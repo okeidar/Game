@@ -3,6 +3,15 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
 jobs:
   export:
     runs-on: ubuntu-24.04
@@ -28,3 +37,16 @@ jobs:
         with:
           name: playtest-builds
           path: build/
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: build/web
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-24.04
+    needs: export
+    steps:
+      - name: Deploy web build
+        id: deployment
+        uses: actions/deploy-pages@v4
