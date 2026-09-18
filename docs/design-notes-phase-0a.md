@@ -488,14 +488,22 @@ Shipped: ALL TEN what's-missing scaffolds.
 
 ### What's-missing list — the ten marked scaffolded
 - ~~audio hooks~~ [scaffolded], ~~boss machinery~~ [scaffolded], ~~tutorial hooks~~ [scaffolded], ~~multi-enemy aggro linking~~ [scaffolded], ~~message/toast feed~~ [scaffolded], ~~NG+ machinery~~ [scaffolded], ~~gestures~~ [scaffolded], ~~settings menu~~ [scaffolded], ~~NPC + dialogue~~ [scaffolded], ~~map~~ [scaffolded].
-### New proposals (never built without your word)
+### Scope ruling (Omer, 2026-09-19 ~00:05): critical path only, no feature creep
+Verbatim: "no focus on the critical path. not feature creeping. ng+, actual bosses, copiues, co-op, bestiary, tod, are too much"
+**CUT (rejected by Omer, removed from candidates, never to be re-proposed):**
+- NG+ design (the round-5 ngplus.gd machinery stays as shipped scaffold; no further design work)
+- Actual boss design/content (machinery stays; no content)
+- Co-op / phantom machinery
+- Bestiary / enemy codex
+- Weather / time-of-day machinery
+- "Copiues" (his word; read as copies/duplicated content) — cut with the rest
+
+### Remaining proposals (unapproved, unbuilt, critical-path candidates only)
 - **Fast travel between checkpoints** — machinery hook exists (respawn + fire); needs a travel choice at the fire. Design first.
-- **Weather / time-of-day machinery** — mood and visibility hooks; not in the project, proposed.
 - **Item durability** — Elden Ring lacks it; do we? Proposed, not built.
-- **Co-op / phantom machinery** — big; proposal only.
-- **Bestiary / enemy memory** — discovered-enemy codex hook (pairs with map discovery). Proposal only.
-- **New: real audio streams** — hook names are placeholders; actual sound selection is an art call.
-- **New: tutorial copy + trigger set** — machinery takes rules; writing them is design.
-- **New: boss design proper** — machinery supports phases; real boss movesets/phases are content design.
-- **New: map visual layout** — discovery list is text; a visual map layout is an art/UI call.
-- **New: NG+ design** — triggers, carry-over, scaling numbers.
+- **Real audio streams** — hook names are placeholders; actual sound selection is an art call.
+- **Tutorial copy + trigger set** — machinery takes rules; writing them is design.
+- **Map visual layout** — discovery list is text; a visual map layout is an art/UI call.
+
+### Critical path (per main's read-back, Omer to correct if wrong)
+The core loop's detail decisions: heal, death penalty, progression, checkpoint behavior, enemy patterns, movesets. New scaffolding is on hold until his detail-breakdown begins.
