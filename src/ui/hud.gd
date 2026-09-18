@@ -17,6 +17,7 @@ var en_bar: ProgressBar
 var en_label: Label
 var log_label: Label
 var banner: Label
+var room_label: Label
 
 func _bar(color: Color, w: int, pos: Vector2) -> ProgressBar:
 	var b := ProgressBar.new()
@@ -71,6 +72,13 @@ func _ready() -> void:
 	en_bar.add_theme_stylebox_override("fill", efill)
 	en_panel.add_child(en_bar)
 
+	room_label = Label.new()
+	room_label.position = Vector2(24, 44)
+	room_label.add_theme_font_size_override("font_size", 17)
+	room_label.add_theme_color_override("font_color", Color("c8ccd4"))
+	room_label.text = ""
+	add_child(room_label)
+
 	log_label = Label.new()
 	log_label.position = Vector2(24, 70)
 	log_label.add_theme_font_size_override("font_size", 13)
@@ -102,6 +110,9 @@ func _ready() -> void:
 
 func set_banner(text: String) -> void:
 	banner.text = text
+
+func set_room(text: String) -> void:
+	room_label.text = text
 
 func _process(_dt: float) -> void:
 	if player == null:

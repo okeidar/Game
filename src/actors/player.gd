@@ -131,8 +131,8 @@ func apply_hit(damage: float, from_pos: Vector3, stagger: float) -> int:
 		return HIT_RESULT_MISS
 	if is_invulnerable():
 		if roll_t <= T.PERFECT_DODGE_WINDOW:
-			add_feathers(T.PERFECT_DODGE_FEATHERS)
-			Sim.log_event("PERFECT DODGE +%d feathers" % int(T.PERFECT_DODGE_FEATHERS))
+			# acknowledged only: payoff pending Omer's call (no invented rewards)
+			Sim.log_event("PERFECT DODGE")
 		else:
 			Sim.log_event("PLAYER DODGED THROUGH")
 		return HIT_RESULT_DODGED

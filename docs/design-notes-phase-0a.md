@@ -15,7 +15,13 @@ Build: Godot 4.7.2, GDScript, text-first, headless CI. No art, all signal.
   works through tradeoffs. Every strong option carries a cost. Feathers are the
   flagship instance, not the only one.
 - Canon now exists (Omer, 2026-09-18): the protagonist is Erthis and the
-  feather mechanic is canon. HARD RULE: canon story text lives only in the
+  feather mechanic is canon.
+- STANDING RULE (Omer, 2026-09-18, verbatim): "feathers are scarce. dont
+  invent stuff. ask me first." Never invent reward, economy, or design
+  numbers. Propose, get his word, then build. (First applied: the +2-feather
+  perfect-dodge payoff was removed the same day it shipped.)
+- Perfect dodge reward: OPEN ITEM, deferred by Omer 2026-09-18 ("just make a
+  perfect dodge. we will think about the reward later"). HARD RULE: canon story text lives only in the
   private Callosum mind - names appear in this repo, story never does.
   The arena ("the greyfield") and the enemy ("the effigy") remain
   placeholders with hooks, not fiction.
@@ -35,7 +41,7 @@ Every verb in the combat core has a cost line:
 | Lock-on | camera + aim tracking | narrower awareness, breaks at range/death |
 | Block (hold RMB) | 70% damage cut, 360 coverage | chips 30% through, drains stamina per hit (0.9x dmg), half movement, stamina regen choked to 20% while held |
 | Parry (block pressed <=0.13s before impact) | full deflect, attacker reels 1.4s | the tight window itself; misjudge and you eat the blow you tried to read |
-| Perfect dodge (hit connects <=0.15s after roll start) | +2 feathers on top of the dodge | you must hold the roll until the last instant - maximum exposure to earn it |
+| Perfect dodge (hit connects <=0.15s after roll start) | nothing yet - it is a pure timing mechanic; reward deferred to Omer | holding the roll to the last instant is its own risk; payout TBD |
 | Guard break (stamina hits 0 while blocking) | - | the blocked hit lands FULL + 1.0s reel: turtling is a loan, not a wall |
 
 Design rule for everything after 0A (cards, systems, items, routes): each
@@ -153,6 +159,26 @@ proof (two identical 400-frame scripts produce identical state traces).
 - The arena: a walled yard at dusk. Where it is, whose it is: open.
 - Defensive abilities at high coat (mentioned by Omer): not in 0A; the
   resistance curve is the hook.
+
+## Test hall layout (Omer directive 2026-09-18)
+
+The greyfield is now a test hall: one room per mechanic, in a row, so each
+verb is isolable for playtesting. "Make the test room more testable.
+Multiple areas. Most with dummies that dont strike back. Only one with real
+enemy. A room to test every unique mechanic."
+
+- MOVE: open floor + pillars. Movement, camera-relative WASD, sprint, roll
+  feel, lock-on against nothing.
+- STRIKE: two training dummies (never strike back). Light/heavy commitment,
+  hitstop, stagger-out-of-swing, kill drops.
+- VOLLEY: three training dummies at range + three feather pickups. Volley
+  cost/spread/commit and the collection loop.
+- DEFEND: the ONLY real enemy (approaches, telegraphs, swings) + two pickups.
+  I-frames, block, parry, guard break, perfect dodge, death/respawn.
+
+Room names float in pale ink at each room; the HUD shows the current room.
+Dummies vs real enemy is one flag (ai_enabled), covered by a deterministic
+test: a dummy never swings in 400 frames in range; the real one engages.
 
 ## Mortal Shell 2 - what I took (Omer named it as the defense reference)
 

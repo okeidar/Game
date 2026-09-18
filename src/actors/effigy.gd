@@ -174,7 +174,7 @@ func _tick_attack(dt: float) -> void:
 					stagger_t = T.PARRY_STAGGER
 					cooldown = T.DUMMY_COOLDOWN
 					Sim.log_event("%s DEFLECTED - REELING" % display_name)
-	if attack.phase == "done":
+	if attack != null and attack.phase == "done":
 		attack = null
 		state = "idle"
 		cooldown = T.DUMMY_COOLDOWN

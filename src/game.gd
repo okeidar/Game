@@ -13,7 +13,8 @@ const Hud = preload("res://src/ui/hud.gd")
 var sim_root: Node3D
 var arena
 var player
-var effigy
+var effigy          # the one real enemy (DEFEND room)
+var effigies: Array = []
 var cam
 var hud
 var build_id := "dev"
@@ -45,9 +46,16 @@ func _build() -> void:
 	player = Player.new()
 	player.position = arena.player_spawn
 	sim_root.add_child(player)
-	effigy = Effigy.new()
-	effigy.position = arena.effigy_spawn
-	sim_root.add_child(effigy)
+	for spec in arena.enemy_specs:
+		var e = Effigy.new()
+		e.position = spec.pos
+		e.ai_enabled = spec.ai
+		e.display_name = spec.name
+		sim_root.add_child(e)
+		effigies.append(e)
+		e.died.connect(_on_effigy_died.bind(e))
+		if spec.ai:
+			effigy = e
 	cam = CameraRig.new()
 	cam.player = player
 	add_child(cam)
@@ -57,12 +65,9 @@ func _build() -> void:
 	hud.effigy = effigy
 	hud.build_id = build_id
 	add_child(hud)
-	player.facing = (arena.effigy_spawn - arena.player_spawn)
-	player.facing.y = 0.0
-	player.facing = player.facing.normalized()
+	player.facing = Vector3(1, 0, 0)  # face down the hall, toward the rooms
 	player.rotation.y = atan2(player.facing.x, player.facing.z)
 	player.died.connect(_on_player_died)
-	effigy.died.connect(_on_effigy_died)
 
 func _process(delta: float) -> void:
 	if Sim.hitstop_left > 0.0:
@@ -75,6 +80,22 @@ func _process(delta: float) -> void:
 		death_timer -= delta
 		if death_timer <= 0.0:
 			_respawn()
+	# room banner + enemy bar follows the relevant effigy
+	if hud != null and player != null and arena != null:
+		hud.set_room(arena.room_at(player.position))
+		var shown = null
+		if player.lock_target != null:
+			shown = player.lock_target
+		else:
+			var best_d := 10.0
+			for e in effigies:
+				if e.dead:
+					continue
+				var d: float = e.global_position.distance_to(player.global_position)
+				if d < best_d:
+					best_d = d
+					shown = e
+		hud.effigy = shown
 	if Input.is_action_just_pressed("ui_cancel") and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	elif Input.mouse_mode != Input.MOUSE_MODE_CAPTURED and Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
@@ -86,13 +107,14 @@ func _on_player_died() -> void:
 	Sim.log_event("YOU DIED x%d" % deaths)
 	death_timer = 2.5
 
-func _on_effigy_died() -> void:
+func _on_effigy_died(e) -> void:
 	player.add_feathers(Tuning.KILL_FEATHERS)
-	Sim.log_event("EFFIGY FELLED +%d feathers" % int(Tuning.KILL_FEATHERS))
+	Sim.log_event("%s FELLED +%d feathers" % [e.display_name, int(Tuning.KILL_FEATHERS)])
 
 func _respawn() -> void:
 	player.reset_run(arena.player_spawn)
-	effigy.reset_run(arena.effigy_spawn)
+	for e in effigies:
+		e.reset_run(e.spawn_pos)
 	hud.set_banner("")
 	Sim.log_event("WAKE AT THE SLAB")
 

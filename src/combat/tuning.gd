@@ -95,7 +95,9 @@ const GUARD_BREAK_STAGGER := 1.0     # C: guard break = full hit + long reel
 const PARRY_WINDOW := 0.13           # B: block pressed this close to impact deflects (DS3 parry ~8-12 active frames @60)
 const PARRY_STAGGER := 1.4           # C: deflected attacker reels - the punish window (MS2 break damage, simplified)
 const PERFECT_DODGE_WINDOW := 0.15   # C: hit must connect within this of roll start
-const PERFECT_DODGE_FEATHERS := 2.0  # C: payoff chosen = feathers (feeds the collection-only economy)
+# Perfect dodge pays NOTHING yet. Omer 2026-09-18: "feathers are scarce. dont
+# invent stuff. ask me first." Standing rule: never invent reward/economy/
+# design numbers - propose, get his word, then build.
 
 const HITSTOP_DEALT := 0.05        # C: action-game standard 50-150ms band
 const HITSTOP_TAKEN := 0.09

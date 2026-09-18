@@ -311,7 +311,7 @@ class ScenarioDefense extends Scenario:
 		if lf < 100:
 			return false
 		if run == 0:
-			check(absf(p.hp - 92.5) < 0.01, "held block chips 30%% of 25 through, hp=%.2f" % p.hp)
+			check(absf(p.hp - 92.5) < 0.01, "held block chips 30 percent of 25 through, hp=%.2f" % p.hp)
 			check(p.stamina >= 77.4 and p.stamina <= 78.5, "blocked hit drains stamina ~22.5 (trickle regen after), stamina=%.2f" % p.stamina)
 			var blk := false
 			for ev in Sim.events:
@@ -337,10 +337,10 @@ class ScenarioDefense extends Scenario:
 			return false
 		if run == 3:
 			check(absf(p.hp - 100.0) < 0.01, "perfect dodge takes zero, hp=%.2f" % p.hp)
-			check(absf(p.feathers - 12.0) < 0.01, "perfect dodge pays +2 feathers (10->12), feathers=%.2f" % p.feathers)
+			check(absf(p.feathers - 10.0) < 0.01, "perfect dodge pays nothing yet (no invented rewards, Omer rule), feathers=%.2f" % p.feathers)
 			var perf := false
 			for ev in Sim.events:
-				if ev.begins_with("PERFECT DODGE"): perf = true
+				if ev == "PERFECT DODGE": perf = true
 			check(perf, "perfect dodge is acknowledged")
 			_start_run(4)
 			return false
@@ -348,6 +348,45 @@ class ScenarioDefense extends Scenario:
 		check(absf(p.feathers - 10.0) < 0.01, "early roll earns no feathers, feathers=%.2f" % p.feathers)
 		check(Sim.events.has("PLAYER DODGED THROUGH"), "plain dodge-through is acknowledged")
 		return true
+
+
+class ScenarioRooms extends Scenario:
+	const Sim = preload("res://src/combat/combat_sim.gd")
+	var run := 0
+	var lf := -2
+	func setup() -> void:
+		name = "training_dummy_vs_real_enemy"
+		_start_run(0)
+	func _start_run(r: int) -> void:
+		run = r
+		lf = -2
+		h.make_world()  # harness world: effigy starts ai_enabled = false (training dummy)
+		h.player.facing = Vector3(0, 0, -1)
+		h.effigies[0].position = Vector3(0, 0.05, -2.2)
+	func step(f: int) -> bool:
+		var e = h.effigies[0]
+		if lf < 0:
+			lf += 1
+			return false
+		lf += 1
+		if run == 0:
+			if lf >= 400:
+				var raised := false
+				for ev in Sim.events:
+					if ev.contains("RAISES"): raised = true
+				check(not raised, "training dummy never strikes back across 400 frames in range")
+				check(e.attack == null, "training dummy never enters a swing")
+				e.ai_enabled = true
+				lf = 0
+				run = 1
+			return false
+		if lf >= 300:
+			var raised2 := false
+			for ev in Sim.events:
+				if ev.contains("RAISES"): raised2 = true
+			check(raised2, "the one real enemy engages on its own within 300 frames")
+			return true
+		return false
 
 class ScenarioLockOn extends Scenario:
 	func setup() -> void:
@@ -591,6 +630,7 @@ func _register() -> void:
 		ScenarioRegen.new(),
 		ScenarioCameraRelative.new(),
 		ScenarioDefense.new(),
+		ScenarioRooms.new(),
 		ScenarioHeavy.new(),
 		ScenarioDeterminismA.new(),
 		ScenarioDeterminismB.new(),
