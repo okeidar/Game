@@ -19,6 +19,11 @@ static func log_event(msg: String) -> void:
 		log_lines.pop_front()
 	print("[combat] ", msg)
 
+static func emit_sound(source_name: String, pos: Vector3, radius: float, loudness: float) -> void:
+	# Sound machinery (round 2): events exist now; enemy hearing is the
+	# deferred enemy side and consumes these later.
+	log_event("SOUND %s at (%.1f, %.1f) r=%.1f loud=%.1f" % [source_name, pos.x, pos.z, radius, loudness])
+
 static func hitstop(d: float) -> void:
 	hitstop_left = maxf(hitstop_left, d)
 

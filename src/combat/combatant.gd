@@ -16,6 +16,8 @@ var stagger_t := 0.0
 var hit_flash_t := 0.0
 var since_hit := 99.0
 var crit_open_t := 0.0  # riposte machinery: >0 means hits on this combatant crit
+const StatusSystem = preload("res://src/combat/status_effects.gd")
+var statuses = StatusSystem.new()  # status scaffolding: build-up/trigger/tick/expiry
 var visual: MeshInstance3D
 var base_color := Color.WHITE
 
@@ -50,6 +52,7 @@ func apply_hit(damage: float, from_pos: Vector3, stagger: float, _flags := {}) -
 func tick_common(dt: float) -> void:
 	stagger_t = maxf(0.0, stagger_t - dt)
 	crit_open_t = maxf(0.0, crit_open_t - dt)
+	statuses.tick(dt, display_name)
 	hit_flash_t = maxf(0.0, hit_flash_t - dt)
 	since_hit += dt
 	_update_flash()

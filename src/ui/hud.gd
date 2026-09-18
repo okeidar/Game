@@ -102,7 +102,7 @@ func _ready() -> void:
 	add_child(build)
 
 	var hint := Label.new()
-	hint.text = "WASD move · SHIFT sprint · SPACE roll · LMB attack · F heavy · R volley · RMB block (tight = parry) · Q heal · E interact · TAB lock-on · arrows/mouse camera · ESC cursor"
+	hint.text = "WASD move · SHIFT sprint · SPACE roll · LMB attack · F heavy · R volley · RMB block (tight = parry) · Q heal · E interact · CTRL sneak · 1 item · V jump · TAB lock-on · arrows/mouse camera · ESC cursor"
 	hint.position = Vector2(24, 528)
 	hint.add_theme_font_size_override("font_size", 12)
 	hint.add_theme_color_override("font_color", Color("5a6472"))
@@ -120,7 +120,7 @@ func _process(_dt: float) -> void:
 	hp_bar.value = player.hp
 	st_bar.value = player.stamina
 	fe_bar.value = player.feathers
-	fe_text.text = "%d feathers · %d%% resist · heal x%d" % [int(player.feathers), int(round(player.feather_resist() * 100.0)), player.heal_charges]
+	fe_text.text = "%d feathers · %d%% resist · heal x%d%s" % [int(player.feathers), int(round(player.feather_resist() * 100.0)), player.heal_charges, (" · SNEAK" if player.sneaking else "")]
 	if effigy != null and (player.lock_target == effigy or effigy.since_hit < 4.0) and not effigy.dead:
 		en_panel.visible = true
 		en_bar.value = effigy.hp

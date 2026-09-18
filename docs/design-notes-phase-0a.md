@@ -288,3 +288,63 @@ recovery, parry-window riposte crit, unblockable through block, two-link
 chain, progression spend/deny/convert/upgrade. Legacy scenarios updated so
 their effigies face the player (backstab machinery made their old arbitrary
 facing meaningful).
+
+---
+
+## Machinery pass 2 (2026-09-19): player-side sneak/sound, statuses, consumables, movesets, jump
+
+Directives from Omer: "Sneak - lets take player side now. Means a slow walk. It means
+we also nees to emit sound. Build scaffolding fir status effects and consumables" and
+"And combos, jump and the rest you mentioned. No equip load, poise, charged heavies,
+weapon art, and guard counters". Machinery only; every number below is SCAFFOLD.
+
+### EXPLICITLY EXCLUDED BY OMER - do not build, do not propose again
+equip load - poise / hyperarmor - charged heavies - weapon arts - guard counters.
+
+### 7. Sneak + sound (player side only)
+- CTRL = sneak walk (slow). Movement emits SOUND events: a footstep per 2m of
+  travel, each with a radius/loudness property. Sneak quietest, walk medium,
+  sprint loud, roll emits one on start. HUD shows SNEAK while active.
+- Scaffold: sneak speed x0.45; radii sneak 2.5 / walk 6.0 / sprint 10.0 / roll 8.0.
+- Enemy hearing/awareness is the DEFERRED enemy side: nothing consumes sound yet.
+- OPEN: sneak speed multiplier, sound radii, what else emits sound (attacks?
+  landing from a jump? item use?), whether sound is how enemies notice you at all.
+
+### 8. Status effects scaffolding
+- Every combatant (player AND enemies) has a status system: statuses can be
+  registered with threshold/duration/tick interval; build-up accumulates,
+  crossing the threshold triggers, active statuses tick on an interval, then
+  expire; untriggered build-up decays. Effect hooks (on_tick callables) exist.
+- No status designs exist: the catalog (bleed/poison/frost/...), build-up
+  rates, effects, and resistances are all OPEN for Omer.
+
+### 9. Consumables scaffolding
+- Inventory machinery: slots with quantities, add/stack, use with a rooted
+  commit (key 1, slot 0), effect application hook per item def, empty-slot
+  denial. Commit is interruptible by stagger (tradeoff shape preserved).
+- Scaffold: 0.8s use commit. No item designs: catalog, quantities, and where
+  items come from are all OPEN.
+
+### 10. Moveset machinery (combos)
+- Per-weapon moveset TABLES: light chain (ordered links), heavy, running
+  attack, rolling attack, jump attack slots. Player attack selection reads the
+  table: light presses advance the chain inside a window, sprint-attack uses
+  the running slot, post-roll attack uses the rolling slot, airborne attack
+  uses the jump slot. One scaffold moveset exists; every slot reuses the
+  current proven attack data, so playtest behavior is unchanged.
+- Scaffold: chain window 0.8s, roll-attack window 0.4s.
+- OPEN: the weapon catalog, chains per weapon, all frame data, whether
+  running/rolling/jump attacks get distinct properties.
+
+### 11. Jump
+- V = jump (key binding itself is provisional scaffolding). Jump-attack hook
+  exists (airborne attack uses the jump slot). Gravity now preserves upward
+  velocity so a jump survives its first frame.
+- Scaffold: jump velocity 5.0 (gravity 18). OPEN: height/feel, air control
+  (currently full), jump-attack properties, does jumping cost stamina.
+
+### New test coverage (18/18 green)
+sneak speed + quiet/medium/loud/roll sound events; status build-up, trigger,
+tick, expiry, decay; consumable commit, effect hook, quantity tracking,
+empty-slot denial; light-chain advance + window reset; running and rolling
+slots; jump leaves floor, lands, jump-attack slot while airborne.

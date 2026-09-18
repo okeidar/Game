@@ -13,7 +13,7 @@ const DT := 1.0 / 60.0
 
 class ScriptedInput extends RefCounted:
 	var plan: Array = []
-	var cur := {"move": Vector2.ZERO, "sprint": false, "dodge": false, "attack": false, "heavy": false, "volley": false, "lock": false, "block": false, "heal": false, "interact": false}
+	var cur := {"move": Vector2.ZERO, "sprint": false, "dodge": false, "attack": false, "heavy": false, "volley": false, "lock": false, "block": false, "heal": false, "interact": false, "sneak": false, "use_item": false, "jump": false}
 	func at(f: int, set: Dictionary) -> void:
 		plan.append({"f": f, "set": set})
 	func begin_frame(f: int) -> void:
@@ -24,6 +24,8 @@ class ScriptedInput extends RefCounted:
 		cur.lock = false
 		cur.heal = false
 		cur.interact = false
+		cur.use_item = false
+		cur.jump = false
 		for ev in plan:
 			if ev.f == f:
 				for k in ev.set:
@@ -513,6 +515,177 @@ class ScenarioMachinery extends Scenario:
 		lf += 1
 		return false
 
+
+class ScenarioMachinery2 extends Scenario:
+	const Sim = preload("res://src/combat/combat_sim.gd")
+	const T2 = preload("res://src/combat/tuning.gd")
+	var run := 0
+	var lf := -2
+	var start_x := 0.0
+	func setup() -> void:
+		name = "sneak_status_items"
+		_start_run(0)
+	func _start_run(r: int) -> void:
+		run = r
+		lf = -2
+		h.make_world()
+		h.effigies[0].position = Vector3(0, 0.05, 60.0)  # out of the walk path
+	func _sounds_with(tag: String) -> int:
+		var n := 0
+		for ev in Sim.events:
+			if ev.begins_with("SOUND") and ev.contains(tag): n += 1
+		return n
+	func step(f: int) -> bool:
+		var p = h.player
+		if lf < 0:
+			lf += 1
+			return false
+		match run:
+			0:  # sneak = slow walk; movement emits sound events (machinery only)
+				if lf == 0:
+					h.input.cur.move = Vector2(0, -1)
+					h.input.cur.sneak = true
+					start_x = p.position.x
+				if lf == 60:
+					var spd: float = Vector2(p.velocity.x, p.velocity.z).length()
+					check(spd < T2.WALK_SPEED * 0.6 and spd > 0.5, "sneak walk is slow (%.2f vs walk %.2f)" % [spd, T2.WALK_SPEED])
+					check(_sounds_with("r=2.5") > 0, "sneak footsteps emit quiet sound events")
+					h.input.cur.sneak = false
+					h.input.cur.move = Vector2(0, -1)
+					Sim.events.clear()
+				if lf == 120:
+					check(_sounds_with("r=6.0") > 0, "normal footsteps emit medium sound events")
+					check(_sounds_with("r=2.5") == 0, "no sneak-radius sound once sneak is released")
+					h.input.cur.sprint = true
+					Sim.events.clear()
+				if lf == 170:
+					check(_sounds_with("r=10.0") > 0, "sprint footsteps emit loud sound events")
+					h.input.cur.sprint = false
+					h.input.cur.move = Vector2.ZERO
+					h.input.cur.dodge = true
+				if lf == 190:
+					check(_sounds_with("r=8.0") > 0, "rolling emits a sound event")
+					_start_run(1)
+					return false
+			1:  # status machinery: build-up, trigger, tick, expiry, decay
+				if lf == 0:
+					p.statuses.register_status("test_bleed", {"threshold": 30.0, "duration": 1.0, "tick_interval": 0.5})
+					p.statuses.add_buildup("test_bleed", 20.0, p.display_name)
+				if lf == 5:
+					check(not p.statuses.is_active("test_bleed"), "buildup below threshold has not triggered")
+					p.statuses.add_buildup("test_bleed", 15.0, p.display_name)
+				if lf == 10:
+					check(p.statuses.is_active("test_bleed"), "crossing the threshold triggers the status")
+				if lf == 45:  # ~0.58s after trigger at lf7-ish: at least one tick
+					var ticks := 0
+					for ev in Sim.events:
+						if ev.begins_with("STATUS TICK test_bleed"): ticks += 1
+					check(ticks >= 1, "active status ticks, ticks=%d" % ticks)
+				if lf == 90:
+					var expired := false
+					for ev in Sim.events:
+						if ev.begins_with("STATUS EXPIRED test_bleed"): expired = true
+					check(expired, "status expires after its duration")
+					p.statuses.add_buildup("test_bleed", 10.0, p.display_name)
+				if lf == 150:
+					check(p.statuses.meters.get("test_bleed", 0.0) < 10.0, "untriggered buildup decays, meter=%.1f" % p.statuses.meters.get("test_bleed", 0.0))
+					_start_run(2)
+					return false
+			2:  # consumable machinery: slots, quantity, commit-gated use, effect hook
+				if lf == 0:
+					p.hp = 50.0
+					p.inventory.register_item_def("test_draught", func(u): u.hp += 5.0)
+					p.inventory.add_item("test_draught", 2)
+				if lf == 5: h.input.cur.use_item = true
+				if lf == 20:
+					check(absf(p.hp - 50.0) < 0.01, "item has not fired yet mid-commit, hp=%.1f" % p.hp)
+				if lf == 60:  # 0.8s commit = 48 frames after lf5
+					check(absf(p.hp - 55.0) < 0.01, "item effect hook applied after the commit, hp=%.1f" % p.hp)
+					var used := false
+					for ev in Sim.events:
+						if ev.begins_with("ITEM USED test_draught"): used = true
+					check(used, "item use is acknowledged")
+					check(p.inventory.slots[0].qty == 1, "quantity tracked (2->1)")
+					h.input.cur.use_item = true
+				if lf == 115:
+					check(absf(p.hp - 60.0) < 0.01, "second use applies again, hp=%.1f" % p.hp)
+					check(p.inventory.slots.size() == 0, "slot empties at zero quantity")
+					h.input.cur.use_item = true
+				if lf == 130:
+					check(Sim.events.has("ITEM DENIED empty slot"), "using an empty slot is denied")
+					return true
+		lf += 1
+		return false
+
+
+class ScenarioMachinery3 extends Scenario:
+	const Sim = preload("res://src/combat/combat_sim.gd")
+	var run := 0
+	var lf := -2
+	func setup() -> void:
+		name = "moveset_jump"
+		_start_run(0)
+	func _start_run(r: int) -> void:
+		run = r
+		lf = -2
+		h.make_world()
+		h.effigies[0].position = Vector3(0, 0.05, 60.0)
+	func _slots() -> Array:
+		var out := []
+		for ev in Sim.events:
+			if ev.begins_with("ATTACK SLOT "): out.append(ev.trim_prefix("ATTACK SLOT "))
+		return out
+	func step(f: int) -> bool:
+		var p = h.player
+		if lf < 0:
+			lf += 1
+			return false
+		match run:
+			0:  # moveset machinery: light chain advances and resets
+				if lf == 5: h.input.cur.attack = true
+				if lf == 60: h.input.cur.attack = true   # inside the chain window
+				if lf == 200: h.input.cur.attack = true  # window expired: back to link 0
+				if lf == 260:
+					var sl := _slots()
+					check(sl.size() == 3, "three attacks ran through the moveset table, got %d" % sl.size())
+					check(sl[0] == "light_chain[0]", "first light is chain link 0, got %s" % sl[0])
+					check(sl[1] == "light_chain[1]", "second light inside the window is link 1, got %s" % sl[1])
+					check(sl[2] == "light_chain[0]", "after the window lapses the chain resets, got %s" % sl[2])
+					_start_run(1)
+					return false
+			1:  # running and rolling attack slots
+				if lf == 0:
+					h.input.cur.move = Vector2(0, -1)
+					h.input.cur.sprint = true
+				if lf == 30:
+					h.input.cur.attack = true
+				if lf == 31:
+					h.input.cur.sprint = false
+					h.input.cur.move = Vector2.ZERO
+				if lf == 90: h.input.cur.dodge = true
+				if lf == 140: h.input.cur.attack = true  # roll ends ~lf132, window 0.4s
+				if lf == 200:
+					var sl := _slots()
+					check(sl.size() == 2, "two situational attacks ran, got %d" % sl.size())
+					check(sl[0] == "running_attack", "attack while sprinting uses the running slot, got %s" % sl[0])
+					check(sl[1] == "rolling_attack", "attack right after a roll uses the rolling slot, got %s" % sl[1])
+					_start_run(2)
+					return false
+			2:  # jump verb + jump-attack hook
+				if lf == 5: h.input.cur.jump = true
+				if lf == 20:
+					check(p.position.y > 0.25, "jump leaves the floor, y=%.2f" % p.position.y)
+				if lf == 60:
+					check(p.is_on_floor(), "jump lands back on the floor")
+					h.input.cur.jump = true
+				if lf == 70: h.input.cur.attack = true  # airborne
+				if lf == 130:
+					var sl := _slots()
+					check(sl.size() == 1 and sl[0] == "jump_attack", "attacking airborne uses the jump-attack slot, got %s" % (sl[0] if sl.size() > 0 else "none"))
+					return true
+		lf += 1
+		return false
+
 class ScenarioLockOn extends Scenario:
 	func setup() -> void:
 		name = "lock_on"
@@ -759,6 +932,8 @@ func _register() -> void:
 		ScenarioDefense.new(),
 		ScenarioRooms.new(),
 		ScenarioMachinery.new(),
+		ScenarioMachinery2.new(),
+		ScenarioMachinery3.new(),
 		ScenarioHeavy.new(),
 		ScenarioDeterminismA.new(),
 		ScenarioDeterminismB.new(),

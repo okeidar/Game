@@ -19,6 +19,16 @@ var camera_yaw := 0.0
 var block_t := 0.0
 var heal_charges := T.HEAL_CHARGES_SCAFFOLD
 var heal_t := 0.0
+const Inventory = preload("res://src/combat/inventory.gd")
+var inventory = Inventory.new()
+var sneaking := false
+var step_acc := 0.0   # sound machinery: distance accumulated toward the next footstep
+var item_t := 0.0
+const Moveset = preload("res://src/combat/moveset.gd")
+var moveset: Dictionary
+var chain_index := 0
+var chain_window_t := 0.0
+var roll_end_t := 99.0  # seconds since a roll ended; feeds the rolling-attack slot
 var cam: Node3D = null         # camera rig, set by game; null in tests
 var lock_target: Node3D = null
 var buffered := ""
@@ -32,6 +42,7 @@ var wing_r: MeshInstance3D
 var feather_motes: Array[MeshInstance3D] = []
 
 func _ready() -> void:
+	moveset = Moveset.scaffold_moveset()
 	display_name = "PLAYER"
 	team = "player"
 	max_hp = T.PLAYER_HP
@@ -187,13 +198,18 @@ func tick(dt: float) -> void:
 	var inp := _poll()
 	_tick_lock(inp)
 	if stagger_t > 0.0:
-		if state == "attack" or state == "volley" or state == "heal":
+		if state == "attack" or state == "volley" or state == "heal" or state == "item":
 			state = "free"
 			attack = null
 		velocity = velocity.move_toward(Vector3.ZERO, 18.0 * dt)
 		move_and_slide()
 		_update_visual(dt)
 		return
+	if chain_window_t > 0.0:
+		chain_window_t -= dt
+	else:
+		chain_index = 0
+	roll_end_t += dt
 	match state:
 		"free": _tick_free(dt, inp)
 		"roll": _tick_roll(dt, inp)
@@ -201,6 +217,7 @@ func tick(dt: float) -> void:
 		"volley": _tick_volley(dt, inp)
 		"block": _tick_block(dt, inp)
 		"heal": _tick_heal(dt, inp)
+		"item": _tick_item(dt, inp)
 	if buffer_left > 0.0:
 		buffer_left -= dt
 		if buffer_left <= 0.0:
@@ -221,6 +238,9 @@ func _poll() -> Dictionary:
 		"block": Input.is_action_pressed("block"),
 		"heal": Input.is_action_just_pressed("heal"),
 		"interact": Input.is_action_just_pressed("interact"),
+		"sneak": Input.is_action_pressed("sneak"),
+		"use_item": Input.is_action_just_pressed("use_item"),
+		"jump": Input.is_action_just_pressed("jump"),
 	}
 
 func _move_world(m: Vector2) -> Vector3:
@@ -231,14 +251,24 @@ func _tick_free(dt: float, inp: Dictionary) -> void:
 	var dir := _move_world(wish)
 	if dir.length_squared() > 1.0:
 		dir = dir.normalized()
-	sprinting = inp.sprint and stamina > 0.0 and wish.length_squared() > 0.01
+	sneaking = inp.get("sneak", false) and wish.length_squared() > 0.01
+	sprinting = inp.sprint and not sneaking and stamina > 0.0 and wish.length_squared() > 0.01
 	var speed := T.SPRINT_SPEED if sprinting else T.WALK_SPEED
+	if sneaking:
+		speed *= T.SNEAK_SPEED_MULT_SCAFFOLD  # SCAFFOLD - sneak speed undecided
 	if sprinting:
 		_spend_stamina(T.SPRINT_DRAIN_PER_SEC * dt)
 	velocity.x = dir.x * speed
 	velocity.z = dir.z * speed
 	_gravity(dt)
 	move_and_slide()
+	# sound machinery: movement emits footstep sound events (enemy hearing deferred)
+	if wish.length_squared() > 0.01:
+		step_acc += Vector2(velocity.x, velocity.z).length() * dt
+		if step_acc >= T.SOUND_STEP_DISTANCE:
+			step_acc = 0.0
+			var r: float = T.SOUND_RADIUS_SPRINT_SCAFFOLD if sprinting else (T.SOUND_RADIUS_SNEAK_SCAFFOLD if sneaking else T.SOUND_RADIUS_WALK_SCAFFOLD)
+			Sim.emit_sound("footstep", global_position, r, r)
 	if _lock_valid():
 		facing = (lock_target.global_position - global_position)
 		facing.y = 0.0
@@ -261,6 +291,35 @@ func _tick_free(dt: float, inp: Dictionary) -> void:
 		_try_heal()
 	elif inp.get("interact", false):
 		_try_interact()
+	elif inp.get("use_item", false):
+		_try_use_item()
+	elif inp.get("jump", false):
+		_try_jump()
+
+func _try_jump() -> bool:
+	if not is_on_floor():
+		return false
+	velocity.y = T.JUMP_VELOCITY_SCAFFOLD  # SCAFFOLD - height/feel/air control undecided
+	Sim.log_event("JUMP")
+	return true
+
+func _try_use_item() -> bool:
+	if not inventory.can_use(0):
+		Sim.log_event("ITEM DENIED empty slot")
+		return false
+	state = "item"
+	item_t = 0.0
+	Sim.log_event("ITEM USE START")
+	return true
+
+func _tick_item(dt: float, _inp: Dictionary) -> void:
+	item_t += dt
+	velocity = Vector3.ZERO
+	_gravity(dt)
+	move_and_slide()
+	if item_t >= T.ITEM_USE_COMMIT_SCAFFOLD:
+		inventory.use(0, self)
+		state = "free"
 
 func _try_roll(dir: Vector3) -> bool:
 	if stamina <= 0.0:
@@ -269,6 +328,7 @@ func _try_roll(dir: Vector3) -> bool:
 	_spend_stamina(T.ROLL_COST)
 	state = "roll"
 	roll_t = 0.0
+	Sim.emit_sound("roll", global_position, T.SOUND_RADIUS_ROLL_SCAFFOLD, T.SOUND_RADIUS_ROLL_SCAFFOLD)
 	roll_dir = dir.normalized() if dir.length_squared() > 0.01 else -facing
 	facing = roll_dir
 	Sim.log_event("ROLL")
@@ -291,15 +351,32 @@ func _tick_roll(dt: float, inp: Dictionary) -> void:
 		_buffer("volley")
 	if roll_t >= T.ROLL_DURATION:
 		state = "free"
+		roll_end_t = 0.0
 		_fire_buffered()
 
 func _try_attack() -> bool:
-	return _start_attack(T.PLAYER_ATTACK, T.ATTACK_COST, "ATTACK")
+	var slot := ""
+	var data: Dictionary
+	if not is_on_floor():
+		slot = "jump_attack"
+		data = moveset.jump_attack
+	elif roll_end_t < T.ROLL_ATTACK_WINDOW_SCAFFOLD:
+		slot = "rolling_attack"
+		data = moveset.rolling_attack
+	elif sprinting:
+		slot = "running_attack"
+		data = moveset.running_attack
+	else:
+		slot = "light_chain[%d]" % chain_index
+		data = moveset.light_chain[chain_index]
+		chain_index = (chain_index + 1) % moveset.light_chain.size()
+		chain_window_t = data.windup + data.active + data.recovery + T.CHAIN_WINDOW_SCAFFOLD
+	return _start_attack(data, T.ATTACK_COST, "ATTACK", slot)
 
 func _try_heavy() -> bool:
-	return _start_attack(T.HEAVY_ATTACK, T.HEAVY_COST, "HEAVY")
+	return _start_attack(moveset.heavy, T.HEAVY_COST, "HEAVY", "heavy")
 
-func _start_attack(data: Dictionary, cost: float, label: String) -> bool:
+func _start_attack(data: Dictionary, cost: float, label: String, slot := "") -> bool:
 	if stamina <= 0.0:
 		Sim.log_event("%s DENIED stamina" % label)
 		return false
@@ -312,6 +389,8 @@ func _start_attack(data: Dictionary, cost: float, label: String) -> bool:
 	rotation.y = atan2(facing.x, facing.z)
 	state = "attack"
 	Sim.log_event("%s START" % label)
+	if slot != "":
+		Sim.log_event("ATTACK SLOT %s" % slot)
 	return true
 
 func _tick_attack(dt: float, inp: Dictionary) -> void:
@@ -477,8 +556,8 @@ func _tick_stamina(dt: float) -> void:
 func _gravity(dt: float) -> void:
 	if not is_on_floor():
 		velocity.y -= 18.0 * dt
-	else:
-		velocity.y = 0.0
+	elif velocity.y < 0.0:
+		velocity.y = 0.0  # keep upward velocity so a jump survives its first frame
 
 func _lock_valid() -> bool:
 	return lock_target != null and is_instance_valid(lock_target) and not lock_target.dead

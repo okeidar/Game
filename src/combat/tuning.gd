@@ -118,3 +118,20 @@ const CRIT_MULTIPLIER_SCAFFOLD := 2.0   # SCAFFOLD - riposte multiplier undecide
 const BACKSTAB_HALF_ANGLE_SCAFFOLD := 60.0  # SCAFFOLD - backstab condition undecided
 const CHECKPOINT_RADIUS_SCAFFOLD := 1.8 # SCAFFOLD - interact radius undecided
 const ESSENCE_RATE_SCAFFOLD := 1.0      # SCAFFOLD - feather->essence conversion undecided
+
+# Sneak + sound machinery scaffolds (Omer directive 2026-09-18, round 2):
+# sneak = slow walk; movement emits sound events. Enemy-side awareness is
+# deliberately NOT built (deferred). Values below are SCAFFOLD, not design.
+const SNEAK_SPEED_MULT_SCAFFOLD := 0.45   # SCAFFOLD - sneak speed undecided
+const SOUND_STEP_DISTANCE := 2.0          # machinery: one footstep per this much travel
+const SOUND_RADIUS_SNEAK_SCAFFOLD := 2.5  # SCAFFOLD - sound radii undecided
+const SOUND_RADIUS_WALK_SCAFFOLD := 6.0   # SCAFFOLD
+const SOUND_RADIUS_SPRINT_SCAFFOLD := 10.0 # SCAFFOLD
+const SOUND_RADIUS_ROLL_SCAFFOLD := 8.0   # SCAFFOLD
+const STATUS_BUILDUP_DECAY_SCAFFOLD := 10.0 # SCAFFOLD - buildup decay/s undecided
+const ITEM_USE_COMMIT_SCAFFOLD := 0.8     # SCAFFOLD - item use commit undecided
+
+# Moveset + jump scaffolds (Omer directive 2026-09-18, round 2).
+const CHAIN_WINDOW_SCAFFOLD := 0.8      # SCAFFOLD - chain continue window undecided
+const ROLL_ATTACK_WINDOW_SCAFFOLD := 0.4 # SCAFFOLD - roll-attack window undecided
+const JUMP_VELOCITY_SCAFFOLD := 5.0     # SCAFFOLD - jump height/feel undecided
