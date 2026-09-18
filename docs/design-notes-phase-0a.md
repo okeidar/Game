@@ -7,16 +7,18 @@ Build: Godot 4.7.2, GDScript, text-first, headless CI. No art, all signal.
 
 - Dark and gloomy tone, even at greybox: dusk arena, fog, cold moonlight,
   desaturated palette, pale ink HUD.
-- Signature mechanic: the winged protagonist collects feathers. One resource,
+- Signature mechanic: Erthis, the winged protagonist, collects feathers. One resource,
   two uses: feathers held are armor (damage resistance, later defensive
   abilities); feathers spent are ammunition (volleys). Spending protection for
   offense is the risk economy in one resource.
 - Generalized doctrine (Omer, same conversation): the decision system always
   works through tradeoffs. Every strong option carries a cost. Feathers are the
   flagship instance, not the only one.
-- Omer has an initial story for some characters. It is not in 0A. No lore was
-  invented: the protagonist, the arena ("the greyfield"), and the enemy ("the
-  effigy") are placeholders with hooks, not fiction.
+- Canon now exists (Omer, 2026-09-18): the protagonist is Erthis and the
+  feather mechanic is canon. HARD RULE: canon story text lives only in the
+  private Callosum mind - names appear in this repo, story never does.
+  The arena ("the greyfield") and the enemy ("the effigy") remain
+  placeholders with hooks, not fiction.
 
 ## The tradeoff doctrine as implemented in 0A
 
@@ -24,10 +26,10 @@ Every verb in the combat core has a cost line:
 
 | Option | Gain | Cost |
 | --- | --- | --- |
-| Dodge roll | i-frames (0.34s) + reposition | 25 stamina, committed direction |
-| Light attack | 20 dmg, quick | 20 stamina, locked in for 0.88s |
-| Heavy attack | 32 dmg, hard stagger | 32 stamina, 0.5s exposed windup, 1.28s total |
-| Sprint | 1.6x speed | drains the stamina you need to dodge (12/s) |
+| Dodge roll | i-frames (0.43s) + reposition | 16 stamina, committed direction |
+| Light attack | 20 dmg, quick | 20 stamina, locked in for 0.84s |
+| Heavy attack | 32 dmg, hard stagger | 27 stamina, 0.5s exposed windup, 1.28s total |
+| Sprint | 1.6x speed | drains the stamina you need to dodge (14/s) |
 | Feather volley | ranged 3x8 dmg | 6 feathers = 10 points of resistance lost |
 | Full feather coat | up to 50% damage resist | temptation: every volley strips it |
 | Lock-on | camera + aim tracking | narrower awareness, breaks at range/death |
@@ -43,7 +45,7 @@ no pure upgrades. Numbers live in `src/combat/tuning.gd`, one file, diffable.
 - Volley: 6 feathers, three projectiles, 8 damage each, 0.35s rooted cast.
   Denied below 6.
 - Sources: 5 scattered pickups (+6 each, respawn 12s) and a felled effigy (+6).
-- The coat is visible: one pale mote per 5 feathers orbits the protagonist.
+- The coat is visible: one pale mote per 5 feathers orbits Erthis.
 
 ## Combat core (0A numbers)
 
@@ -127,8 +129,13 @@ proof (two identical 400-frame scripts produce identical state traces).
   tradeoff doctrine: power now, paid for in a resource hole you must climb
   out of. Future-systems material, NOT 0A scope.
 
-- Protagonist: winged, collects feathers. Name, history, why the coat works
-  this way: open.
+- Erthis: protagonist, canon. Everything about who he is and why the coat
+  works this way lives in the Callosum mind, not in this repo.
+- Uldor: canon character, guide-shaped. Hook for later phases; story in the mind.
+- Ashitori: canon character, boss-shaped. Hook for a later boss phase;
+  story in the mind.
+- Kelden'gon: canon character, king-shaped. Hook for a later
+  region/arc; story in the mind.
 - The effigy: a training thing in a greyfield. What it is a rehearsal for: open.
 - The arena: a walled yard at dusk. Where it is, whose it is: open.
 - Defensive abilities at high coat (mentioned by Omer): not in 0A; the
