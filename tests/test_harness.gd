@@ -783,6 +783,118 @@ class ScenarioMachinery4 extends Scenario:
 		lf += 1
 		return false
 
+
+class ScenarioShell extends Scenario:
+	const Sim = preload("res://src/combat/combat_sim.gd")
+	const Shell = preload("res://src/ui/shell.gd")
+	const SaveGame = preload("res://src/combat/save_game.gd")
+	var run := 0
+	var lf := -2
+	var shell
+	var fired := ""
+	func setup() -> void:
+		name = "shell_layer"
+		_start_run(0)
+	func _start_run(r: int) -> void:
+		run = r
+		lf = -2
+		h.make_world()
+		h.effigies[0].position = Vector3(0, 0.05, 60.0)
+		shell = Shell.new()
+		shell.player = h.player
+		h.add_child(shell)
+	func step(f: int) -> bool:
+		var p = h.player
+		if lf < 0:
+			lf += 1
+			return false
+		match run:
+			0:  # attributes machinery: register, raise, scaling hook feeds derived
+				if lf == 5:
+					p.attrs.register_attribute("vit", 10)
+					p.attrs.register_scaling("max_hp", func(a): return 100.0 + a.vit * 2.0)
+					p.recalculate_derived()
+					check(absf(p.max_hp - 120.0) < 0.01, "registered scaling feeds max_hp (100 + 10x2), got %.1f" % p.max_hp)
+					p.attrs.raise("vit", 5)
+					p.recalculate_derived()
+					check(absf(p.max_hp - 130.0) < 0.01, "raising the attribute moves the derived value, got %.1f" % p.max_hp)
+					check(absf(p.attrs.derived("defense", 7.0) - 7.0) < 0.01, "unregistered derived keys fall back (no invented scaling)")
+					_start_run(1)
+					return false
+			1:  # equipment machinery: swapping the weapon slot swaps the moveset
+				if lf == 5:
+					var T2 = preload("res://src/combat/tuning.gd")
+					var fake := {"id": "test_3chain", "light_chain": [T2.PLAYER_ATTACK, T2.PLAYER_ATTACK, T2.PLAYER_ATTACK], "heavy": T2.HEAVY_ATTACK, "running_attack": T2.PLAYER_ATTACK, "rolling_attack": T2.PLAYER_ATTACK, "jump_attack": T2.PLAYER_ATTACK}
+					p.equipment.equip("weapon", fake, p)
+					check(p.moveset.get("id") == "test_3chain", "equipping swaps the player moveset table")
+				if lf == 10: h.input.cur.attack = true
+				if lf == 60: h.input.cur.attack = true
+				if lf == 115: h.input.cur.attack = true
+				if lf == 170:
+					var n0 := 0
+					var n2 := 0
+					for ev in Sim.events:
+						if ev == "ATTACK SLOT light_chain[0]": n0 += 1
+						if ev == "ATTACK SLOT light_chain[2]": n2 += 1
+					check(n2 == 1, "the equipped 3-link chain reaches link 2")
+					check(n0 == 1, "and wraps back to link 0")
+					_start_run(2)
+					return false
+			2:  # save/load machinery
+				if lf == 5:
+					p.position = Vector3(3.0, 0.05, -7.0)
+					p.hp = 42.0
+					p.feathers = 17.0
+					p.heal_charges = 1
+					p.attrs.register_attribute("str", 12)
+					p.inventory.add_item("test_draught", 2)
+					check(SaveGame.save_to_file(p, 4), "save writes to file")
+					p.position = Vector3.ZERO
+					p.hp = 100.0
+					p.feathers = 0.0
+					p.heal_charges = 3
+					p.attrs.attrs.clear()
+					p.inventory.slots.clear()
+					var d: int = SaveGame.load_from_file(p)
+					check(d == 4, "deaths count restores")
+					check(p.position.distance_to(Vector3(3.0, 0.05, -7.0)) < 0.01, "position restores")
+					check(absf(p.hp - 42.0) < 0.01 and absf(p.feathers - 17.0) < 0.01 and p.heal_charges == 1, "hp/feathers/charges restore")
+					check(p.attrs.get_attr("str") == 12, "attributes restore")
+					check(p.inventory.slots.size() == 1 and p.inventory.slots[0].qty == 2, "inventory restores")
+					_start_run(3)
+					return false
+			3:  # menu machinery: nav, activate, hooks
+				if lf == 5:
+					shell.open("pause", false)
+					check(shell.state == "pause" and shell.menu_items.size() == 2, "pause menu builds")
+					shell.nav(1)
+					check(shell.sel == 1, "navigation moves the cursor")
+					shell.nav(1)
+					check(shell.sel == 0, "navigation wraps")
+					shell.activate()  # RESUME
+					check(shell.state == "hidden", "RESUME closes the menu")
+				if lf == 10:
+					p.inventory.add_item("test_draught", 1)
+					p.inventory.register_item_def("test_draught", func(u): u.hp += 5.0)
+					p.hp = 50.0
+					shell.open("inventory", false)
+					check(shell.menu_items.size() == 2, "inventory lists the slot plus close, got %d" % shell.menu_items.size())
+					shell.activate()  # use slot 0 through the UI
+				if lf == 80:  # 0.8s commit after lf10
+					check(absf(p.hp - 55.0) < 0.01, "using an item through the inventory UI applies the effect, hp=%.1f" % p.hp)
+					shell.on_respawn = func(): fired = "respawn"
+					shell.open("death", false)
+					check(shell.label.text.contains("YOU DIED"), "death screen carries the genre banner")
+					shell.activate()
+					check(fired == "respawn", "death screen fires the respawn hook")
+					shell.on_begin = func(): fired = "begin"
+					shell.open("title", false)
+					shell.activate()
+					check(fired == "begin", "title BEGIN hook fires")
+					return true
+		lf += 1
+		return false
+
 class ScenarioLockOn extends Scenario:
 	func setup() -> void:
 		name = "lock_on"
@@ -1032,6 +1144,7 @@ func _register() -> void:
 		ScenarioMachinery2.new(),
 		ScenarioMachinery3.new(),
 		ScenarioMachinery4.new(),
+		ScenarioShell.new(),
 		ScenarioHeavy.new(),
 		ScenarioDeterminismA.new(),
 		ScenarioDeterminismB.new(),

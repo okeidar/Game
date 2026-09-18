@@ -1,0 +1,113 @@
+extends CanvasLayer
+## Game shell scaffolding (round 4): title / pause / death / inventory /
+## equipment menu machinery. Navigation, selection, and action hooks are real;
+## layout, art, wording, and every rule are OPEN decisions. Bindings are
+## provisional scaffolding (ui_* defaults + I inventory + O equipment).
+
+const Sim = preload("res://src/combat/combat_sim.gd")
+const T = preload("res://src/combat/tuning.gd")
+const Moveset = preload("res://src/combat/moveset.gd")
+
+var state := "hidden"          # hidden | title | pause | death | inventory | equipment
+var menu_items: Array = []     # each: {"label": String, "action": Callable}
+var sel := 0
+var player = null
+var on_respawn: Callable = Callable()   # game.gd hooks
+var on_begin: Callable = Callable()
+var on_quit_to_title: Callable = Callable()
+var label: RichTextLabel
+
+func _ready() -> void:
+	process_mode = Node.PROCESS_MODE_ALWAYS
+	layer = 10
+	label = RichTextLabel.new()
+	label.bbcode_enabled = true
+	label.position = Vector2(80, 120)
+	label.size = Vector2(700, 500)
+	label.add_theme_font_size_override("normal_font_size", 26)
+	add_child(label)
+	visible = false
+
+func open(kind: String, pause_tree := true) -> void:
+	state = kind
+	sel = 0
+	_build_menu()
+	visible = true
+	if pause_tree and get_tree() != null:
+		get_tree().paused = true
+
+func close() -> void:
+	state = "hidden"
+	visible = false
+	if get_tree() != null:
+		get_tree().paused = false
+
+func nav(d: int) -> void:
+	if menu_items.is_empty():
+		return
+	sel = (sel + d + menu_items.size()) % menu_items.size()
+	_render()
+
+func activate() -> void:
+	if menu_items.is_empty():
+		return
+	menu_items[sel].action.call()
+	_render()
+
+func _build_menu() -> void:
+	menu_items.clear()
+	match state:
+		"title":
+			_add("BEGIN", func(): if on_begin.is_valid(): on_begin.call())
+			_add("QUIT (hook only)", func(): Sim.log_event("SHELL QUIT hook"))
+		"pause":
+			_add("RESUME", func(): close())
+			_add("QUIT TO TITLE (hook)", func(): if on_quit_to_title.is_valid(): on_quit_to_title.call())
+		"death":
+			_add("RISE AT THE LAST CHECKPOINT", func(): if on_respawn.is_valid(): on_respawn.call())
+		"inventory":
+			if player != null:
+				for i in player.inventory.slots.size():
+					var it: Dictionary = player.inventory.slots[i]
+					var slot: int = i
+					_add("%s x%d" % [it.id, it.qty], func(): _use_item(slot))
+			_add("CLOSE", func(): close())
+		"equipment":
+			if player != null:
+				_add("weapon: %s" % player.equipment.equipped_id("weapon"), func(): Sim.log_event("EQUIPMENT weapon slot (swap machinery)"))
+				_add("swap to scaffold moveset", func(): player.equipment.equip("weapon", Moveset.scaffold_moveset(), player))
+			_add("CLOSE", func(): close())
+	_render()
+
+func _use_item(slot: int) -> void:
+	close()
+	if player != null:
+		player._try_use_item()   # slot-0 commit machinery; slot routing is OPEN
+		Sim.log_event("SHELL used inventory slot %d (routing scaffold)" % slot)
+
+func _add(lbl: String, fn: Callable) -> void:
+	menu_items.append({"label": lbl, "action": fn})
+
+func _render() -> void:
+	if label == null:
+		return
+	var title := state.to_upper()
+	if state == "death":
+		title = "YOU DIED"
+	var txt := "[center][b]%s[/b][/center]\n\n" % title
+	for i in menu_items.size():
+		var mark := "> " if i == sel else "  "
+		txt += "%s%s\n" % [mark, menu_items[i].label]
+	label.text = txt
+
+func _unhandled_input(event: InputEvent) -> void:
+	if state == "hidden":
+		return
+	if event.is_action_pressed("ui_down"):
+		nav(1)
+	elif event.is_action_pressed("ui_up"):
+		nav(-1)
+	elif event.is_action_pressed("ui_accept") or event.is_action_pressed("interact"):
+		activate()
+	elif event.is_action_pressed("ui_cancel") and state in ["pause", "inventory", "equipment"]:
+		close()

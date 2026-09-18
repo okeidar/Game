@@ -12,6 +12,7 @@ const Hud = preload("res://src/ui/hud.gd")
 const Checkpoint = preload("res://src/world/checkpoint.gd")
 const DeathPenalty = preload("res://src/combat/death_penalty.gd")
 const Progression = preload("res://src/combat/progression.gd")
+const Shell = preload("res://src/ui/shell.gd")
 
 var sim_root: Node3D
 var arena
@@ -22,6 +23,7 @@ var cam
 var hud
 var build_id := "dev"
 var progression
+var shell
 var death_timer := 0.0
 var deaths := 0
 
@@ -76,6 +78,14 @@ func _build() -> void:
 	player.facing = Vector3(1, 0, 0)  # face down the hall, toward the rooms
 	player.rotation.y = atan2(player.facing.x, player.facing.z)
 	player.died.connect(_on_player_died)
+	shell = Shell.new()
+	shell.player = player
+	shell.on_begin = func(): shell.close()
+	shell.on_respawn = func(): _respawn(); shell.close()
+	shell.on_quit_to_title = func(): shell.open("title")
+	add_child(shell)
+	if not ("--self-test" in OS.get_cmdline_user_args()):
+		shell.open("title")  # shell machinery: boot lands on the title menu
 
 func _process(delta: float) -> void:
 	if Sim.hitstop_left > 0.0:
@@ -104,6 +114,13 @@ func _process(delta: float) -> void:
 					best_d = d
 					shown = e
 		hud.effigy = shown
+	if shell != null and shell.state == "hidden":
+		if Input.is_action_just_pressed("menu_inventory"):
+			shell.open("inventory")
+		elif Input.is_action_just_pressed("menu_equipment"):
+			shell.open("equipment")
+		elif Input.is_action_just_pressed("ui_cancel"):
+			shell.open("pause")
 	if Input.is_action_just_pressed("ui_cancel") and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
 		Input.mouse_mode = Input.MOUSE_MODE_VISIBLE
 	elif Input.mouse_mode != Input.MOUSE_MODE_CAPTURED and Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
@@ -114,7 +131,8 @@ func _on_player_died() -> void:
 	deaths += 1
 	hud.set_banner("YOU DIED")
 	Sim.log_event("YOU DIED x%d" % deaths)
-	death_timer = 2.5
+	death_timer = 0.0
+	shell.open("death")  # death screen: rise on confirm, genre shape
 
 func _on_effigy_died(e) -> void:
 	player.add_feathers(Tuning.KILL_FEATHERS)

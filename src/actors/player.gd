@@ -25,7 +25,11 @@ var sneaking := false
 var step_acc := 0.0   # sound machinery: distance accumulated toward the next footstep
 var item_t := 0.0
 const Moveset = preload("res://src/combat/moveset.gd")
+const Attributes = preload("res://src/combat/attributes.gd")
+const Equipment = preload("res://src/combat/equipment.gd")
 var moveset: Dictionary
+var attrs = Attributes.new()         # stat scaffolding: catalog/curves OPEN
+var equipment = Equipment.new()      # equipment scaffolding: slots/rules OPEN
 var chain_index := 0
 var chain_window_t := 0.0
 var roll_end_t := 99.0  # seconds since a roll ended; feeds the rolling-attack slot
@@ -44,6 +48,8 @@ var feather_motes: Array[MeshInstance3D] = []
 
 func _ready() -> void:
 	moveset = Moveset.scaffold_moveset()
+	equipment.slots.weapon = moveset
+	recalculate_derived()
 	display_name = "PLAYER"
 	team = "player"
 	max_hp = T.PLAYER_HP
@@ -52,6 +58,13 @@ func _ready() -> void:
 	base_color = Color("c9bfb0")   # pale ash
 	add_to_group("player")
 	_build_visuals()
+
+## Derived-value hook (round 4): registered scalings reshape stats here.
+## No scalings registered by default - fallbacks keep current behavior.
+func recalculate_derived() -> void:
+	var hp_frac: float = (hp / max_hp) if max_hp > 0.0 else 1.0
+	max_hp = attrs.derived("max_hp", T.PLAYER_HP)
+	hp = max_hp * hp_frac
 
 func _build_visuals() -> void:
 	var capsule := CapsuleMesh.new()

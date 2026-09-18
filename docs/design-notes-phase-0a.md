@@ -392,3 +392,82 @@ is scaffolded properly. Then we will start breaking down the details."
 sneak invisibility in the cone, vision alert, hearing alert from behind,
 enemy projectile flight + hit, checkpoint respawn resolution + fallback,
 safe fall vs damaging fall.
+
+---
+
+## Machinery pass 4 (2026-09-19): the game shell layer
+
+Omer caught the gap: "nothing? what about menu, inventory, stats, etc?"
+The earlier scaffold-complete claim covered combat/core-loop only. This pass
+scaffolds the shell. All UI is text-only machinery: layout, art, wording,
+and bindings are OPEN (bindings provisional: ESC pause, I items, O equip).
+
+### 16. Title + pause menus
+- Menu machinery: state machine (title/pause/death/inventory/equipment),
+  cursor nav with wrap, activate hooks. Boot lands on title (BEGIN enters,
+  QUIT is a hook). Pause = RESUME / QUIT-TO-TITLE hook. Tree pauses under menus.
+
+### 17. Inventory UI
+- Lists consumable slots with quantities, use-through-UI routes into the
+  existing commit machinery. Slot routing (which slot gets used) is scaffold.
+
+### 18. Stats/attributes
+- Attribute table on the player (enemies share the combatant base, so the
+  same system attaches): register/raise/read + derived-value scaling hooks.
+  recalculate_derived() applies registered scalings; with none registered
+  everything falls back to current values. ZERO stats designed: catalog,
+  starting values, curves are all Omer's.
+
+### 19. Equipment screen
+- Equipment slots (weapon) hold moveset tables; equip swaps the live moveset
+  (chain state resets). UI lists the slot, swap machinery proven with a
+  3-link test moveset. Slot rules/catalog OPEN.
+
+### 20. Save/load
+- Capture/restore: position, hp/stamina/feathers, heal charges, attributes,
+  inventory, checkpoint, deaths. JSON file (user://) + dict API. Format,
+  scope, slot rules OPEN. Checkpoint node relink on load is world-side (open).
+
+### 21. Death screen
+- YOU DIED state screen; RISE confirms respawn at the registered checkpoint
+  (replaces the old 2.5s auto-respawn). Art/wording OPEN.
+
+### New test coverage (20/20 green)
+attribute scaling feed + fallback, attribute raise; moveset swap drives a
+3-link chain; save/load round-trip of every captured field; menu nav/wrap/
+activate, inventory UI use, death screen banner + respawn hook, title BEGIN.
+
+---
+
+## WHAT'S MISSING (living list - updated each round)
+
+Layered souls-like completeness. [scaffolded] = machinery exists, details open.
+[proposal] = gap I hunted up, NOT approved, never built without Omer's word.
+
+### Combat core - SCAFFOLDED
+movement (walk/sprint/roll/perfect dodge/sneak/jump), camera+lock-on, light/
+heavy/volley, movesets+combos, block/parry/guard-break, riposte, stamina,
+feathers economy hooks, statuses, consumables, heal, fall damage.
+
+### Enemy machinery - SCAFFOLDED
+attack chains + flags (unblockable), awareness (vision/hearing/alert), ranged
+projectiles, stagger, training-dummy vs real-enemy modes, respawn.
+
+### World/loop - SCAFFOLDED
+checkpoints + rest stub, death remnant, respawn linkage, test hall.
+
+### Shell - SCAFFOLDED (this round)
+title/pause/death menus, inventory UI, attributes, equipment screen, save/load.
+
+### Missing - proposals awaiting Omer's word (DO NOT BUILD):
+1. Settings menu machinery (volume/FOV/remap hooks) - shell layer.
+2. Audio hooks (SFX/music event bus; the sound system is gameplay-only today).
+3. NPC + dialogue machinery (talk verb, dialogue trees as data).
+4. Map machinery (world map/region graph; not minimap art).
+5. Boss machinery (phases, health-bar presentation, arena triggers) - combat.
+6. Tutorial/teaching hooks (contextual hints; the hall is informal today).
+7. Multi-enemy encounter machinery (aggro linking between enemies - noted in
+   awareness open decisions).
+8. Message/notification feed UI (event toasts: item gained, status applied).
+9. Gestures/photo-mode style extras - low priority, listed for completeness.
+10. New Game+ machinery (cycle counter, difficulty scaling hook) - meta.

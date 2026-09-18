@@ -102,7 +102,7 @@ func _ready() -> void:
 	add_child(build)
 
 	var hint := Label.new()
-	hint.text = "WASD move · SHIFT sprint · SPACE roll · LMB attack · F heavy · R volley · RMB block (tight = parry) · Q heal · E interact · CTRL sneak · 1 item · V jump · TAB lock-on · arrows/mouse camera · ESC cursor"
+	hint.text = "WASD move · SHIFT sprint · SPACE roll · LMB attack · F heavy · R volley · RMB block (tight = parry) · Q heal · E interact · CTRL sneak · 1 item · V jump · I items · O equip · TAB lock-on · arrows/mouse camera · ESC cursor"
 	hint.position = Vector2(24, 528)
 	hint.add_theme_font_size_override("font_size", 12)
 	hint.add_theme_color_override("font_color", Color("5a6472"))
