@@ -154,15 +154,15 @@ class ScenarioStamina extends Scenario:
 		h.input.at(220, {"sprint": false, "move": Vector2.ZERO})
 	func step(f: int) -> bool:
 		var p = h.player
-		if f == 10: check(absf(p.stamina - 75.0) < 0.01, "roll costs 25 (100->75), got %.2f" % p.stamina)
+		if f == 10: check(absf(p.stamina - 84.0) < 0.01, "roll costs 16 (100->84), got %.2f" % p.stamina)
 		if f == 59: st59 = p.stamina
-		if f == 66: check(st59 - p.stamina >= 19.0 and st59 - p.stamina <= 20.5, "swing costs ~20 (regen overlaps the window), delta %.2f" % (st59 - p.stamina))
+		if f == 66: check(st59 - p.stamina >= 18.0 and st59 - p.stamina <= 20.5, "swing costs ~20 (45/s regen overlaps the window), delta %.2f" % (st59 - p.stamina))
 		if f == 150: check(p.stamina > 60.0, "stamina regenerates after delay, got %.2f" % p.stamina)
 		if f == 170: st170 = p.stamina
 		if f == 215:
 			st215 = p.stamina
 			var per_sec := (st170 - st215) * 60.0 / 45.0
-			check(absf(per_sec - 12.0) < 0.6, "sprint drains ~12/s, measured %.2f/s" % per_sec)
+			check(absf(per_sec - 14.0) < 0.6, "sprint drains ~14/s, measured %.2f/s" % per_sec)
 		return f >= 240
 
 class ScenarioCommitment extends Scenario:
@@ -180,9 +180,9 @@ class ScenarioCommitment extends Scenario:
 		var p = h.player
 		if f > 5 and done_frame < 0 and p.state == "free":
 			done_frame = f
-		if f >= 6 and f <= 55 and p.state != "attack":
+		if f >= 6 and f <= 48 and p.state != "attack":
 			interrupted = true
-		if f > 55 and p.state == "roll":
+		if f > 48 and p.state == "roll":
 			saw_roll = true
 		if f == 100:
 			check(not interrupted, "dodge input during windup/active never interrupts the swing")
@@ -422,7 +422,7 @@ class ScenarioHeavy extends Scenario:
 		if f > 85 and p.state == "roll":
 			saw_roll = true
 		if f == 10:
-			check(absf(p.stamina - 68.0) < 0.01, "heavy costs 32 stamina, got %.2f" % p.stamina)
+			check(absf(p.stamina - 73.0) < 0.01, "heavy costs 27 stamina, got %.2f" % p.stamina)
 		if f == 34:
 			check(absf(e.hp - 60.0) < 0.01, "heavy has not hit yet at frame 34 (windup is longer than light)")
 			check(p.state == "attack", "heavy cannot be canceled mid-windup")

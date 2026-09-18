@@ -1,49 +1,60 @@
 extends RefCounted
-## Phase 0A greybox tuning. One resource doctrine:
-## stamina pays for body actions; FEATHERS are both armor and ammunition.
-## Held feathers harden you; spent feathers buy offense and leave you bare.
+## Phase 0A greybox tuning, fitted to published souls-like values (see
+## docs/design-notes-phase-0a.md "Tuning benchmarks" for the full table).
+## One resource doctrine: stamina pays for body actions; FEATHERS are both
+## armor and ammunition. Held feathers harden you; spent feathers buy offense
+## and leave you bare. Every strong option carries a named cost.
 
-const WALK_SPEED := 4.6
-const SPRINT_SPEED := 7.4
-const SPRINT_DRAIN_PER_SEC := 12.0
+const WALK_SPEED := 4.6            # C: feel value, no published analogue
+const SPRINT_SPEED := 7.4          # C: ~1.6x walk, matches souls walk/sprint ratio feel
+const SPRINT_DRAIN_PER_SEC := 14.0 # C: DS3 drain is unpublished; kept near DS1-era estimates
 
-const ROLL_SPEED := 8.5
-const ROLL_DURATION := 0.62
-const ROLL_IFRAME_START := 0.08   # i-frames match the tucked part of the roll
-const ROLL_IFRAME_END := 0.42
-const ROLL_COST := 25.0
+# Roll: fitted to the FromSoft standard roll (A-grade convergence):
+# DS3 med roll i-frames 0-26 @60fps (433ms window), roll-cancel at 42 (0.70s)
+# Elden Ring light/med: 13 i-frames @30fps = 433ms, 8 recovery frames, ~0.70s total
+# DS1: 11 i-frames @30fps (367ms); i-frames active from the first frame (DS3/ER)
+const ROLL_SPEED := 6.0            # C: ~4.2m travel over the roll; souls roll distance unpublished
+const ROLL_DURATION := 0.70        # A: DS3 roll-cancel 42/60, ER ~21/30
+const ROLL_IFRAME_START := 0.0     # A: i-frames from frame 0 (DS3 wikidot, gamedev anatomy article)
+const ROLL_IFRAME_END := 0.43      # A: 433ms window (ER 13/30; DS3 med roll 0-26/60)
+const ROLL_COST := 16.0            # A: DS3 roll costs exactly 16 stamina (darksouls3.wikidot.com/stamina)
 
-const ATTACK_COST := 20.0
-const HEAVY_COST := 32.0
-const STAMINA_MAX := 100.0
-const STAMINA_REGEN := 30.0
-const STAMINA_REGEN_DELAY := 0.7
+const ATTACK_COST := 20.0          # B: DS3 straight-sword R1 ~20 (soulsplanner weapon stamina tables)
+const HEAVY_COST := 27.0           # B/C: DS3 uncharged R2 sits ~1.3-1.5x R1 cost
+const STAMINA_MAX := 100.0         # B: DS3 starting-mid pool 90-160 (softcap 160 @40 END); 100 keeps costs readable
+const STAMINA_REGEN := 45.0        # A: exactly 45/s in both DS1 and DS3
+const STAMINA_REGEN_DELAY := 0.7   # C: souls regen delay is unpublished; short delay keeps pressure after commits
 
 const PLAYER_HP := 100.0
-const PLAYER_HURT_RADIUS := 0.5
-const PLAYER_STAGGER := 0.35
-const ATTACK_STEP_SPEED := 1.6    # forward drift during windup + active
-const BUFFER_AFTER_STATE := 0.25  # input buffer grace after a state ends
+const PLAYER_HURT_RADIUS := 0.5    # C: greybox capsule
+const PLAYER_STAGGER := 0.35       # C: hitstun length is feel territory
+const ATTACK_STEP_SPEED := 1.6     # C: forward drift during windup + active
+const BUFFER_AFTER_STATE := 0.25   # C: input buffer grace after a state ends
 
 # The feather economy. Feathers held = armor. Feathers spent = ammo.
+# Model is A-grade: DS3 absorption is a % reduction applied after flat
+# defense, stacking multiplicatively - the coat is a single absorption slot
+# driven by feathers held. Linear-in-feathers curve is our judgment call (C).
 const FEATHERS_MAX := 30.0
-const FEATHER_REGEN := 0.7        # slow molt-regrowth per second, always on
-const RESIST_AT_FULL := 0.5       # 50% damage taken at a full coat, linear down to 0
-const VOLLEY_COST := 6.0
-const VOLLEY_DAMAGE := 8.0        # per feather projectile
+const FEATHER_REGEN := 0.7         # C: slow molt-regrowth per second, always on
+const RESIST_AT_FULL := 0.5        # C: 50% at a full coat, linear down to 0
+const VOLLEY_COST := 6.0           # C: own economy
+const VOLLEY_DAMAGE := 8.0         # C: per feather projectile
 const VOLLEY_COUNT := 3
 const VOLLEY_SPREAD_DEG := 9.0
 const VOLLEY_SPEED := 16.0
 const VOLLEY_LIFE := 1.2
-const VOLLEY_COMMIT := 0.35       # rooted cast time
+const VOLLEY_COMMIT := 0.35        # C: rooted cast time
 const VOLLEY_STAGGER := 0.15
 const PICKUP_VALUE := 6.0
 const PICKUP_RADIUS := 0.9
 const PICKUP_RESPAWN := 12.0
-const KILL_FEATHERS := 6.0        # a felled effigy sheds into your coat
+const KILL_FEATHERS := 6.0         # a felled effigy sheds into your coat
 
+# Player light attack. Enemy-reactability rules do not bound player swings;
+# fitted so one full swing ~= one roll cycle (C, DS3 straight-sword feel).
 const PLAYER_ATTACK := {
-	"damage": 20.0, "windup": 0.28, "active": 0.14, "recovery": 0.46,
+	"damage": 20.0, "windup": 0.28, "active": 0.14, "recovery": 0.42,
 	"reach": 2.4, "arc_deg": 100.0, "stagger": 0.45,
 }
 # Tradeoff doctrine, instance two: more damage and stagger, but a longer
@@ -52,6 +63,9 @@ const HEAVY_ATTACK := {
 	"damage": 32.0, "windup": 0.50, "active": 0.16, "recovery": 0.62,
 	"reach": 2.5, "arc_deg": 110.0, "stagger": 0.8,
 }
+# Effigy attack: B-grade fit. gamedev anatomy article: attack signal + active
+# must give >= 340ms to be reactable; training enemy stays generous (0.85s).
+# Recovery is the Window of Opportunity and should be the longest phase.
 const DUMMY_ATTACK := {
 	"damage": 25.0, "windup": 0.85, "active": 0.12, "recovery": 1.05,
 	"reach": 2.6, "arc_deg": 90.0,
@@ -67,9 +81,9 @@ const DUMMY_RESPAWN := 4.0
 const DUMMY_TRACK_FRACTION := 0.5  # share of windup where it still turns
 const DUMMY_TRACK_RATE := 2.6      # rad/s
 
-const HITSTOP_DEALT := 0.05
+const HITSTOP_DEALT := 0.05        # C: action-game standard 50-150ms band
 const HITSTOP_TAKEN := 0.09
 
-const LOCK_RANGE := 18.0
+const LOCK_RANGE := 18.0           # C: souls lock-on range unpublished
 const LOCK_BREAK_RANGE := 26.0
 const LOCK_CONE_DEG := 75.0
