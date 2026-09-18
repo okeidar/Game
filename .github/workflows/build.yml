@@ -1,0 +1,30 @@
+name: Build playtests
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+jobs:
+  export:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pinned Godot and templates
+        run: |
+          curl -fL -o godot.zip https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_linux.x86_64.zip
+          unzip -q godot.zip && mv Godot_v4.7.2-stable_linux.x86_64 godot
+          curl -fL -o templates.tpz https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_export_templates.tpz
+          mkdir -p ~/.local/share/godot/export_templates/4.7.2.stable /tmp/templates
+          unzip -q templates.tpz -d /tmp/templates
+          cp -a /tmp/templates/templates/. ~/.local/share/godot/export_templates/4.7.2.stable/
+      - name: Import, test, export
+        run: |
+          ./godot --headless --path . --editor --quit
+          ./godot --headless --path . -- --self-test | tee self-test.log
+          grep 'SELF_TEST_OK player_moved=true' self-test.log
+          mkdir -p build/web build/windows
+          ./godot --headless --path . --export-release Web build/web/index.html
+          ./godot --headless --path . --export-release 'Windows Desktop' build/windows/AgentDrivenGodot.exe
+      - uses: actions/upload-artifact@v4
+        with:
+          name: playtest-builds
+          path: build/
