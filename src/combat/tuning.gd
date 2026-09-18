@@ -105,3 +105,16 @@ const HITSTOP_TAKEN := 0.09
 const LOCK_RANGE := 18.0           # C: souls lock-on range unpublished
 const LOCK_BREAK_RANGE := 26.0
 const LOCK_CONE_DEG := 75.0
+
+# ---------------------------------------------------------------------------
+# MACHINERY SCAFFOLDS (Omer directive 2026-09-18: "just have the thing ready
+# for when we decide the details"). Every value below is PLACEHOLDER
+# SCAFFOLDING, not design. Standing rule: Omer decides the real numbers.
+const HEAL_CHARGES_SCAFFOLD := 3        # SCAFFOLD - charges undecided
+const HEAL_AMOUNT_SCAFFOLD := 40.0      # SCAFFOLD - amount undecided
+const HEAL_COMMIT := 0.9                # SCAFFOLD - rooted cast time undecided
+const CRIT_WINDOW_SCAFFOLD := 1.2       # SCAFFOLD - riposte window undecided
+const CRIT_MULTIPLIER_SCAFFOLD := 2.0   # SCAFFOLD - riposte multiplier undecided
+const BACKSTAB_HALF_ANGLE_SCAFFOLD := 60.0  # SCAFFOLD - backstab condition undecided
+const CHECKPOINT_RADIUS_SCAFFOLD := 1.8 # SCAFFOLD - interact radius undecided
+const ESSENCE_RATE_SCAFFOLD := 1.0      # SCAFFOLD - feather->essence conversion undecided

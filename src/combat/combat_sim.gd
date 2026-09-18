@@ -4,11 +4,13 @@ extends RefCounted
 static var log_lines: Array[String] = []
 static var events: Array[String] = []   # machine-checkable feed for tests
 static var hitstop_left := 0.0
+static var active_checkpoint = null
 
 static func reset() -> void:
 	log_lines.clear()
 	events.clear()
 	hitstop_left = 0.0
+	active_checkpoint = null
 
 static func log_event(msg: String) -> void:
 	log_lines.append(msg)

@@ -212,3 +212,79 @@ What 0A takes from it:
 - Difficulty: effigy damage/hp/aggression vs. the coat economy.
 - Whether the tradeoff doctrine reads in play the way he means it.
 - Camera feel: sensitivity, lock-on ease, distance.
+
+---
+
+## Machinery pass (2026-09-19): six systems built with details OPEN
+
+Directive from Omer: "lets do everything that is not detailed but machinary …
+just have the thing ready for when we decide the details." Every system below
+is real machinery with its undecided parts named as scaffolds. None of the
+numbers below are design; they exist so the machine runs and can be felt in
+the playtest. Standing rule holds: Omer decides the real values.
+
+### 1. Checkpoints - built, rest effect OPEN
+- A checkpoint entity exists (pale obelisk, MOVE room beside the slab).
+  Walk up + E registers it (brightens, logged) and calls "rest".
+- Rest currently does NOTHING but acknowledge itself.
+- OPEN DECISIONS: what rest restores (hp? heal charges? feathers?), does it
+  respawn/reset enemies, is it the progression/level-up site, respawn point
+  rules, one-shot vs reusable registration.
+
+### 2. Basic heal - works, numbers OPEN
+- Q: rooted commit (0.9s scaffold), then heals. Heal is interruptible by
+  stagger (commit risk). HUD shows remaining charges.
+- Scaffold values, NOT design: 3 charges, +40 hp per charge.
+- Tradeoff shape already in the machinery: the commit roots you, a stagger
+  wastes the cast, charges are finite.
+- OPEN DECISIONS: charge count, heal amount, refill source (checkpoint?
+  collection? kills? none?), cast time, can you move/cancel, does it cost
+  stamina or feathers.
+
+### 3. Death penalty - records + remnant, payload OPEN
+- On death a remnant mote is left at the death spot; walking over it recovers
+  it. The record (position + contents container) exists.
+- The payload is EMPTY: nothing is deducted, nothing is restored.
+- OPEN DECISIONS: what drops (feathers? essence? a fraction?), one remnant at
+  a time or many, does dying again destroy the old remnant, recovery radius,
+  can enemies interact with it.
+
+### 4. Progression - spend/convert/upgrade hooks, catalog OPEN
+- spend(cost, player) machinery works (checks affordability, deducts,
+  refuses when short - tested). convert_feathers_to_essence exists at a
+  SCAFFOLD 1:1 rate. apply_upgrade(id) hook records applications.
+- OPEN DECISIONS: the whole economy. Costs, conversion rate (if conversion
+  exists at all), what essence is for, the upgrade catalog and its tradeoffs,
+  where spending happens (checkpoint UI?).
+
+### 5. Riposte - crit window works, conditions/values OPEN
+- A crit window opens on the enemy when its attack is parried (reel) and,
+  as scaffolding, when you strike from its rear arc (60 deg half-angle).
+  Hits inside the window crit and are logged as RIPOSTE.
+- Scaffold values: 1.2s window, x2.0 damage, 60 deg backstab arc.
+- OPEN DECISIONS: the multiplier, whether backstab crits at all (and its
+  arc), window length, does a riposte cost stamina, can it be a distinct
+  animation/verb instead of a normal attack, does guard-break also open it.
+
+### 6. Enemy attack patterns - chain + flags machinery, patterns OPEN
+- Effigy attacks can now be chained (data-driven links with per-link delay)
+  and carry flags; "unblockable" is the first flag: it telegraphs RED from
+  windup start (normal attacks glow sickly yellow) and pierces block/parry.
+  Tests force specific attacks; live behavior unchanged (single club swing,
+  empty chain table).
+- OPEN DECISIONS: the actual chain patterns, which attacks are unblockable,
+  delay windows between links, does the player get a punish window after a
+  chain, per-enemy movesets.
+
+### Deliberately NOT done (kept stable for the current playtest)
+- Death deducts nothing (payload empty until Omer decides).
+- Effigy keeps its single club swing; chains exist but are unused in play.
+- No progression UI: hooks are code-level until the economy is decided.
+- Perfect dodge still pays nothing (Omer: "we will think about the reward later").
+
+### New test coverage (16/16 green)
+heal commit + charge denial, checkpoint register + rest stub, remnant drop +
+recovery, parry-window riposte crit, unblockable through block, two-link
+chain, progression spend/deny/convert/upgrade. Legacy scenarios updated so
+their effigies face the player (backstab machinery made their old arbitrary
+facing meaningful).

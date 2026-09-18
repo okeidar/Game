@@ -13,6 +13,9 @@ var facing := Vector3.FORWARD
 var spawn_pos := Vector3.ZERO
 var respawn_t := 0.0
 var ai_enabled := true
+var forced_attack_data = null   # machinery: tests/future AI inject an attack dict
+var attack_chain: Array = []    # machinery: follow-up links after the first swing
+var chain_delay_t := 0.0
 var club_pivot: Node3D
 var body_mat: StandardMaterial3D
 var windup_color := Color("8a7a2a")   # sickly yellow: get ready
@@ -64,8 +67,8 @@ func _build_visuals() -> void:
 	club.position = Vector3(0.5, 0.2, 0.85)
 	club_pivot.add_child(club)
 
-func apply_hit(damage: float, from_pos: Vector3, stagger: float) -> int:
-	var r: int = super.apply_hit(damage, from_pos, stagger)
+func apply_hit(damage: float, from_pos: Vector3, stagger: float, flags := {}) -> int:
+	var r: int = super.apply_hit(damage, from_pos, stagger, flags)
 	if r == HIT_RESULT_HIT:
 		if attack != null:
 			Sim.log_event("%s STAGGERED OUT OF SWING" % display_name)
@@ -139,7 +142,7 @@ func _try_attack() -> bool:
 	var target := _get_target()
 	if target == null:
 		return false
-	attack = MeleeAttack.new(T.DUMMY_ATTACK, target.global_position - global_position)
+	attack = MeleeAttack.new(forced_attack_data if forced_attack_data != null else T.DUMMY_ATTACK, target.global_position - global_position)
 	facing = attack.direction
 	state = "attack"
 	Sim.log_event("%s RAISES ITS CLUB" % display_name)
@@ -147,6 +150,19 @@ func _try_attack() -> bool:
 
 func _tick_attack(dt: float) -> void:
 	if attack == null:
+		if attack_chain.size() > 0 and state == "attack":
+			chain_delay_t -= dt
+			if chain_delay_t <= 0.0:
+				var link: Dictionary = attack_chain.pop_front()
+				var t2 := _get_target()
+				if t2 != null:
+					attack = MeleeAttack.new(link, t2.global_position - global_position)
+					facing = attack.direction
+					Sim.log_event("%s CHAINS AGAIN" % display_name)
+				else:
+					attack_chain.clear()
+					state = "idle"
+					cooldown = T.DUMMY_COOLDOWN
 		return
 	var target := _get_target()
 	# track early, commit late: strafing behind it beats the swing
@@ -167,17 +183,22 @@ func _tick_attack(dt: float) -> void:
 		if target != null and _in_range_any(target):
 			var d: Dictionary = attack.data
 			if Sim.in_sector(global_position, attack.direction, target.global_position, target.hurt_radius, d.reach, d.arc_deg):
-				var res: int = target.apply_hit(d.damage, global_position, T.PLAYER_STAGGER)
+				var res: int = target.apply_hit(d.damage, global_position, T.PLAYER_STAGGER, {"unblockable": d.get("unblockable", false)})
 				if res == HIT_RESULT_PARRIED:
 					attack = null
+					attack_chain.clear()
 					state = "idle"
 					stagger_t = T.PARRY_STAGGER
+					crit_open_t = T.CRIT_WINDOW_SCAFFOLD  # riposte machinery: reel opens the crit window
 					cooldown = T.DUMMY_COOLDOWN
 					Sim.log_event("%s DEFLECTED - REELING" % display_name)
 	if attack != null and attack.phase == "done":
 		attack = null
-		state = "idle"
-		cooldown = T.DUMMY_COOLDOWN
+		if attack_chain.size() > 0:
+			chain_delay_t = attack_chain[0].get("delay", 0.0)  # SCAFFOLD hook: per-link delay
+		else:
+			state = "idle"
+			cooldown = T.DUMMY_COOLDOWN
 
 func _in_range_any(target: Node3D) -> bool:
 	return _dist_to(target) <= T.DUMMY_ATTACK.reach + target.hurt_radius + 1.0
@@ -188,8 +209,9 @@ func _update_visual(dt: float) -> void:
 		var d: Dictionary = attack.data
 		if attack.phase == "windup":
 			var f: float = clampf(attack.t / d.windup, 0.0, 1.0)
-			base_color = Color("5a6577").lerp(windup_color, f)
-			body_mat.emission = windup_color * f * 0.6
+			var wc: Color = active_color if attack.data.get("unblockable", false) else windup_color
+			base_color = Color("5a6577").lerp(wc, f)
+			body_mat.emission = wc * f * 0.6
 		elif attack.phase == "active":
 			base_color = active_color
 			body_mat.emission = active_color

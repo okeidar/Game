@@ -13,7 +13,7 @@ const DT := 1.0 / 60.0
 
 class ScriptedInput extends RefCounted:
 	var plan: Array = []
-	var cur := {"move": Vector2.ZERO, "sprint": false, "dodge": false, "attack": false, "heavy": false, "volley": false, "lock": false, "block": false}
+	var cur := {"move": Vector2.ZERO, "sprint": false, "dodge": false, "attack": false, "heavy": false, "volley": false, "lock": false, "block": false, "heal": false, "interact": false}
 	func at(f: int, set: Dictionary) -> void:
 		plan.append({"f": f, "set": set})
 	func begin_frame(f: int) -> void:
@@ -22,6 +22,8 @@ class ScriptedInput extends RefCounted:
 		cur.heavy = false
 		cur.volley = false
 		cur.lock = false
+		cur.heal = false
+		cur.interact = false
 		for ev in plan:
 			if ev.f == f:
 				for k in ev.set:
@@ -201,6 +203,7 @@ class ScenarioHitWindow extends Scenario:
 		h.make_world()
 		h.player.facing = Vector3(0, 0, -1)
 		h.effigies[0].position = Vector3(0, 0.05, -2.0)
+		h.effigies[0].facing = Vector3(0, 0, 1)
 		h.input.at(5, {"attack": true})
 		h.input.at(65, {"attack": true})
 		h.input.at(115, {"attack": true})
@@ -238,6 +241,7 @@ class ScenarioIFrames extends Scenario:
 		h.player.feathers = 0.0
 		h.player.facing = Vector3(0, 0, -1)
 		h.effigies[0].position = Vector3(0, 0.05, -2.2)
+		h.effigies[0].facing = Vector3(0, 0, 1)  # faces the player: run 3 crits come from the parry window, not backstab
 	func step(f: int) -> bool:
 		var p = h.player
 		var e = h.effigies[0]
@@ -279,6 +283,7 @@ class ScenarioDefense extends Scenario:
 		h.make_world()
 		h.player.facing = Vector3(0, 0, -1)
 		h.effigies[0].position = Vector3(0, 0.05, -2.2)
+		h.effigies[0].facing = Vector3(0, 0, 1)  # faces the player: run 3 crits come from the parry window, not backstab
 	func step(f: int) -> bool:
 		var p = h.player
 		var e = h.effigies[0]
@@ -388,6 +393,126 @@ class ScenarioRooms extends Scenario:
 			return true
 		return false
 
+
+class ScenarioMachinery extends Scenario:
+	const Sim = preload("res://src/combat/combat_sim.gd")
+	const Checkpoint = preload("res://src/world/checkpoint.gd")
+	const DeathPenalty = preload("res://src/combat/death_penalty.gd")
+	const Progression = preload("res://src/combat/progression.gd")
+	var run := 0
+	var lf := -2
+	func setup() -> void:
+		name = "machinery_scaffolds"
+		_start_run(0)
+	func _start_run(r: int) -> void:
+		run = r
+		lf = -2
+		h.make_world()
+		h.player.facing = Vector3(0, 0, -1)
+		h.effigies[0].position = Vector3(0, 0.05, -2.2)
+		h.effigies[0].facing = Vector3(0, 0, 1)  # faces the player: run 3 crits come from the parry window, not backstab
+	func step(f: int) -> bool:
+		var p = h.player
+		var e = h.effigies[0]
+		if lf < 0:
+			lf += 1
+			return false
+		match run:
+			0:  # heal machinery
+				if lf == 0: p.hp = 50.0
+				if lf == 5: h.input.cur.heal = true
+				if lf == 70:
+					check(absf(p.hp - 90.0) < 0.01, "heal machinery: +40 scaffold after the commit, hp=%.2f" % p.hp)
+					check(p.heal_charges == 2, "a charge was spent (3->2), charges=%d" % p.heal_charges)
+					var healed := false
+					for ev in Sim.events:
+						if ev.begins_with("HEALED"): healed = true
+					check(healed, "heal completion is acknowledged")
+					p.heal_charges = 0
+					h.input.cur.heal = true
+				if lf == 80:
+					check(Sim.events.has("HEAL DENIED charges"), "heal is denied with no charges")
+					_start_run(1)
+					return false
+			1:  # checkpoint machinery
+				if lf == 0:
+					var cp = Checkpoint.new()
+					cp.position = p.position
+					h.sim_root.add_child(cp)
+				if lf == 5: h.input.cur.interact = true
+				if lf == 20:
+					check(Sim.events.has("CHECKPOINT REGISTERED"), "checkpoint registers on interact")
+					var stub := false
+					for ev in Sim.events:
+						if ev.begins_with("CHECKPOINT REST (stub"): stub = true
+					check(stub, "rest is an acknowledged stub, not a decided effect")
+					check(Sim.active_checkpoint != null, "the checkpoint is registered as active")
+					_start_run(2)
+					return false
+			2:  # death remnant machinery
+				if lf == 0:
+					DeathPenalty.drop(p, h.sim_root)
+				if lf == 20:
+					var rec := false
+					for ev in Sim.events:
+						if ev.begins_with("REMNANT RECOVERED"): rec = true
+					check(rec, "walking over the remnant recovers it (empty payload, rules undecided)")
+					_start_run(3)
+					return false
+			3:  # riposte machinery: parry opens the crit window, next hit crits
+				if lf == 5: e._try_attack()
+				if lf == 49: h.input.cur.block = true
+				if lf == 69: h.input.cur.block = false
+				if lf == 70:
+					check(e.crit_open_t > 0.0, "parry reel opens the crit window, t=%.2f" % e.crit_open_t)
+					h.input.cur.attack = true
+				if lf == 110:
+					check(absf(e.hp - 20.0) < 0.01, "riposte machinery: 20 x 2.0 scaffold = 40 damage, hp=%.2f" % e.hp)
+					var rip := false
+					for ev in Sim.events:
+						if ev.begins_with("RIPOSTE"): rip = true
+					check(rip, "riposte is acknowledged")
+					_start_run(4)
+					return false
+			4:  # unblockable flag machinery: block does not hold
+				if lf == 0:
+					p.feathers = 0.0
+					e.forced_attack_data = {"damage": 25.0, "windup": 0.85, "active": 0.12, "recovery": 1.05, "reach": 2.6, "arc_deg": 90.0, "unblockable": true}
+				if lf == 5: e._try_attack()
+				if lf == 6: h.input.cur.block = true
+				if lf == 90:
+					check(absf(p.hp - 75.0) < 0.01, "unblockable blow goes through the guard at full 25, hp=%.2f" % p.hp)
+					var blk2 := false
+					for ev in Sim.events:
+						if ev.begins_with("BLOCKED") or ev.begins_with("PARRY"): blk2 = true
+					check(not blk2, "unblockable is never blocked or parried")
+					_start_run(5)
+					return false
+			5:  # attack chain machinery: two linked swings land in order
+				if lf == 0:
+					p.feathers = 0.0
+					var link := {"damage": 25.0, "windup": 0.4, "active": 0.12, "recovery": 0.5, "reach": 2.6, "arc_deg": 90.0, "delay": 0.2}
+					e.attack_chain = [link]
+				if lf == 5: e._try_attack()
+				if lf == 200:
+					check(Sim.events.has("EFFIGY CHAINS AGAIN"), "the chain follow-up fires")
+					check(absf(p.hp - 50.0) < 0.01, "both linked swings land (25 + 25), hp=%.2f" % p.hp)
+					_start_run(6)
+					return false
+			6:  # progression machinery: spend path, conversion hook, upgrade hook
+				if lf == 5:
+					var prog = Progression.new()
+					p.feathers = 20.0
+					check(prog.spend({"feathers": 6.0}, p), "spend path accepts an affordable cost")
+					check(absf(p.feathers - 14.0) < 0.01, "spend deducts feathers (20->14), feathers=%.2f" % p.feathers)
+					check(not prog.spend({"feathers": 99.0}, p), "spend path refuses an unaffordable cost")
+					var got: float = prog.convert_feathers_to_essence(p, 4.0)
+					check(absf(got - 4.0) < 0.01 and absf(p.feathers - 10.0) < 0.01, "conversion hook moves feathers to essence at the scaffold rate")
+					check(prog.apply_upgrade("test_upgrade", p) and prog.applied_upgrades.has("test_upgrade"), "upgrade hook records the application")
+					return true
+		lf += 1
+		return false
+
 class ScenarioLockOn extends Scenario:
 	func setup() -> void:
 		name = "lock_on"
@@ -455,6 +580,7 @@ class ScenarioHitstop extends Scenario:
 		h.make_world()
 		h.player.facing = Vector3(0, 0, -1)
 		h.effigies[0].position = Vector3(0, 0.05, -2.0)
+		h.effigies[0].facing = Vector3(0, 0, 1)
 		h.input.at(5, {"attack": true})
 	func step(f: int) -> bool:
 		if f == 80:
@@ -555,6 +681,7 @@ class ScenarioHeavy extends Scenario:
 		h.make_world()
 		h.player.facing = Vector3(0, 0, -1)
 		h.effigies[0].position = Vector3(0, 0.05, -2.2)
+		h.effigies[0].facing = Vector3(0, 0, 1)
 		h.input.at(5, {"heavy": true})
 		h.input.at(12, {"dodge": true})
 	func step(f: int) -> bool:
@@ -631,6 +758,7 @@ func _register() -> void:
 		ScenarioCameraRelative.new(),
 		ScenarioDefense.new(),
 		ScenarioRooms.new(),
+		ScenarioMachinery.new(),
 		ScenarioHeavy.new(),
 		ScenarioDeterminismA.new(),
 		ScenarioDeterminismB.new(),

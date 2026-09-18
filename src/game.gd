@@ -9,6 +9,9 @@ const Effigy = preload("res://src/actors/effigy.gd")
 const Arena = preload("res://src/world/arena.gd")
 const CameraRig = preload("res://src/camera/third_person_camera.gd")
 const Hud = preload("res://src/ui/hud.gd")
+const Checkpoint = preload("res://src/world/checkpoint.gd")
+const DeathPenalty = preload("res://src/combat/death_penalty.gd")
+const Progression = preload("res://src/combat/progression.gd")
 
 var sim_root: Node3D
 var arena
@@ -18,6 +21,7 @@ var effigies: Array = []
 var cam
 var hud
 var build_id := "dev"
+var progression
 var death_timer := 0.0
 var deaths := 0
 
@@ -65,6 +69,10 @@ func _build() -> void:
 	hud.effigy = effigy
 	hud.build_id = build_id
 	add_child(hud)
+	progression = Progression.new()
+	var cp = Checkpoint.new()
+	cp.position = Vector3(-31.0, 0.05, 1.5)  # MOVE room, beside the slab
+	sim_root.add_child(cp)
 	player.facing = Vector3(1, 0, 0)  # face down the hall, toward the rooms
 	player.rotation.y = atan2(player.facing.x, player.facing.z)
 	player.died.connect(_on_player_died)
@@ -102,6 +110,7 @@ func _process(delta: float) -> void:
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 func _on_player_died() -> void:
+	DeathPenalty.drop(player, sim_root)
 	deaths += 1
 	hud.set_banner("YOU DIED")
 	Sim.log_event("YOU DIED x%d" % deaths)

@@ -17,6 +17,8 @@ var volley_t := 0.0
 var facing := Vector3.FORWARD
 var camera_yaw := 0.0
 var block_t := 0.0
+var heal_charges := T.HEAL_CHARGES_SCAFFOLD
+var heal_t := 0.0
 var cam: Node3D = null         # camera rig, set by game; null in tests
 var lock_target: Node3D = null
 var buffered := ""
@@ -126,7 +128,7 @@ func damage_after_defense(damage: float) -> float:
 func is_invulnerable() -> bool:
 	return state == "roll" and roll_t >= T.ROLL_IFRAME_START and roll_t <= T.ROLL_IFRAME_END
 
-func apply_hit(damage: float, from_pos: Vector3, stagger: float) -> int:
+func apply_hit(damage: float, from_pos: Vector3, stagger: float, flags := {}) -> int:
 	if dead:
 		return HIT_RESULT_MISS
 	if is_invulnerable():
@@ -136,7 +138,7 @@ func apply_hit(damage: float, from_pos: Vector3, stagger: float) -> int:
 		else:
 			Sim.log_event("PLAYER DODGED THROUGH")
 		return HIT_RESULT_DODGED
-	if state == "block":
+	if state == "block" and not flags.get("unblockable", false):
 		if block_t <= T.PARRY_WINDOW:
 			Sim.hitstop(T.HITSTOP_DEALT)
 			Sim.log_event("PARRY - DEFLECTED")
@@ -185,7 +187,7 @@ func tick(dt: float) -> void:
 	var inp := _poll()
 	_tick_lock(inp)
 	if stagger_t > 0.0:
-		if state == "attack" or state == "volley":
+		if state == "attack" or state == "volley" or state == "heal":
 			state = "free"
 			attack = null
 		velocity = velocity.move_toward(Vector3.ZERO, 18.0 * dt)
@@ -198,6 +200,7 @@ func tick(dt: float) -> void:
 		"attack": _tick_attack(dt, inp)
 		"volley": _tick_volley(dt, inp)
 		"block": _tick_block(dt, inp)
+		"heal": _tick_heal(dt, inp)
 	if buffer_left > 0.0:
 		buffer_left -= dt
 		if buffer_left <= 0.0:
@@ -216,6 +219,8 @@ func _poll() -> Dictionary:
 		"volley": Input.is_action_just_pressed("volley"),
 		"lock": Input.is_action_just_pressed("lock_on"),
 		"block": Input.is_action_pressed("block"),
+		"heal": Input.is_action_just_pressed("heal"),
+		"interact": Input.is_action_just_pressed("interact"),
 	}
 
 func _move_world(m: Vector2) -> Vector3:
@@ -252,6 +257,10 @@ func _tick_free(dt: float, inp: Dictionary) -> void:
 		_try_heavy()
 	elif inp.volley:
 		_try_volley()
+	elif inp.get("heal", false):
+		_try_heal()
+	elif inp.get("interact", false):
+		_try_interact()
 
 func _try_roll(dir: Vector3) -> bool:
 	if stamina <= 0.0:
@@ -337,10 +346,17 @@ func _resolve_attack_hit() -> void:
 		if e.dead:
 			continue
 		if Sim.in_sector(global_position, attack.direction, e.global_position, e.hurt_radius, d.reach, d.arc_deg):
-			var r: int = e.apply_hit(d.damage, global_position, d.get("stagger", T.DUMMY_STAGGER))
+			var to_e: Vector3 = (e.global_position - global_position).normalized()
+			var behind: bool = to_e.dot(e.facing) > cos(deg_to_rad(T.BACKSTAB_HALF_ANGLE_SCAFFOLD))
+			var crit: bool = e.crit_open_t > 0.0 or behind
+			var dmg: float = d.damage * (T.CRIT_MULTIPLIER_SCAFFOLD if crit else 1.0)
+			var r: int = e.apply_hit(dmg, global_position, d.get("stagger", T.DUMMY_STAGGER))
 			if r == HIT_RESULT_HIT:
 				Sim.hitstop(T.HITSTOP_DEALT)
-				Sim.log_event("HIT %s -%d" % [e.display_name, int(round(d.damage))])
+				if crit:
+					Sim.log_event("RIPOSTE %s -%d (scaffold x%.1f)" % [e.display_name, int(round(dmg)), T.CRIT_MULTIPLIER_SCAFFOLD])
+				else:
+					Sim.log_event("HIT %s -%d" % [e.display_name, int(round(dmg))])
 
 func _try_volley() -> bool:
 	if feathers < T.VOLLEY_COST:
@@ -401,6 +417,39 @@ func _fire_buffered() -> void:
 		"attack": _try_attack()
 		"heavy": _try_heavy()
 		"volley": _try_volley()
+
+func _try_heal() -> bool:
+	if heal_charges <= 0:
+		Sim.log_event("HEAL DENIED charges")
+		return false
+	if hp >= max_hp:
+		Sim.log_event("HEAL DENIED full")
+		return false
+	state = "heal"
+	heal_t = 0.0
+	Sim.log_event("HEAL START")
+	return true
+
+func _tick_heal(dt: float, _inp: Dictionary) -> void:
+	heal_t += dt
+	velocity = Vector3.ZERO
+	_gravity(dt)
+	move_and_slide()
+	if heal_t >= T.HEAL_COMMIT:
+		heal_charges -= 1
+		var amt: float = minf(T.HEAL_AMOUNT_SCAFFOLD, max_hp - hp)
+		hp += amt
+		Sim.log_event("HEALED +%d (scaffold amount)" % int(round(amt)))
+		state = "free"
+
+func _try_interact() -> bool:
+	for c in get_tree().get_nodes_in_group("checkpoints"):
+		var d: Vector3 = c.global_position - global_position
+		d.y = 0.0
+		if d.length() <= T.CHECKPOINT_RADIUS_SCAFFOLD:
+			c.activate(self)
+			return true
+	return false
 
 func _tick_block(dt: float, inp: Dictionary) -> void:
 	block_t += dt
@@ -513,6 +562,7 @@ func reset_run(spawn: Vector3) -> void:
 	hp = max_hp
 	stamina = T.STAMINA_MAX
 	feathers = T.FEATHERS_MAX
+	heal_charges = T.HEAL_CHARGES_SCAFFOLD
 	dead = false
 	stagger_t = 0.0
 	state = "free"

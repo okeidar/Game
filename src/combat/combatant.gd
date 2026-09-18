@@ -15,6 +15,7 @@ var dead := false
 var stagger_t := 0.0
 var hit_flash_t := 0.0
 var since_hit := 99.0
+var crit_open_t := 0.0  # riposte machinery: >0 means hits on this combatant crit
 var visual: MeshInstance3D
 var base_color := Color.WHITE
 
@@ -30,7 +31,7 @@ func is_invulnerable() -> bool:
 func damage_after_defense(damage: float) -> float:
 	return damage
 
-func apply_hit(damage: float, from_pos: Vector3, stagger: float) -> int:
+func apply_hit(damage: float, from_pos: Vector3, stagger: float, _flags := {}) -> int:
 	if dead:
 		return HIT_RESULT_MISS
 	if is_invulnerable():
@@ -48,6 +49,7 @@ func apply_hit(damage: float, from_pos: Vector3, stagger: float) -> int:
 
 func tick_common(dt: float) -> void:
 	stagger_t = maxf(0.0, stagger_t - dt)
+	crit_open_t = maxf(0.0, crit_open_t - dt)
 	hit_flash_t = maxf(0.0, hit_flash_t - dt)
 	since_hit += dt
 	_update_flash()
