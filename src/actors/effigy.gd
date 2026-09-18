@@ -1,0 +1,239 @@
+extends "res://src/combat/combatant.gd"
+## The training effigy. One attack, honestly telegraphed: it raises the club
+## slow and turns yellow, then red, then the blow falls. Punishable recovery.
+## Any hit staggers it out of windup. No hidden armor in 0A.
+
+const T = preload("res://src/combat/tuning.gd")
+const MeleeAttack = preload("res://src/combat/melee_attack.gd")
+
+var state := "idle"            # idle | approach | attack | dead
+var attack: MeleeAttack = null
+var cooldown := 0.5
+var facing := Vector3.FORWARD
+var spawn_pos := Vector3.ZERO
+var respawn_t := 0.0
+var ai_enabled := true
+var club_pivot: Node3D
+var body_mat: StandardMaterial3D
+var windup_color := Color("8a7a2a")   # sickly yellow: get ready
+var active_color := Color("c22e1f")   # blood red: the blow is live
+
+func _ready() -> void:
+	display_name = "EFFIGY"
+	team = "enemy"
+	max_hp = T.DUMMY_HP
+	hp = max_hp
+	hurt_radius = T.DUMMY_HURT_RADIUS
+	base_color = Color("5a6577")   # cold slate, readable through fog
+	spawn_pos = position
+	add_to_group("enemies")
+	_build_visuals()
+
+func _build_visuals() -> void:
+	var capsule := CapsuleMesh.new()
+	capsule.radius = 0.55
+	capsule.height = 1.9
+	visual = MeshInstance3D.new()
+	visual.mesh = capsule
+	body_mat = StandardMaterial3D.new()
+	body_mat.albedo_color = base_color
+	body_mat.roughness = 0.9
+	body_mat.emission_enabled = true
+	body_mat.emission = Color.BLACK
+	visual.material_override = body_mat
+	visual.position.y = 0.95
+	add_child(visual)
+	var col := CollisionShape3D.new()
+	var shape := CapsuleShape3D.new()
+	shape.radius = 0.55
+	shape.height = 1.9
+	col.shape = shape
+	col.position.y = 0.95
+	add_child(col)
+	club_pivot = Node3D.new()
+	club_pivot.position = Vector3(0.0, 1.7, 0.0)
+	add_child(club_pivot)
+	var club := MeshInstance3D.new()
+	var cb := BoxMesh.new()
+	cb.size = Vector3(0.22, 0.22, 1.7)
+	club.mesh = cb
+	var cm := StandardMaterial3D.new()
+	cm.albedo_color = Color("6e6455")
+	cm.roughness = 0.85
+	club.material_override = cm
+	club.position = Vector3(0.5, 0.2, 0.85)
+	club_pivot.add_child(club)
+
+func apply_hit(damage: float, from_pos: Vector3, stagger: float) -> int:
+	var r: int = super.apply_hit(damage, from_pos, stagger)
+	if r == HIT_RESULT_HIT:
+		if attack != null:
+			Sim.log_event("%s STAGGERED OUT OF SWING" % display_name)
+		attack = null
+		state = "idle"
+		cooldown = 0.4
+	return r
+
+func _physics_process(dt: float) -> void:
+	tick(dt)
+
+func tick(dt: float) -> void:
+	tick_common(dt)
+	if dead:
+		respawn_t -= dt
+		if respawn_t <= 0.0:
+			reset_run(spawn_pos)
+			Sim.log_event("%s RISES AGAIN" % display_name)
+		return
+	if not ai_enabled:
+		_tick_attack(dt)
+		_update_visual(dt)
+		return
+	if stagger_t > 0.0:
+		velocity = Vector3.ZERO
+		_update_visual(dt)
+		return
+	cooldown = maxf(0.0, cooldown - dt)
+	var target := _get_target()
+	match state:
+		"idle":
+			if target != null and _dist_to(target) < T.DUMMY_AGGRO_RANGE:
+				state = "approach"
+		"approach":
+			if target == null or target.dead:
+				state = "idle"
+			else:
+				var d := _dist_to(target)
+				var to: Vector3 = (target.global_position - global_position)
+				to.y = 0.0
+				to = to.normalized()
+				if d > T.DUMMY_ATTACK_RANGE:
+					facing = to
+					velocity.x = to.x * T.DUMMY_APPROACH_SPEED
+					velocity.z = to.z * T.DUMMY_APPROACH_SPEED
+					move_and_slide()
+				else:
+					velocity = Vector3.ZERO
+					facing = to
+					if cooldown <= 0.0 and stagger_t <= 0.0:
+						_try_attack()
+		"attack":
+			_tick_attack(dt)
+	_update_visual(dt)
+
+func _get_target() -> Node3D:
+	var ps := get_tree().get_nodes_in_group("player")
+	if ps.is_empty():
+		return null
+	return ps[0]
+
+func _dist_to(n: Node3D) -> float:
+	var d: Vector3 = n.global_position - global_position
+	d.y = 0.0
+	return d.length()
+
+func _in_range(target: Node3D) -> bool:
+	return _dist_to(target) <= T.DUMMY_ATTACK_RANGE + 0.3
+
+func _try_attack() -> bool:
+	var target := _get_target()
+	if target == null:
+		return false
+	attack = MeleeAttack.new(T.DUMMY_ATTACK, target.global_position - global_position)
+	facing = attack.direction
+	state = "attack"
+	Sim.log_event("%s RAISES ITS CLUB" % display_name)
+	return true
+
+func _tick_attack(dt: float) -> void:
+	if attack == null:
+		return
+	var target := _get_target()
+	# track early, commit late: strafing behind it beats the swing
+	if attack.phase == "windup" and target != null and not target.dead \
+			and attack.t < attack.data.windup * T.DUMMY_TRACK_FRACTION:
+		var want: Vector3 = target.global_position - global_position
+		want.y = 0.0
+		want = want.normalized()
+		var cur_a := atan2(attack.direction.x, attack.direction.z)
+		var want_a := atan2(want.x, want.z)
+		var na := move_toward(cur_a, want_a, T.DUMMY_TRACK_RATE * dt)
+		attack.direction = Vector3(sin(na), 0.0, cos(na))
+		facing = attack.direction
+	var prev: String = attack.phase
+	attack.advance(dt)
+	if attack.just_entered_active(prev) and not attack.resolved:
+		attack.resolved = true
+		if target != null and _in_range_any(target):
+			var d: Dictionary = attack.data
+			if Sim.in_sector(global_position, attack.direction, target.global_position, target.hurt_radius, d.reach, d.arc_deg):
+				target.apply_hit(d.damage, global_position, T.PLAYER_STAGGER)
+	if attack.phase == "done":
+		attack = null
+		state = "idle"
+		cooldown = T.DUMMY_COOLDOWN
+
+func _in_range_any(target: Node3D) -> bool:
+	return _dist_to(target) <= T.DUMMY_ATTACK.reach + target.hurt_radius + 1.0
+
+func _update_visual(dt: float) -> void:
+	# telegraph colors: slate -> yellow (windup) -> red (live) -> slate
+	if attack != null and not dead:
+		var d: Dictionary = attack.data
+		if attack.phase == "windup":
+			var f: float = clampf(attack.t / d.windup, 0.0, 1.0)
+			base_color = Color("5a6577").lerp(windup_color, f)
+			body_mat.emission = windup_color * f * 0.6
+		elif attack.phase == "active":
+			base_color = active_color
+			body_mat.emission = active_color
+		else:
+			base_color = base_color.lerp(Color("5a6577"), 6.0 * dt)
+			body_mat.emission = body_mat.emission.lerp(Color.BLACK, 6.0 * dt)
+	else:
+		base_color = base_color.lerp(Color("5a6577"), 6.0 * dt)
+		body_mat.emission = body_mat.emission.lerp(Color.BLACK, 6.0 * dt)
+	# club pose mirrors the attack clock: raise slow, fall fast
+	var pitch := 0.0
+	if attack != null:
+		var d2: Dictionary = attack.data
+		if attack.phase == "windup":
+			var f2: float = clampf(attack.t / d2.windup, 0.0, 1.0)
+			pitch = lerpf(0.0, -1.6, f2 * f2)
+		elif attack.phase == "active":
+			var f3: float = clampf((attack.t - d2.windup) / d2.active, 0.0, 1.0)
+			pitch = lerpf(-1.6, 0.9, f3)
+		else:
+			var f4: float = clampf((attack.t - d2.windup - d2.active) / d2.recovery, 0.0, 1.0)
+			pitch = lerpf(0.9, 0.0, f4 * 0.6)
+	club_pivot.rotation.x = pitch
+	rotation.y = lerp_angle(rotation.y, atan2(facing.x, facing.z), 10.0 * dt)
+	# death: keel over
+	if dead:
+		visual.rotation.x = lerpf(visual.rotation.x, -1.4, 4.0 * dt)
+
+func reset_run(spawn: Vector3) -> void:
+	position = spawn
+	velocity = Vector3.ZERO
+	hp = max_hp
+	dead = false
+	stagger_t = 0.0
+	attack = null
+	state = "idle"
+	cooldown = 0.8
+	respawn_t = 0.0
+	base_color = Color("5a6577")
+	visual.rotation.x = 0.0
+	facing = Vector3.FORWARD
+	_update_flash()
+
+func _on_died() -> void:
+	pass
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_READY:
+		died.connect(func() -> void:
+			state = "dead"
+			respawn_t = T.DUMMY_RESPAWN
+			Sim.log_event("%s FELLED" % display_name)
+		)

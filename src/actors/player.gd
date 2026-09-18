@@ -1,0 +1,471 @@
+extends "res://src/combat/combatant.gd"
+## The winged one, in greybox form. Stamina pays for body actions (sprint, roll,
+## swing). Feathers are a second economy: the coat you wear and the shot you fire.
+
+const T = preload("res://src/combat/tuning.gd")
+const MeleeAttack = preload("res://src/combat/melee_attack.gd")
+const Projectile = preload("res://src/combat/projectile.gd")
+
+var stamina := T.STAMINA_MAX
+var since_spend := 99.0
+var feathers := T.FEATHERS_MAX
+var state := "free"            # free | roll | attack | volley
+var attack: MeleeAttack = null
+var roll_t := 0.0
+var roll_dir := Vector3.FORWARD
+var volley_t := 0.0
+var facing := Vector3.FORWARD
+var camera_yaw := 0.0
+var cam: Node3D = null         # camera rig, set by game; null in tests
+var lock_target: Node3D = null
+var buffered := ""
+var buffer_left := 0.0
+var sprinting := false
+var deaths := 0
+var input_source: RefCounted = null
+var sword_pivot: Node3D
+var wing_l: MeshInstance3D
+var wing_r: MeshInstance3D
+var feather_motes: Array[MeshInstance3D] = []
+
+func _ready() -> void:
+	display_name = "PLAYER"
+	team = "player"
+	max_hp = T.PLAYER_HP
+	hp = max_hp
+	hurt_radius = T.PLAYER_HURT_RADIUS
+	base_color = Color("c9bfb0")   # pale ash
+	add_to_group("player")
+	_build_visuals()
+
+func _build_visuals() -> void:
+	var capsule := CapsuleMesh.new()
+	capsule.radius = 0.5
+	capsule.height = 1.8
+	visual = MeshInstance3D.new()
+	visual.mesh = capsule
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = base_color
+	mat.roughness = 0.85
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	visual.material_override = mat
+	visual.position.y = 0.9
+	add_child(visual)
+	var col := CollisionShape3D.new()
+	var shape := CapsuleShape3D.new()
+	shape.radius = 0.5
+	shape.height = 1.8
+	col.shape = shape
+	col.position.y = 0.9
+	add_child(col)
+	# sword: telegraph + sweep, its pose is a pure function of attack phase
+	sword_pivot = Node3D.new()
+	sword_pivot.position = Vector3(0.0, 1.1, 0.0)
+	add_child(sword_pivot)
+	var sword := MeshInstance3D.new()
+	var sb := BoxMesh.new()
+	sb.size = Vector3(0.07, 0.07, 1.5)
+	sword.mesh = sb
+	var sm := StandardMaterial3D.new()
+	sm.albedo_color = Color("8b93a1")
+	sm.roughness = 0.35
+	sm.metallic = 0.6
+	sword.material_override = sm
+	sword.position = Vector3(0.4, 0.0, 0.75)
+	sword_pivot.add_child(sword)
+	# wings: the fiction, two dark planes on the back
+	wing_l = _wing(-1.0)
+	wing_r = _wing(1.0)
+	add_child(wing_l)
+	add_child(wing_r)
+	# the coat: one mote per 5 feathers, visible armor you spend
+	for i in 6:
+		var m := MeshInstance3D.new()
+		var fm := BoxMesh.new()
+		fm.size = Vector3(0.09, 0.26, 0.02)
+		m.mesh = fm
+		var mm := StandardMaterial3D.new()
+		mm.albedo_color = Color("e8e4da")
+		mm.emission_enabled = true
+		mm.emission = Color("cfc9bb")
+		m.material_override = mm
+		add_child(m)
+		feather_motes.append(m)
+	_update_coat()
+
+func _wing(side: float) -> MeshInstance3D:
+	var w := MeshInstance3D.new()
+	var wm := BoxMesh.new()
+	wm.size = Vector3(0.09, 1.1, 0.55)
+	w.mesh = wm
+	var mat := StandardMaterial3D.new()
+	mat.albedo_color = Color("2a2d33")
+	mat.roughness = 0.95
+	w.material_override = mat
+	w.position = Vector3(side * 0.52, 1.25, -0.18)
+	w.rotation.z = side * 0.5
+	w.rotation.y = side * 0.35
+	return w
+
+func _update_coat() -> void:
+	var shown := int(ceil(feathers / 5.0))
+	for i in feather_motes.size():
+		var m := feather_motes[i]
+		m.visible = i < shown
+		var a := TAU * float(i) / 6.0
+		m.position = Vector3(sin(a) * 0.62, 1.32 + 0.05 * sin(a * 2.0), cos(a) * 0.62)
+		m.rotation.y = a
+
+func feather_resist() -> float:
+	return T.RESIST_AT_FULL * clampf(feathers / T.FEATHERS_MAX, 0.0, 1.0)
+
+func damage_after_defense(damage: float) -> float:
+	return damage * (1.0 - feather_resist())
+
+func is_invulnerable() -> bool:
+	return state == "roll" and roll_t >= T.ROLL_IFRAME_START and roll_t <= T.ROLL_IFRAME_END
+
+func apply_hit(damage: float, from_pos: Vector3, stagger: float) -> int:
+	var r: int = super.apply_hit(damage, from_pos, stagger)
+	if r == HIT_RESULT_HIT:
+		attack = null
+		state = "free"
+		buffered = ""
+		Sim.hitstop(T.HITSTOP_TAKEN)
+		Sim.log_event("PLAYER HIT -%d" % int(round(damage_after_defense(damage))))
+	elif r == HIT_RESULT_DODGED:
+		Sim.log_event("PLAYER DODGED THROUGH")
+	return r
+
+func add_feathers(n: float) -> void:
+	feathers = clampf(feathers + n, 0.0, T.FEATHERS_MAX)
+	_update_coat()
+
+func _spend_stamina(n: float) -> void:
+	stamina -= n
+	since_spend = 0.0
+
+func _physics_process(dt: float) -> void:
+	tick(dt)
+
+func tick(dt: float) -> void:
+	tick_common(dt)
+	if dead:
+		return
+	_tick_stamina(dt)
+	add_feathers(T.FEATHER_REGEN * dt)
+	var inp := _poll()
+	_tick_lock(inp)
+	if stagger_t > 0.0:
+		if state == "attack" or state == "volley":
+			state = "free"
+			attack = null
+		velocity = velocity.move_toward(Vector3.ZERO, 18.0 * dt)
+		move_and_slide()
+		_update_visual(dt)
+		return
+	match state:
+		"free": _tick_free(dt, inp)
+		"roll": _tick_roll(dt, inp)
+		"attack": _tick_attack(dt, inp)
+		"volley": _tick_volley(dt, inp)
+	if buffer_left > 0.0:
+		buffer_left -= dt
+		if buffer_left <= 0.0:
+			buffered = ""
+	_update_visual(dt)
+
+func _poll() -> Dictionary:
+	if input_source != null:
+		return input_source.poll()
+	return {
+		"move": Input.get_vector("move_left", "move_right", "move_forward", "move_back"),
+		"sprint": Input.is_action_pressed("sprint"),
+		"dodge": Input.is_action_just_pressed("dodge"),
+		"attack": Input.is_action_just_pressed("attack"),
+		"heavy": Input.is_action_just_pressed("heavy"),
+		"volley": Input.is_action_just_pressed("volley"),
+		"lock": Input.is_action_just_pressed("lock_on"),
+	}
+
+func _move_world(m: Vector2) -> Vector3:
+	return Vector3(m.x, 0.0, m.y).rotated(Vector3.UP, camera_yaw)
+
+func _tick_free(dt: float, inp: Dictionary) -> void:
+	var wish: Vector2 = inp.move
+	var dir := _move_world(wish)
+	if dir.length_squared() > 1.0:
+		dir = dir.normalized()
+	sprinting = inp.sprint and stamina > 0.0 and wish.length_squared() > 0.01
+	var speed := T.SPRINT_SPEED if sprinting else T.WALK_SPEED
+	if sprinting:
+		_spend_stamina(T.SPRINT_DRAIN_PER_SEC * dt)
+	velocity.x = dir.x * speed
+	velocity.z = dir.z * speed
+	_gravity(dt)
+	move_and_slide()
+	if _lock_valid():
+		facing = (lock_target.global_position - global_position)
+		facing.y = 0.0
+		facing = facing.normalized()
+	elif dir.length_squared() > 0.01:
+		facing = dir.normalized()
+	if inp.dodge:
+		_try_roll(dir)
+	elif inp.attack:
+		_try_attack()
+	elif inp.heavy:
+		_try_heavy()
+	elif inp.volley:
+		_try_volley()
+
+func _try_roll(dir: Vector3) -> bool:
+	if stamina <= 0.0:
+		Sim.log_event("ROLL DENIED stamina")
+		return false
+	_spend_stamina(T.ROLL_COST)
+	state = "roll"
+	roll_t = 0.0
+	roll_dir = dir.normalized() if dir.length_squared() > 0.01 else -facing
+	facing = roll_dir
+	Sim.log_event("ROLL")
+	return true
+
+func _tick_roll(dt: float, inp: Dictionary) -> void:
+	roll_t += dt
+	var speed := T.ROLL_SPEED * (1.0 - 0.45 * (roll_t / T.ROLL_DURATION))
+	velocity.x = roll_dir.x * speed
+	velocity.z = roll_dir.z * speed
+	_gravity(dt)
+	move_and_slide()
+	if inp.dodge:
+		_buffer("dodge")
+	elif inp.attack:
+		_buffer("attack")
+	elif inp.heavy:
+		_buffer("heavy")
+	elif inp.volley:
+		_buffer("volley")
+	if roll_t >= T.ROLL_DURATION:
+		state = "free"
+		_fire_buffered()
+
+func _try_attack() -> bool:
+	return _start_attack(T.PLAYER_ATTACK, T.ATTACK_COST, "ATTACK")
+
+func _try_heavy() -> bool:
+	return _start_attack(T.HEAVY_ATTACK, T.HEAVY_COST, "HEAVY")
+
+func _start_attack(data: Dictionary, cost: float, label: String) -> bool:
+	if stamina <= 0.0:
+		Sim.log_event("%s DENIED stamina" % label)
+		return false
+	_spend_stamina(cost)
+	var dir := facing
+	if _lock_valid():
+		dir = lock_target.global_position - global_position
+	attack = MeleeAttack.new(data, dir)
+	facing = attack.direction
+	rotation.y = atan2(facing.x, facing.z)
+	state = "attack"
+	Sim.log_event("%s START" % label)
+	return true
+
+func _tick_attack(dt: float, inp: Dictionary) -> void:
+	var prev: String = attack.phase
+	attack.advance(dt)
+	var drift := 0.0
+	if attack.phase == "windup" or attack.phase == "active":
+		drift = T.ATTACK_STEP_SPEED
+	velocity.x = attack.direction.x * drift
+	velocity.z = attack.direction.z * drift
+	_gravity(dt)
+	move_and_slide()
+	if attack.just_entered_active(prev) and not attack.resolved:
+		attack.resolved = true
+		_resolve_attack_hit()
+	if inp.dodge:
+		_buffer("dodge")
+	elif inp.attack:
+		_buffer("attack")
+	elif inp.heavy:
+		_buffer("heavy")
+	elif inp.volley:
+		_buffer("volley")
+	if attack.phase == "done":
+		attack = null
+		state = "free"
+		_fire_buffered()
+
+func _resolve_attack_hit() -> void:
+	var d: Dictionary = attack.data
+	for e in get_tree().get_nodes_in_group("enemies"):
+		if e.dead:
+			continue
+		if Sim.in_sector(global_position, attack.direction, e.global_position, e.hurt_radius, d.reach, d.arc_deg):
+			var r: int = e.apply_hit(d.damage, global_position, d.get("stagger", T.DUMMY_STAGGER))
+			if r == HIT_RESULT_HIT:
+				Sim.hitstop(T.HITSTOP_DEALT)
+				Sim.log_event("HIT %s -%d" % [e.display_name, int(round(d.damage))])
+
+func _try_volley() -> bool:
+	if feathers < T.VOLLEY_COST:
+		Sim.log_event("VOLLEY DENIED feathers")
+		return false
+	add_feathers(-T.VOLLEY_COST)
+	state = "volley"
+	volley_t = 0.0
+	var dir := facing
+	if _lock_valid():
+		dir = lock_target.global_position - global_position
+	dir.y = 0.0
+	dir = dir.normalized()
+	facing = dir
+	rotation.y = atan2(facing.x, facing.z)
+	Sim.log_event("VOLLEY -%d feathers" % int(T.VOLLEY_COST))
+	_fire_volley(dir)
+	return true
+
+func _fire_volley(dir: Vector3) -> void:
+	var n := T.VOLLEY_COUNT
+	for i in n:
+		var off := 0.0
+		if n > 1:
+			off = deg_to_rad(T.VOLLEY_SPREAD_DEG) * (float(i) - float(n - 1) / 2.0)
+		var p := Projectile.new()
+		p.velocity = dir.rotated(Vector3.UP, off) * T.VOLLEY_SPEED
+		p.damage = T.VOLLEY_DAMAGE
+		p.life = T.VOLLEY_LIFE
+		p.stagger = T.VOLLEY_STAGGER
+		p.shooter = self
+		p.target_group = "enemies"
+		p.position = global_position + Vector3(0, 1.3, 0) + dir * 0.7
+		get_parent().add_child(p)
+
+func _tick_volley(dt: float, _inp: Dictionary) -> void:
+	volley_t += dt
+	velocity = velocity.move_toward(Vector3.ZERO, 22.0 * dt)
+	_gravity(dt)
+	move_and_slide()
+	if volley_t >= T.VOLLEY_COMMIT:
+		state = "free"
+		_fire_buffered()
+
+func _buffer(action: String) -> void:
+	buffered = action
+	buffer_left = 99.0   # held until state ends, then grace window applies
+
+func _fire_buffered() -> void:
+	if buffered == "":
+		return
+	var a := buffered
+	buffered = ""
+	buffer_left = 0.0
+	var inp := _poll()
+	match a:
+		"dodge": _try_roll(_move_world(inp.move))
+		"attack": _try_attack()
+		"heavy": _try_heavy()
+		"volley": _try_volley()
+
+func _tick_stamina(dt: float) -> void:
+	since_spend += dt
+	if since_spend >= T.STAMINA_REGEN_DELAY and state == "free" and not sprinting:
+		stamina = minf(T.STAMINA_MAX, stamina + T.STAMINA_REGEN * dt)
+
+func _gravity(dt: float) -> void:
+	if not is_on_floor():
+		velocity.y -= 18.0 * dt
+	else:
+		velocity.y = 0.0
+
+func _lock_valid() -> bool:
+	return lock_target != null and is_instance_valid(lock_target) and not lock_target.dead
+
+func _tick_lock(inp: Dictionary) -> void:
+	if lock_target != null and (not is_instance_valid(lock_target) or lock_target.dead):
+		lock_target = null
+		Sim.log_event("LOCK LOST")
+	if _lock_valid() and global_position.distance_to(lock_target.global_position) > T.LOCK_BREAK_RANGE:
+		lock_target = null
+		Sim.log_event("LOCK LOST")
+	if inp.lock:
+		if _lock_valid():
+			lock_target = null
+			Sim.log_event("LOCK OFF")
+		else:
+			var fwd := facing
+			if cam != null and cam.has_method("cam_forward"):
+				fwd = cam.cam_forward()
+			lock_target = acquire_lock(fwd)
+
+func acquire_lock(cam_forward: Vector3) -> Node3D:
+	var best: Node3D = null
+	var best_ang := T.LOCK_CONE_DEG
+	var f := Vector3(cam_forward.x, 0.0, cam_forward.z)
+	if f.length_squared() < 0.0001:
+		f = facing
+	f = f.normalized()
+	for e in get_tree().get_nodes_in_group("enemies"):
+		if e.dead:
+			continue
+		var to: Vector3 = e.global_position - global_position
+		to.y = 0.0
+		var dist := to.length()
+		if dist > T.LOCK_RANGE or dist < 0.05:
+			continue
+		var ang := rad_to_deg(acos(clampf(f.dot(to / dist), -1.0, 1.0)))
+		if ang < best_ang:
+			best_ang = ang
+			best = e
+	if best != null:
+		Sim.log_event("LOCK ON %s" % best.display_name)
+	return best
+
+func _update_visual(dt: float) -> void:
+	var target_yaw := atan2(facing.x, facing.z)
+	if state == "attack" or state == "roll" or state == "volley":
+		rotation.y = target_yaw
+	else:
+		rotation.y = lerp_angle(rotation.y, target_yaw, 14.0 * dt)
+	# roll: tuck, and go ghost during the i-frame window so they visibly match
+	var mat := visual.material_override as StandardMaterial3D
+	if state == "roll":
+		visual.scale = Vector3(1.0, 0.62, 1.0)
+		mat.albedo_color.a = 0.45 if is_invulnerable() else 1.0
+	else:
+		visual.scale = Vector3.ONE
+		mat.albedo_color.a = 1.0
+	_update_sword()
+
+func _update_sword() -> void:
+	var a := 0.0
+	if state == "attack" and attack != null:
+		var d: Dictionary = attack.data
+		if attack.phase == "windup":
+			var f: float = clampf(attack.t / d.windup, 0.0, 1.0)
+			a = lerpf(0.0, -1.9, f * f)
+		elif attack.phase == "active":
+			var f2: float = clampf((attack.t - d.windup) / d.active, 0.0, 1.0)
+			a = lerpf(-1.9, 1.4, f2)
+		else:
+			var f3: float = clampf((attack.t - d.windup - d.active) / d.recovery, 0.0, 1.0)
+			a = lerpf(1.4, 0.0, f3 * 0.5)
+	sword_pivot.rotation.y = a
+
+func reset_run(spawn: Vector3) -> void:
+	position = spawn
+	velocity = Vector3.ZERO
+	hp = max_hp
+	stamina = T.STAMINA_MAX
+	feathers = T.FEATHERS_MAX
+	dead = false
+	stagger_t = 0.0
+	state = "free"
+	attack = null
+	buffered = ""
+	lock_target = null
+	facing = Vector3.FORWARD
+	rotation.y = 0.0
+	_update_coat()
+	_update_flash()

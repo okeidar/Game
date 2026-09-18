@@ -1,9 +1,6 @@
-# Godot editor/import cache
 .godot/
-
-# Exported playtest builds are CI artifacts, not source
 build/
-
-# Local/editor noise
-.DS_Store
 *.tmp
+
+# local build artifacts
+build_info.cfg

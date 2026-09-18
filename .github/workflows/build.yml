@@ -3,50 +3,40 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
-permissions:
-  contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: pages
-  cancel-in-progress: true
-
+env:
+  GODOT_VERSION: 4.7.2-stable
+  GODOT_SHA512: 9aa00f7a605200940bce3027a567b782f49bd8e940dd06ae9e987bd65aee1b1467edd56ed84fcdcbdd44354bf613bdbb4e5d2913e925850368e150c59ed54c65
+  TEMPLATES_SHA512: ca4d71c4d7b81dfc15d1a98baa07534aa95b03fdda78a0075b06672e1648d2e5f40980c9adc28d23e1b92e732ee7bf3461997aa804af74ec2fcd7a93ccb84079
 jobs:
-  export:
+  test-and-export:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
-      - name: Install pinned Godot and templates
+      - name: Install pinned Godot and templates (checksum-verified)
         run: |
-          curl -fL -o godot.zip https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_linux.x86_64.zip
-          unzip -q godot.zip && mv Godot_v4.7.2-stable_linux.x86_64 godot
-          curl -fL -o templates.tpz https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_export_templates.tpz
-          mkdir -p ~/.local/share/godot/export_templates/4.7.2.stable /tmp/templates
-          unzip -q templates.tpz -d /tmp/templates
+          curl -fL -o godot.zip https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}/Godot_v${GODOT_VERSION}_linux.x86_64.zip
+          echo "${GODOT_SHA512}  godot.zip" | sha512sum -c -
+          unzip -q godot.zip && mv Godot_v${GODOT_VERSION}_linux.x86_64 godot
+          curl -fL -o templates.tpz https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}/Godot_v${GODOT_VERSION}_export_templates.tpz
+          echo "${TEMPLATES_SHA512}  templates.tpz" | sha512sum -c -
+          mkdir -p ~/.local/share/godot/export_templates/4.7.2.stable
+          unzip -q templates.tpz 'templates/web_*' 'templates/windows_*' 'templates/version.txt' -d /tmp/templates
           cp -a /tmp/templates/templates/. ~/.local/share/godot/export_templates/4.7.2.stable/
-      - name: Import, test, export
+      - name: Import and run deterministic combat tests
         run: |
           ./godot --headless --path . --editor --quit
+          ./godot --headless --path . -- --run-tests | tee tests.log
+          grep -q 'TESTS_SUMMARY' tests.log
+          ! grep -q 'checks_failed=[1-9]' tests.log
           ./godot --headless --path . -- --self-test | tee self-test.log
-          grep 'SELF_TEST_OK player_moved=true' self-test.log
+          grep 'SELF_TEST_OK built=true' self-test.log
+      - name: Stamp build info and export web + windows
+        run: |
+          printf 'extends RefCounted\n\nconst ID := "%s"\n' "$(git rev-parse --short HEAD)" > src/build_id.gd
           mkdir -p build/web build/windows
           ./godot --headless --path . --export-release Web build/web/index.html
-          ./godot --headless --path . --export-release 'Windows Desktop' build/windows/AgentDrivenGodot.exe
+          ./godot --headless --path . --export-release 'Windows Desktop' build/windows/FeatherGreybox.exe
       - uses: actions/upload-artifact@v4
         with:
           name: playtest-builds
           path: build/
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: build/web
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-24.04
-    needs: export
-    steps:
-      - name: Deploy web build
-        id: deployment
-        uses: actions/deploy-pages@v4
