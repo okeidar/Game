@@ -514,3 +514,12 @@ Root cause: machinery pass 2 (sneak round, 3a93dd5) bound sneak to SHIFT (419432
 Fix: sneak rebound to CTRL (4194326) in project.godot.
 Test gap (his meta-point, correct): every prior test asserted STATE (sprinting flag, speeds table), never OUTCOME (real displacement over frames), and nothing checked that two movement gaits don't share a physical key. Added ScenarioSprintOutcome: measures REAL velocity over 60-frame windows (sprint 7.40 m/s vs walk 4.60 vs sneak 2.07) and asserts sprint/sneak bindings never overlap + sprint=SHIFT + sneak=CTRL. Live-verified in headless Chrome via real key events + POS telemetry: per-sample sprint/walk ratio 1.61, exactly SPRINT_SPEED/WALK_SPEED.
 Also added: web debug hook `?debugpos=1` prints player position every 0.5s for live measurement (game.gd, web-only).
+
+## Overnight iteration 1 (2026-09-19, ~02:15): measurement infrastructure + baseline
+Omer's mandate: "It still doesnt feel like a game... continue untill i wake up with multiple iterations... always test and assess - both with stats and playtests... Record everything to a log and then analyze it. Compare to other games (as a reference)... create a controller or an automation... simulate input so you can 'virtually play' the game. Record it and review the footage."
+Built first because every later iteration is judged by it:
+- **Structured stats feed**: Sim.stat(kind, fields) prints STAT <json> to console (harvested live) and keeps a test-visible copy. Events: attack(slot/dmg/windup), hit(target/dmg/crit/slot), whiff(slot), player_hurt(dmg/hp), block, parry, roll, heal(charges_left), death, respawn.
+- **Live telemetry**: ?debugpos=1 now prints POS (pos+hp+stamina) and EPOS (per-enemy pos/hp/dead) every 0.5s, web only.
+- **Playtest bot** (verify/playtest.js): real keyboard/mouse input via headless Chrome; steers to nearest living effigy by telemetry (8-way), sprints past 5m, attacks in range with chain presses, rolls on telegraph console lines, heals under 40 hp. Captures console + screenshot frames; assembles film.mp4 + montage.png for footage review; writes run.log + stats.json.
+- **Analyzer** (verify/analyze.py): duration, attacks/hits/whiffs/hit-rate, dmg dealt/taken, dps, deaths, rolls, slot mix, time-to-first-hit.
+Overnight-design-choice log begins next iteration (weapons/combos). All overnight choices are marked [overnight proposal - awaiting Omer review].

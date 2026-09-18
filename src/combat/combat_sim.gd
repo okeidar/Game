@@ -17,6 +17,7 @@ static func reset() -> void:
 	sounds.clear()
 	toasts.clear()
 	alert_pulses.clear()
+	stats.clear()
 
 static func toast(msg: String) -> void:
 	# Player-facing message machinery: separate from the debug log feed.
@@ -24,6 +25,17 @@ static func toast(msg: String) -> void:
 	if toasts.size() > 12:
 		toasts.pop_front()
 	log_event("TOAST %s" % msg)
+
+static var stats: Array = []
+
+## Structured stats feed (overnight mandate 2026-09-19): machine-readable
+## gameplay events for the playtest bot + stats analysis. Prints STAT <json>
+## to the console (harvested live) and keeps a copy for tests.
+static func stat(kind: String, fields: Dictionary = {}) -> void:
+	fields["k"] = kind
+	fields["t"] = Time.get_ticks_msec()
+	stats.append(fields)
+	print("STAT " + JSON.stringify(fields))
 
 static func log_event(msg: String) -> void:
 	log_lines.append(msg)

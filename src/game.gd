@@ -136,7 +136,9 @@ func _process(delta: float) -> void:
 		_dbg_acc += delta
 		if _dbg_acc >= 0.5:
 			_dbg_acc = 0.0
-			print("POS %.3f %.3f" % [player.global_position.x, player.global_position.z])
+			print("POS %.3f %.3f hp=%.0f st=%.0f" % [player.global_position.x, player.global_position.z, player.hp, player.stamina])
+			for e in get_tree().get_nodes_in_group("enemies"):
+				print("EPOS %s %.3f %.3f hp=%.0f dead=%d" % [e.display_name, e.global_position.x, e.global_position.z, e.hp, 1 if e.dead else 0])
 	# room banner + enemy bar follows the relevant effigy
 	if hud != null and player != null and arena != null:
 		hud.set_room(arena.room_at(player.position))
@@ -174,6 +176,7 @@ func _process(delta: float) -> void:
 		Input.mouse_mode = Input.MOUSE_MODE_CAPTURED
 
 func _on_player_died() -> void:
+	Sim.stat("death", {"deaths": deaths + 1})
 	DeathPenalty.drop(player, sim_root)
 	deaths += 1
 	hud.set_banner("YOU DIED")
@@ -188,6 +191,7 @@ func _on_effigy_died(e) -> void:
 	Sim.log_event("%s FELLED +%d feathers" % [e.display_name, int(Tuning.KILL_FEATHERS)])
 
 func _respawn() -> void:
+	Sim.stat("respawn")
 	var rsp: Vector3 = Checkpoint.respawn_position(arena.player_spawn)
 	if Sim.active_checkpoint != null:
 		Sim.log_event("RESPAWN AT CHECKPOINT")

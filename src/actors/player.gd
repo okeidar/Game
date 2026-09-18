@@ -36,6 +36,8 @@ var moveset: Dictionary
 var attrs = Attributes.new()         # stat scaffolding: catalog/curves OPEN
 var equipment = Equipment.new()      # equipment scaffolding: slots/rules OPEN
 var chain_index := 0
+var cur_slot := ""
+var last_attack_hit := false
 var chain_window_t := 0.0
 var roll_end_t := 99.0  # seconds since a roll ended; feeds the rolling-attack slot
 var fall_v := 0.0       # deepest downward velocity of the current fall
@@ -172,6 +174,7 @@ func apply_hit(damage: float, from_pos: Vector3, stagger: float, flags := {}) ->
 		if block_t <= T.PARRY_WINDOW:
 			Sim.hitstop(T.HITSTOP_DEALT)
 			Sim.log_event("PARRY - DEFLECTED")
+			Sim.stat("parry")
 			return HIT_RESULT_PARRIED
 		var chip := damage * T.BLOCK_STAMINA_PER_DAMAGE
 		if stamina - chip <= 0.0:
@@ -186,6 +189,7 @@ func apply_hit(damage: float, from_pos: Vector3, stagger: float, flags := {}) ->
 		var rb: int = super.apply_hit(damage * (1.0 - T.BLOCK_DAMAGE_CUT), from_pos, minf(stagger, 0.15))
 		Sim.hitstop(T.HITSTOP_TAKEN * 0.5)
 		Sim.log_event("BLOCKED -%d" % int(round(damage_after_defense(damage) * (1.0 - T.BLOCK_DAMAGE_CUT))))
+		Sim.stat("block", {"dmg": int(round(damage_after_defense(damage) * (1.0 - T.BLOCK_DAMAGE_CUT)))})
 		return rb
 	var r: int = super.apply_hit(damage, from_pos, stagger)
 	if r == HIT_RESULT_HIT:
@@ -194,6 +198,7 @@ func apply_hit(damage: float, from_pos: Vector3, stagger: float, flags := {}) ->
 		buffered = ""
 		Sim.hitstop(T.HITSTOP_TAKEN)
 		Sim.log_event("PLAYER HIT -%d" % int(round(damage_after_defense(damage))))
+		Sim.stat("player_hurt", {"dmg": int(round(damage_after_defense(damage))), "hp": hp})
 	return r
 
 func add_feathers(n: float) -> void:
@@ -360,6 +365,7 @@ func _try_roll(dir: Vector3) -> bool:
 	roll_dir = dir.normalized() if dir.length_squared() > 0.01 else -facing
 	facing = roll_dir
 	Sim.log_event("ROLL")
+	Sim.stat("roll")
 	return true
 
 func _tick_roll(dt: float, inp: Dictionary) -> void:
@@ -418,6 +424,9 @@ func _start_attack(data: Dictionary, cost: float, label: String, slot := "") -> 
 	state = "attack"
 	Audio.sfx("swing")
 	Sim.log_event("%s START" % label)
+	cur_slot = slot if slot != "" else label
+	last_attack_hit = false
+	Sim.stat("attack", {"slot": cur_slot, "dmg": data.damage, "windup": data.windup})
 	if slot != "":
 		Sim.log_event("ATTACK SLOT %s" % slot)
 	return true
@@ -444,6 +453,8 @@ func _tick_attack(dt: float, inp: Dictionary) -> void:
 	elif inp.volley:
 		_buffer("volley")
 	if attack.phase == "done":
+		if not last_attack_hit:
+			Sim.stat("whiff", {"slot": cur_slot})
 		attack = null
 		state = "free"
 		_fire_buffered()
@@ -461,6 +472,8 @@ func _resolve_attack_hit() -> void:
 			var r: int = e.apply_hit(dmg, global_position, d.get("stagger", T.DUMMY_STAGGER))
 			if r == HIT_RESULT_HIT:
 				Sim.hitstop(T.HITSTOP_DEALT)
+				last_attack_hit = true
+				Sim.stat("hit", {"target": e.display_name, "dmg": int(round(dmg)), "crit": crit, "slot": cur_slot})
 				if crit:
 					Sim.log_event("RIPOSTE %s -%d (scaffold x%.1f)" % [e.display_name, int(round(dmg)), T.CRIT_MULTIPLIER_SCAFFOLD])
 				else:
@@ -545,6 +558,7 @@ func _tick_heal(dt: float, _inp: Dictionary) -> void:
 	move_and_slide()
 	if heal_t >= T.HEAL_COMMIT:
 		heal_charges -= 1
+		Sim.stat("heal", {"charges_left": heal_charges})
 		var amt: float = minf(T.HEAL_AMOUNT_SCAFFOLD, max_hp - hp)
 		hp += amt
 		Sim.log_event("HEALED +%d (scaffold amount)" % int(round(amt)))
