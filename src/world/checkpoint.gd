@@ -35,5 +35,12 @@ func activate(_player) -> void:
 	# Resting effect: UNDECIDED (open decision for Omer). Machinery stub only.
 	Sim.log_event("CHECKPOINT REST (stub: what rest does is undecided)")
 
+## Respawn linkage machinery: where the player rises after death.
+## (Rest effects themselves remain undecided.)
+static func respawn_position(fallback: Vector3) -> Vector3:
+	if Sim.active_checkpoint != null:
+		return Sim.active_checkpoint.global_position + Vector3(0, 0.1, 0)
+	return fallback
+
 func _physics_process(_dt: float) -> void:
 	pass

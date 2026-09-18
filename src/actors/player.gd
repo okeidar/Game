@@ -29,6 +29,7 @@ var moveset: Dictionary
 var chain_index := 0
 var chain_window_t := 0.0
 var roll_end_t := 99.0  # seconds since a roll ended; feeds the rolling-attack slot
+var fall_v := 0.0       # deepest downward velocity of the current fall
 var cam: Node3D = null         # camera rig, set by game; null in tests
 var lock_target: Node3D = null
 var buffered := ""
@@ -210,6 +211,15 @@ func tick(dt: float) -> void:
 	else:
 		chain_index = 0
 	roll_end_t += dt
+	if not is_on_floor():
+		fall_v = minf(fall_v, velocity.y)
+	elif fall_v < 0.0:
+		var impact: float = -fall_v
+		fall_v = 0.0
+		if impact > T.FALL_SAFE_SPEED_SCAFFOLD and not dead:
+			var fdmg: float = (impact - T.FALL_SAFE_SPEED_SCAFFOLD) * T.FALL_DAMAGE_SCALE_SCAFFOLD
+			apply_hit(fdmg, global_position + facing, 0.2)
+			Sim.log_event("FALL DAMAGE -%d (scaffold)" % int(round(fdmg)))
 	match state:
 		"free": _tick_free(dt, inp)
 		"roll": _tick_roll(dt, inp)
@@ -251,7 +261,7 @@ func _tick_free(dt: float, inp: Dictionary) -> void:
 	var dir := _move_world(wish)
 	if dir.length_squared() > 1.0:
 		dir = dir.normalized()
-	sneaking = inp.get("sneak", false) and wish.length_squared() > 0.01
+	sneaking = inp.get("sneak", false)
 	sprinting = inp.sprint and not sneaking and stamina > 0.0 and wish.length_squared() > 0.01
 	var speed := T.SPRINT_SPEED if sprinting else T.WALK_SPEED
 	if sneaking:

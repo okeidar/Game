@@ -5,12 +5,14 @@ static var log_lines: Array[String] = []
 static var events: Array[String] = []   # machine-checkable feed for tests
 static var hitstop_left := 0.0
 static var active_checkpoint = null
+static var sounds: Array = []   # sound bus: awareness reads new entries via a watermark
 
 static func reset() -> void:
 	log_lines.clear()
 	events.clear()
 	hitstop_left = 0.0
 	active_checkpoint = null
+	sounds.clear()
 
 static func log_event(msg: String) -> void:
 	log_lines.append(msg)
@@ -20,8 +22,10 @@ static func log_event(msg: String) -> void:
 	print("[combat] ", msg)
 
 static func emit_sound(source_name: String, pos: Vector3, radius: float, loudness: float) -> void:
-	# Sound machinery (round 2): events exist now; enemy hearing is the
-	# deferred enemy side and consumes these later.
+	# Sound machinery: instantaneous events on a bus; awareness consumes them.
+	sounds.append({"pos": pos, "radius": radius, "loudness": loudness, "source": source_name})
+	if sounds.size() > 200:
+		sounds.pop_front()
 	log_event("SOUND %s at (%.1f, %.1f) r=%.1f loud=%.1f" % [source_name, pos.x, pos.z, radius, loudness])
 
 static func hitstop(d: float) -> void:

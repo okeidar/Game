@@ -135,3 +135,15 @@ const ITEM_USE_COMMIT_SCAFFOLD := 0.8     # SCAFFOLD - item use commit undecided
 const CHAIN_WINDOW_SCAFFOLD := 0.8      # SCAFFOLD - chain continue window undecided
 const ROLL_ATTACK_WINDOW_SCAFFOLD := 0.4 # SCAFFOLD - roll-attack window undecided
 const JUMP_VELOCITY_SCAFFOLD := 5.0     # SCAFFOLD - jump height/feel undecided
+
+# Awareness + hazard scaffolds (round 3, autonomous scaffolding under Omer's
+# standing directive). Enemy-side detection machinery; all values OPEN.
+const VISION_RANGE_SCAFFOLD := 12.0      # SCAFFOLD - sight range undecided
+const VISION_HALF_ANGLE_SCAFFOLD := 65.0 # SCAFFOLD - vision cone undecided
+const SNEAK_VISION_MULT_SCAFFOLD := 0.5  # SCAFFOLD - sneak visibility undecided
+const SUSPICION_TIME_SCAFFOLD := 0.9     # SCAFFOLD - time-to-alert undecided
+const HEARING_STIMULUS_SCAFFOLD := 0.7   # SCAFFOLD - hearing vs sight weight undecided
+const HEARING_PULSE_SCAFFOLD := 0.4      # SCAFFOLD - suspicion bump per heard sound undecided
+const ALERT_MEMORY_SCAFFOLD := 3.0       # SCAFFOLD - how long alert persists undecided
+const FALL_SAFE_SPEED_SCAFFOLD := 12.0   # SCAFFOLD - safe landing speed undecided
+const FALL_DAMAGE_SCALE_SCAFFOLD := 5.0  # SCAFFOLD - damage per m/s over safe undecided

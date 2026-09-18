@@ -121,7 +121,10 @@ func _on_effigy_died(e) -> void:
 	Sim.log_event("%s FELLED +%d feathers" % [e.display_name, int(Tuning.KILL_FEATHERS)])
 
 func _respawn() -> void:
-	player.reset_run(arena.player_spawn)
+	var rsp: Vector3 = Checkpoint.respawn_position(arena.player_spawn)
+	if Sim.active_checkpoint != null:
+		Sim.log_event("RESPAWN AT CHECKPOINT")
+	player.reset_run(rsp)
 	for e in effigies:
 		e.reset_run(e.spawn_pos)
 	hud.set_banner("")

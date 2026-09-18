@@ -348,3 +348,47 @@ sneak speed + quiet/medium/loud/roll sound events; status build-up, trigger,
 tick, expiry, decay; consumable commit, effect hook, quantity tracking,
 empty-slot denial; light-chain advance + window reset; running and rolling
 slots; jump leaves floor, lands, jump-attack slot while airborne.
+
+---
+
+## Machinery pass 3 (2026-09-19): enemy awareness, enemy ranged, respawn linkage, fall damage
+
+Built under Omer's standing directive: "Keep working on the game until everything
+is scaffolded properly. Then we will start breaking down the details."
+
+### 12. Enemy awareness (the deferred enemy side of sneak)
+- Every ai-enabled enemy runs an awareness state machine: calm -> suspicious ->
+  alert, and back down. Vision: cone check (range x half-angle), halved range
+  against a sneaking player (sneak is now a held state, not motion-gated).
+  Hearing: consumes the movement sound bus; each heard sound is a suspicion
+  pulse. Being struck alerts instantly (provoked). The effigy only engages
+  when alert; losing the trail de-escalates.
+- Scaffold: vision 12m / 65 deg half-angle / sneak x0.5, suspicion 0.9s to
+  alert by sight, hearing pulse 0.4 per sound, alert memory 3.0s.
+- OPEN: all detection numbers, LOS occlusion (none yet), alert propagation
+  between enemies, what suspicious DOES (investigate the sound spot?),
+  whether alert ever fully resets.
+
+### 13. Enemy ranged machinery
+- Any enemy attack entry may carry a "projectile" table (speed/damage/life):
+  the swing instead fires a projectile at the player (reuses the volley
+  projectile, parametrized shooter/target/log). Live effigy unchanged.
+- OPEN: which enemies get ranged attacks, projectile properties, can
+  projectiles be blocked/parried/dodged distinctively.
+
+### 14. Checkpoint respawn linkage
+- Death now respawns the player at the registered checkpoint (falls back to
+  the original spawn when none). Rest effects remain open.
+- OPEN: does respawn reset enemies (they currently respawn on their own
+  timer), does it refill heal charges (it does today via reset_run - flagged
+  as scaffold until rest rules are decided).
+
+### 15. Fall damage machinery
+- Landing faster than a safe speed deals scaled damage. Roll unchanged.
+- Scaffold: safe 12 m/s, 5 damage per m/s over. OPEN: thresholds, lethal
+  falls, landing stagger.
+
+### New test coverage (19/19 green)
+sneak invisibility in the cone, vision alert, hearing alert from behind,
+enemy projectile flight + hit, checkpoint respawn resolution + fallback,
+safe fall vs damaging fall.

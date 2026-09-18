@@ -13,6 +13,9 @@ var facing := Vector3.FORWARD
 var spawn_pos := Vector3.ZERO
 var respawn_t := 0.0
 var ai_enabled := true
+const Awareness = preload("res://src/combat/awareness.gd")
+const Projectile = preload("res://src/combat/projectile.gd")
+var awareness = Awareness.new()
 var forced_attack_data = null   # machinery: tests/future AI inject an attack dict
 var attack_chain: Array = []    # machinery: follow-up links after the first swing
 var chain_delay_t := 0.0
@@ -69,6 +72,8 @@ func _build_visuals() -> void:
 
 func apply_hit(damage: float, from_pos: Vector3, stagger: float, flags := {}) -> int:
 	var r: int = super.apply_hit(damage, from_pos, stagger, flags)
+	if r != HIT_RESULT_MISS:
+		awareness.alert_now(self)
 	if r == HIT_RESULT_HIT:
 		if attack != null:
 			Sim.log_event("%s STAGGERED OUT OF SWING" % display_name)
@@ -98,12 +103,13 @@ func tick(dt: float) -> void:
 		return
 	cooldown = maxf(0.0, cooldown - dt)
 	var target := _get_target()
+	awareness.tick(dt, self, target)   # enemy side of sneak: vision + hearing
 	match state:
 		"idle":
-			if target != null and _dist_to(target) < T.DUMMY_AGGRO_RANGE:
+			if target != null and awareness.state == "alert" and _dist_to(target) < T.DUMMY_AGGRO_RANGE * 3.0:
 				state = "approach"
 		"approach":
-			if target == null or target.dead:
+			if target == null or target.dead or awareness.state == "calm":
 				state = "idle"
 			else:
 				var d := _dist_to(target)
@@ -180,7 +186,20 @@ func _tick_attack(dt: float) -> void:
 	attack.advance(dt)
 	if attack.just_entered_active(prev) and not attack.resolved:
 		attack.resolved = true
-		if target != null and _in_range_any(target):
+		var d2: Dictionary = attack.data
+		if d2.has("projectile"):
+			var pd: Dictionary = d2.projectile
+			var pr := Projectile.new()
+			pr.velocity = attack.direction * pd.get("speed", 12.0)
+			pr.damage = pd.get("damage", 10.0)
+			pr.life = pd.get("life", 1.5)
+			pr.log_prefix = pd.get("log_prefix", "SHOT HIT")
+			pr.shooter = self
+			pr.target_group = "player"
+			pr.position = global_position + Vector3(0, 1.2, 0) + attack.direction * 0.7
+			get_parent().add_child(pr)
+			Sim.log_event("%s LOOSES A SHOT (scaffold)" % display_name)
+		elif target != null and _in_range_any(target):
 			var d: Dictionary = attack.data
 			if Sim.in_sector(global_position, attack.direction, target.global_position, target.hurt_radius, d.reach, d.arc_deg):
 				var res: int = target.apply_hit(d.damage, global_position, T.PLAYER_STAGGER, {"unblockable": d.get("unblockable", false)})

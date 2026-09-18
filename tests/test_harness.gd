@@ -370,6 +370,7 @@ class ScenarioRooms extends Scenario:
 		h.make_world()  # harness world: effigy starts ai_enabled = false (training dummy)
 		h.player.facing = Vector3(0, 0, -1)
 		h.effigies[0].position = Vector3(0, 0.05, -2.2)
+		h.effigies[0].facing = Vector3(0, 0, 1)  # faces the player so vision can engage
 	func step(f: int) -> bool:
 		var e = h.effigies[0]
 		if lf < 0:
@@ -686,6 +687,102 @@ class ScenarioMachinery3 extends Scenario:
 		lf += 1
 		return false
 
+
+class ScenarioMachinery4 extends Scenario:
+	const Sim = preload("res://src/combat/combat_sim.gd")
+	const Checkpoint = preload("res://src/world/checkpoint.gd")
+	var run := 0
+	var lf := -2
+	func setup() -> void:
+		name = "awareness_ranged_fall"
+		_start_run(0)
+	func _start_run(r: int) -> void:
+		run = r
+		lf = -2
+		h.make_world()
+	func step(f: int) -> bool:
+		var p = h.player
+		var e = h.effigies[0]
+		if lf < 0:
+			lf += 1
+			return false
+		match run:
+			0:  # vision: standing in the cone alerts; sneaking halves the range
+				if lf == 0:
+					e.ai_enabled = true
+					e.position = Vector3(0, 0.05, -8.0)
+					e.facing = Vector3(0, 0, 1)   # faces the player at origin
+					p.position = Vector3(0, 0.05, 0.0)
+					h.input.cur.sneak = true
+				if lf == 120:
+					check(e.awareness.state == "calm", "sneaking at 8m stays unseen (range halved to 6), state=%s" % e.awareness.state)
+					h.input.cur.sneak = false
+				if lf == 240:
+					check(e.awareness.state == "alert", "standing in the cone at 8m alerts, state=%s" % e.awareness.state)
+					var alerted := false
+					for ev in Sim.events:
+						if ev.begins_with("ALERT EFFIGY"): alerted = true
+					check(alerted, "alert transition is acknowledged")
+					_start_run(1)
+					return false
+			1:  # hearing: loud footsteps behind it pull awareness without sight
+				if lf == 0:
+					e.ai_enabled = true
+					e.position = Vector3(5.0, 0.05, -6.0)  # beside the strafe path: footsteps stay in radius
+					e.facing = Vector3(0, 0, -1)  # back turned to the player
+					p.position = Vector3(0, 0.05, 0.0)
+					h.input.cur.move = Vector2(1, 0)   # strafe in place range, loud
+					h.input.cur.sprint = true
+				if lf == 200:
+					check(e.awareness.state == "alert", "loud footsteps within radius alert from behind, state=%s" % e.awareness.state)
+					h.input.cur.sprint = false
+					h.input.cur.move = Vector2.ZERO
+					_start_run(2)
+					return false
+			2:  # enemy projectile machinery
+				if lf == 0:
+					p.position = Vector3(0, 0.05, 0.0)
+					p.feathers = 0.0
+					e.position = Vector3(0, 0.05, -5.0)
+					e.forced_attack_data = {"windup": 0.3, "active": 0.1, "recovery": 0.5, "reach": 0.0, "arc_deg": 0.0, "damage": 0.0, "projectile": {"speed": 12.0, "damage": 10.0, "life": 1.5, "log_prefix": "SHOT HIT"}}
+				if lf == 5: e._try_attack()
+				if lf == 90:
+					var shot := false
+					for ev in Sim.events:
+						if ev.begins_with("SHOT HIT PLAYER"): shot = true
+					check(shot, "enemy projectile flies and lands (machinery)")
+					check(absf(p.hp - 90.0) < 0.01, "projectile deals its scaffold 10, hp=%.2f" % p.hp)
+					_start_run(3)
+					return false
+			3:  # checkpoint respawn linkage
+				if lf == 0:
+					var cp = Checkpoint.new()
+					cp.position = Vector3(5.0, 0.05, 5.0)
+					h.sim_root.add_child(cp)
+					cp.activate(p)
+				if lf == 5:
+					var rsp: Vector3 = Checkpoint.respawn_position(Vector3(-99, 0, -99))
+					check(rsp.distance_to(Vector3(5.0, 0.15, 5.0)) < 0.2, "respawn resolves to the registered checkpoint")
+					Sim.active_checkpoint = null
+					check(Checkpoint.respawn_position(Vector3(-99, 0, -99)).x < -90.0, "without a checkpoint respawn falls back to spawn")
+					_start_run(4)
+					return false
+			4:  # fall damage machinery
+				if lf == 0:
+					p.position = Vector3(0, 3.0, 0.0)   # low hop: v ~ 10.4 < 12 safe
+				if lf == 80:
+					check(absf(p.hp - 100.0) < 0.01, "a safe fall hurts nothing, hp=%.2f" % p.hp)
+					p.position = Vector3(0, 15.0, 0.0)  # long drop: v ~ 23 > 12
+				if lf == 200:
+					var fell := false
+					for ev in Sim.events:
+						if ev.begins_with("FALL DAMAGE"): fell = true
+					check(fell, "a long fall deals fall damage (scaffold)")
+					check(p.hp < 100.0, "hp dropped from the fall, hp=%.2f" % p.hp)
+					return true
+		lf += 1
+		return false
+
 class ScenarioLockOn extends Scenario:
 	func setup() -> void:
 		name = "lock_on"
@@ -934,6 +1031,7 @@ func _register() -> void:
 		ScenarioMachinery.new(),
 		ScenarioMachinery2.new(),
 		ScenarioMachinery3.new(),
+		ScenarioMachinery4.new(),
 		ScenarioHeavy.new(),
 		ScenarioDeterminismA.new(),
 		ScenarioDeterminismB.new(),

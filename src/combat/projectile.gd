@@ -10,6 +10,7 @@ var stagger := 0.15
 var radius := 0.4
 var shooter: Node3D = null
 var target_group := "enemies"
+var log_prefix := "FEATHER HIT"
 
 func _ready() -> void:
 	var m := MeshInstance3D.new()
@@ -40,6 +41,6 @@ func tick(dt: float) -> void:
 		if d.length() < radius + e.hurt_radius:
 			var r: int = e.apply_hit(damage, global_position, stagger)
 			if r == e.HIT_RESULT_HIT:
-				Sim.log_event("FEATHER HIT %s -%d" % [e.display_name, int(round(damage))])
+				Sim.log_event("%s %s -%d" % [log_prefix, e.display_name, int(round(damage))])
 			queue_free()
 			return
