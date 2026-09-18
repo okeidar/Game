@@ -26,6 +26,8 @@ var settings
 var sim_root: Node3D
 var arena
 var player
+var _dbg_pos := false
+var _dbg_acc := 0.0
 var effigy          # the one real enemy (DEFEND room)
 var effigies: Array = []
 var cam
@@ -50,6 +52,9 @@ func _ready() -> void:
 func _load_build_id() -> void:
 	const B = preload("res://src/build_id.gd")
 	build_id = B.ID
+	if OS.has_feature("web"):
+		var qp = JavaScriptBridge.eval("location.search", true)
+		_dbg_pos = qp != null and str(qp).find("debugpos") >= 0
 
 func _build() -> void:
 	Sim.reset()
@@ -127,6 +132,11 @@ func _process(delta: float) -> void:
 		death_timer -= delta
 		if death_timer <= 0.0:
 			_respawn()
+	if _dbg_pos and player != null:
+		_dbg_acc += delta
+		if _dbg_acc >= 0.5:
+			_dbg_acc = 0.0
+			print("POS %.3f %.3f" % [player.global_position.x, player.global_position.z])
 	# room banner + enemy bar follows the relevant effigy
 	if hud != null and player != null and arena != null:
 		hud.set_room(arena.room_at(player.position))

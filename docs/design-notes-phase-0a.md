@@ -507,3 +507,10 @@ Verbatim: "no focus on the critical path. not feature creeping. ng+, actual boss
 
 ### Critical path (per main's read-back, Omer to correct if wrong)
 The core loop's detail decisions: heal, death penalty, progression, checkpoint behavior, enemy patterns, movesets. New scaffolding is on hold until his detail-breakdown begins.
+
+## Playtest fix (2026-09-19): sprint was slow in live play
+Omer: "I played. you said shift to sprint but it is actually slow. it means your tests are not good enough"
+Root cause: machinery pass 2 (sneak round, 3a93dd5) bound sneak to SHIFT (4194325), the same key as sprint. Held SHIFT engaged sneak, and the sprint gate (`inp.sprint and not sneaking`) never opened. SHIFT gave 45% walk speed. HUD always said "CTRL sneak" - the binding never matched the label.
+Fix: sneak rebound to CTRL (4194326) in project.godot.
+Test gap (his meta-point, correct): every prior test asserted STATE (sprinting flag, speeds table), never OUTCOME (real displacement over frames), and nothing checked that two movement gaits don't share a physical key. Added ScenarioSprintOutcome: measures REAL velocity over 60-frame windows (sprint 7.40 m/s vs walk 4.60 vs sneak 2.07) and asserts sprint/sneak bindings never overlap + sprint=SHIFT + sneak=CTRL. Live-verified in headless Chrome via real key events + POS telemetry: per-sample sprint/walk ratio 1.61, exactly SPRINT_SPEED/WALK_SPEED.
+Also added: web debug hook `?debugpos=1` prints player position every 0.5s for live measurement (game.gd, web-only).

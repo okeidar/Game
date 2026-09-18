@@ -1255,6 +1255,64 @@ class ScenarioRegen extends Scenario:
 			check(absf(h.player.feathers - 10.0) < 0.01, "the coat never regrows on a timer (collection only, Omer directive), got %.2f" % h.player.feathers)
 		return f >= 100
 
+
+class ScenarioSprintOutcome extends Scenario:
+	# Outcome test for Omer's playtest catch (2026-09-19): "you said shift to
+	# sprint but it is actually slow". Root cause: sneak + sprint were both bound
+	# to SHIFT in project.godot (machinery pass 2), so SHIFT always engaged sneak
+	# and sprinting never turned on. State-level tests passed while REAL velocity
+	# never rose. These measure actual displacement over frames, and the binding
+	# overlap check fails the moment two movement gaits share a key again.
+	const T2 = preload("res://src/combat/tuning.gd")
+	var p0 := Vector3.ZERO
+	func setup() -> void:
+		name = "sprint_outcome"
+		h.make_world()
+		h.effigies[0].position = Vector3(60.0, 0.05, 60.0)
+		h.player.camera_yaw = 0.0
+		var sprint_keys := []
+		for ev in InputMap.action_get_events("sprint"):
+			if ev is InputEventKey:
+				sprint_keys.append(ev.physical_keycode)
+		var sneak_keys := []
+		for ev in InputMap.action_get_events("sneak"):
+			if ev is InputEventKey:
+				sneak_keys.append(ev.physical_keycode)
+		var overlap := false
+		for k in sneak_keys:
+			if k in sprint_keys:
+				overlap = true
+		check(not overlap, "sprint and sneak never share a key (sprint=%s sneak=%s)" % [str(sprint_keys), str(sneak_keys)])
+		check(4194325 in sprint_keys, "sprint is bound to SHIFT, got %s" % str(sprint_keys))
+		check(4194326 in sneak_keys, "sneak is bound to CTRL, got %s" % str(sneak_keys))
+		h.input.at(2, {"move": Vector2(0, -1), "sprint": true})
+	func _speed_between(a: Vector3, b: Vector3, frames: int) -> float:
+		var d := Vector2(b.x - a.x, b.z - a.z).length()
+		return d * Engine.physics_ticks_per_second / frames
+	func step(f: int) -> bool:
+		var p = h.player
+		if f == 10:
+			p0 = p.global_position
+			check(p.sprinting, "sprint state engages under sprint input")
+		if f == 70:
+			var spd := _speed_between(p0, p.global_position, 60)
+			check(spd > T2.WALK_SPEED * 1.4, "REAL sprint velocity beats walk by 40%%+, measured %.2f m/s (walk %.2f)" % [spd, T2.WALK_SPEED])
+			check(spd > T2.SPRINT_SPEED * 0.9 and spd < T2.SPRINT_SPEED * 1.05, "REAL sprint velocity matches SPRINT_SPEED %.2f, measured %.2f m/s" % [T2.SPRINT_SPEED, spd])
+			p0 = p.global_position
+			h.input.at(72, {"sprint": false, "sneak": true})
+		if f == 80:
+			p0 = p.global_position
+		if f == 140:
+			var spd := _speed_between(p0, p.global_position, 60)
+			check(spd < T2.WALK_SPEED * 0.6, "REAL sneak velocity is meaningfully slower than walk, measured %.2f m/s" % spd)
+			h.input.at(142, {"sneak": false})
+		if f == 150:
+			p0 = p.global_position
+		if f == 210:
+			var spd := _speed_between(p0, p.global_position, 60)
+			check(spd > T2.WALK_SPEED * 0.95 and spd < T2.WALK_SPEED * 1.05, "REAL walk velocity matches WALK_SPEED %.2f, measured %.2f m/s" % [T2.WALK_SPEED, spd])
+		return f >= 215
+
 class ScenarioHeavy extends Scenario:
 	const Sim = preload("res://src/combat/combat_sim.gd")
 	const T = preload("res://src/combat/tuning.gd")
@@ -1349,6 +1407,7 @@ func _register() -> void:
 		ScenarioShell.new(),
 		ScenarioRound5A.new(),
 		ScenarioRound5B.new(),
+		ScenarioSprintOutcome.new(),
 		ScenarioHeavy.new(),
 		ScenarioDeterminismA.new(),
 		ScenarioDeterminismB.new(),
