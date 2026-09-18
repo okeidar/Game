@@ -33,6 +33,10 @@ Every verb in the combat core has a cost line:
 | Feather volley | ranged 3x8 dmg | 6 feathers = 10 points of resistance lost |
 | Full feather coat | up to 50% damage resist | temptation: every volley strips it |
 | Lock-on | camera + aim tracking | narrower awareness, breaks at range/death |
+| Block (hold RMB) | 70% damage cut, 360 coverage | chips 30% through, drains stamina per hit (0.9x dmg), half movement, stamina regen choked to 20% while held |
+| Parry (block pressed <=0.13s before impact) | full deflect, attacker reels 1.4s | the tight window itself; misjudge and you eat the blow you tried to read |
+| Perfect dodge (hit connects <=0.15s after roll start) | +2 feathers on top of the dodge | you must hold the roll until the last instant - maximum exposure to earn it |
+| Guard break (stamina hits 0 while blocking) | - | the blocked hit lands FULL + 1.0s reel: turtling is a loan, not a wall |
 
 Design rule for everything after 0A (cards, systems, items, routes): each
 option must name its cost in the same breath as its power. No free lunches,
@@ -40,7 +44,10 @@ no pure upgrades. Numbers live in `src/combat/tuning.gd`, one file, diffable.
 
 ## Feather economy (0A numbers)
 
-- Coat size: 30 max. Slow regrowth: 0.7/s, always on (a molt, not a mana bar).
+- Coat size: 30 max. NO timer regrowth (Omer directive 2026-09-18, verbatim:
+  "feathers are replenished by collection, not over time"). The only ways back
+  to a full coat are pickups and kills - collection is the sole recovery verb,
+  so every feather spent is a real decision.
 - Resistance: linear, 0% at empty to 50% at full coat.
 - Volley: 6 feathers, three projectiles, 8 damage each, 0.35s rooted cast.
   Denied below 6.
@@ -66,6 +73,12 @@ no pure upgrades. Numbers live in `src/combat/tuning.gd`, one file, diffable.
   (windup) -> red (live frames), plus emission so it reads through fog. Any
   hit staggers it out of the swing. Recovery 1.05s: punishable. 60 hp, rises
   again 4s after falling.
+- Movement is camera-relative (Omer playtest fix 2026-09-18): WASD resolves
+  against camera yaw, the genre standard he expects.
+- Defense verbs (Omer playtest directive 2026-09-18, reference: Mortal Shell 2):
+  block (hold RMB), parry (block pressed inside a 0.13s window before impact),
+  perfect dodge (hit connects within 0.15s of roll start, pays +2 feathers).
+  Guard break when stamina empties mid-block. Roll cancels out of block.
 - Player death: YOU DIED, wake at the slab, world resets.
 - Camera: behind-the-back orbit (mouse or arrows), sphere-cast pull-in so
   walls never eat it, lock-on eases it behind the player-to-target line.
@@ -140,6 +153,31 @@ proof (two identical 400-frame scripts produce identical state traces).
 - The arena: a walled yard at dusk. Where it is, whose it is: open.
 - Defensive abilities at high coat (mentioned by Omer): not in 0A; the
   resistance curve is the hook.
+
+## Mortal Shell 2 - what I took (Omer named it as the defense reference)
+
+Researched via 2026 reviews and mechanic guides (gamerant, neonsect, finalboss,
+screenrant). MS2's defense shape:
+- No stamina at all; Resolve fills from aggression and pays for specials.
+- Seals make Guard / Parry / Harden MUTUALLY EXCLUSIVE - one defensive style
+  equipped at a time; the choice of seal shapes a fight more than the weapon.
+- Guard nullifies but has its own break meter; guard break = vulnerable stagger.
+- Perfect Guard / Perfect Harden (tight-timed) refund or pay Break damage.
+- Parry is the high-risk, high-reward read: biggest Break payout (~3x a perfect
+  guard), worst whiff.
+- Full Break meter opens the enemy to a Riposte.
+
+What 0A takes from it:
+1. Defense as a CHOICE with a price, never a default (MS2 seal exclusivity is
+   the doctrine applied to defense; ours runs block/parry/dodge side by side
+   for now, each with its own cost line - exclusivity is a future loadout hook).
+2. Tight-timed variants of defensive verbs pay out (our parry reel and
+   perfect-dodge feathers are MS2's perfect-guard/perfect-harden pattern).
+3. A punished guard (our stamina guard break) keeps turtling honest, like
+   MS2's guard meter.
+4. NOT taken: no-stamina Resolve (we keep stamina - Omer's feather economy
+   needs a second resource to trade against), and the Riposte meter stays a
+   future hook (parry already opens a punish window).
 
 ## What I cannot judge without Omer
 

@@ -36,7 +36,10 @@ const BUFFER_AFTER_STATE := 0.25   # C: input buffer grace after a state ends
 # defense, stacking multiplicatively - the coat is a single absorption slot
 # driven by feathers held. Linear-in-feathers curve is our judgment call (C).
 const FEATHERS_MAX := 30.0
-const FEATHER_REGEN := 0.7         # C: slow molt-regrowth per second, always on
+# Omer directive (2026-09-18, verbatim): "feathers are replenished by
+# collection, not over time". No timer-based regrowth exists. The coat refills
+# only through world pickups (respawning) and feathers from felled enemies,
+# so there is always an earnable path back.
 const RESIST_AT_FULL := 0.5        # C: 50% at a full coat, linear down to 0
 const VOLLEY_COST := 6.0           # C: own economy
 const VOLLEY_DAMAGE := 8.0         # C: per feather projectile
@@ -80,6 +83,19 @@ const DUMMY_STAGGER := 0.45
 const DUMMY_RESPAWN := 4.0
 const DUMMY_TRACK_FRACTION := 0.5  # share of windup where it still turns
 const DUMMY_TRACK_RATE := 2.6      # rad/s
+
+# Defense verbs (Omer playtest directive 2026-09-18; reference: Mortal Shell 2).
+# Doctrine: every defense pays for its safety - block pays stamina + mobility,
+# parry pays a tight timing window, perfect dodge pays proximity to the blow.
+const BLOCK_DAMAGE_CUT := 0.7        # C: blocked hits still chip 30% through (MS2 guard nullifies; we keep chip per doctrine)
+const BLOCK_STAMINA_PER_DAMAGE := 0.9 # C: the guard budget is stamina; heavy hits tax it harder
+const BLOCK_MOVE_MULT := 0.45        # B: MS2 guard allows slow movement
+const BLOCK_REGEN_MULT := 0.2        # A: DS3 blocking cuts stamina regen by 80%
+const GUARD_BREAK_STAGGER := 1.0     # C: guard break = full hit + long reel
+const PARRY_WINDOW := 0.13           # B: block pressed this close to impact deflects (DS3 parry ~8-12 active frames @60)
+const PARRY_STAGGER := 1.4           # C: deflected attacker reels - the punish window (MS2 break damage, simplified)
+const PERFECT_DODGE_WINDOW := 0.15   # C: hit must connect within this of roll start
+const PERFECT_DODGE_FEATHERS := 2.0  # C: payoff chosen = feathers (feeds the collection-only economy)
 
 const HITSTOP_DEALT := 0.05        # C: action-game standard 50-150ms band
 const HITSTOP_TAKEN := 0.09

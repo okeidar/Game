@@ -16,6 +16,7 @@ var roll_dir := Vector3.FORWARD
 var volley_t := 0.0
 var facing := Vector3.FORWARD
 var camera_yaw := 0.0
+var block_t := 0.0
 var cam: Node3D = null         # camera rig, set by game; null in tests
 var lock_target: Node3D = null
 var buffered := ""
@@ -126,6 +127,34 @@ func is_invulnerable() -> bool:
 	return state == "roll" and roll_t >= T.ROLL_IFRAME_START and roll_t <= T.ROLL_IFRAME_END
 
 func apply_hit(damage: float, from_pos: Vector3, stagger: float) -> int:
+	if dead:
+		return HIT_RESULT_MISS
+	if is_invulnerable():
+		if roll_t <= T.PERFECT_DODGE_WINDOW:
+			add_feathers(T.PERFECT_DODGE_FEATHERS)
+			Sim.log_event("PERFECT DODGE +%d feathers" % int(T.PERFECT_DODGE_FEATHERS))
+		else:
+			Sim.log_event("PLAYER DODGED THROUGH")
+		return HIT_RESULT_DODGED
+	if state == "block":
+		if block_t <= T.PARRY_WINDOW:
+			Sim.hitstop(T.HITSTOP_DEALT)
+			Sim.log_event("PARRY - DEFLECTED")
+			return HIT_RESULT_PARRIED
+		var chip := damage * T.BLOCK_STAMINA_PER_DAMAGE
+		if stamina - chip <= 0.0:
+			stamina = 0.0
+			state = "free"
+			var rg: int = super.apply_hit(damage, from_pos, T.GUARD_BREAK_STAGGER)
+			Sim.hitstop(T.HITSTOP_TAKEN)
+			Sim.log_event("GUARD BREAK - full hit -%d" % int(round(damage_after_defense(damage))))
+			return rg
+		stamina -= chip
+		since_spend = 0.0
+		var rb: int = super.apply_hit(damage * (1.0 - T.BLOCK_DAMAGE_CUT), from_pos, minf(stagger, 0.15))
+		Sim.hitstop(T.HITSTOP_TAKEN * 0.5)
+		Sim.log_event("BLOCKED -%d" % int(round(damage_after_defense(damage) * (1.0 - T.BLOCK_DAMAGE_CUT))))
+		return rb
 	var r: int = super.apply_hit(damage, from_pos, stagger)
 	if r == HIT_RESULT_HIT:
 		attack = null
@@ -133,8 +162,6 @@ func apply_hit(damage: float, from_pos: Vector3, stagger: float) -> int:
 		buffered = ""
 		Sim.hitstop(T.HITSTOP_TAKEN)
 		Sim.log_event("PLAYER HIT -%d" % int(round(damage_after_defense(damage))))
-	elif r == HIT_RESULT_DODGED:
-		Sim.log_event("PLAYER DODGED THROUGH")
 	return r
 
 func add_feathers(n: float) -> void:
@@ -153,7 +180,8 @@ func tick(dt: float) -> void:
 	if dead:
 		return
 	_tick_stamina(dt)
-	add_feathers(T.FEATHER_REGEN * dt)
+	if cam != null:
+		camera_yaw = cam.yaw
 	var inp := _poll()
 	_tick_lock(inp)
 	if stagger_t > 0.0:
@@ -169,6 +197,7 @@ func tick(dt: float) -> void:
 		"roll": _tick_roll(dt, inp)
 		"attack": _tick_attack(dt, inp)
 		"volley": _tick_volley(dt, inp)
+		"block": _tick_block(dt, inp)
 	if buffer_left > 0.0:
 		buffer_left -= dt
 		if buffer_left <= 0.0:
@@ -186,6 +215,7 @@ func _poll() -> Dictionary:
 		"heavy": Input.is_action_just_pressed("heavy"),
 		"volley": Input.is_action_just_pressed("volley"),
 		"lock": Input.is_action_just_pressed("lock_on"),
+		"block": Input.is_action_pressed("block"),
 	}
 
 func _move_world(m: Vector2) -> Vector3:
@@ -210,7 +240,11 @@ func _tick_free(dt: float, inp: Dictionary) -> void:
 		facing = facing.normalized()
 	elif dir.length_squared() > 0.01:
 		facing = dir.normalized()
-	if inp.dodge:
+	if inp.get("block", false) and stamina > 0.0:
+		state = "block"
+		block_t = 0.0
+		Sim.log_event("BLOCK UP")
+	elif inp.dodge:
 		_try_roll(dir)
 	elif inp.attack:
 		_try_attack()
@@ -368,10 +402,28 @@ func _fire_buffered() -> void:
 		"heavy": _try_heavy()
 		"volley": _try_volley()
 
+func _tick_block(dt: float, inp: Dictionary) -> void:
+	block_t += dt
+	var dir := _move_world(inp.move)
+	if dir.length_squared() > 1.0:
+		dir = dir.normalized()
+	velocity.x = dir.x * T.WALK_SPEED * T.BLOCK_MOVE_MULT
+	velocity.z = dir.z * T.WALK_SPEED * T.BLOCK_MOVE_MULT
+	_gravity(dt)
+	move_and_slide()
+	if inp.dodge and stamina > 0.0:
+		_try_roll(dir)
+		return
+	if not inp.get("block", false) or stamina <= 0.0:
+		state = "free"
+
 func _tick_stamina(dt: float) -> void:
 	since_spend += dt
-	if since_spend >= T.STAMINA_REGEN_DELAY and state == "free" and not sprinting:
-		stamina = minf(T.STAMINA_MAX, stamina + T.STAMINA_REGEN * dt)
+	if since_spend >= T.STAMINA_REGEN_DELAY:
+		if state == "free" and not sprinting:
+			stamina = minf(T.STAMINA_MAX, stamina + T.STAMINA_REGEN * dt)
+		elif state == "block":
+			stamina = minf(T.STAMINA_MAX, stamina + T.STAMINA_REGEN * T.BLOCK_REGEN_MULT * dt)
 
 func _gravity(dt: float) -> void:
 	if not is_on_floor():
@@ -436,6 +488,8 @@ func _update_visual(dt: float) -> void:
 	else:
 		visual.scale = Vector3.ONE
 		mat.albedo_color.a = 1.0
+		if state == "block":
+			mat.albedo_color = Color("7f9fcf")  # guard up: cold sheen
 	_update_sword()
 
 func _update_sword() -> void:

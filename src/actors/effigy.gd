@@ -167,7 +167,13 @@ func _tick_attack(dt: float) -> void:
 		if target != null and _in_range_any(target):
 			var d: Dictionary = attack.data
 			if Sim.in_sector(global_position, attack.direction, target.global_position, target.hurt_radius, d.reach, d.arc_deg):
-				target.apply_hit(d.damage, global_position, T.PLAYER_STAGGER)
+				var res: int = target.apply_hit(d.damage, global_position, T.PLAYER_STAGGER)
+				if res == HIT_RESULT_PARRIED:
+					attack = null
+					state = "idle"
+					stagger_t = T.PARRY_STAGGER
+					cooldown = T.DUMMY_COOLDOWN
+					Sim.log_event("%s DEFLECTED - REELING" % display_name)
 	if attack.phase == "done":
 		attack = null
 		state = "idle"

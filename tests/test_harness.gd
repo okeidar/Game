@@ -13,7 +13,7 @@ const DT := 1.0 / 60.0
 
 class ScriptedInput extends RefCounted:
 	var plan: Array = []
-	var cur := {"move": Vector2.ZERO, "sprint": false, "dodge": false, "attack": false, "heavy": false, "volley": false, "lock": false}
+	var cur := {"move": Vector2.ZERO, "sprint": false, "dodge": false, "attack": false, "heavy": false, "volley": false, "lock": false, "block": false}
 	func at(f: int, set: Dictionary) -> void:
 		plan.append({"f": f, "set": set})
 	func begin_frame(f: int) -> void:
@@ -265,6 +265,90 @@ class ScenarioIFrames extends Scenario:
 		check(absf(p.hp - 75.0) < 0.01, "roll that ends before the blow still gets hit, hp=%.2f" % p.hp)
 		return true
 
+
+class ScenarioDefense extends Scenario:
+	const Sim = preload("res://src/combat/combat_sim.gd")
+	var run := 0
+	var lf := -2
+	func setup() -> void:
+		name = "defense_verbs"
+		_start_run(0)
+	func _start_run(r: int) -> void:
+		run = r
+		lf = -2
+		h.make_world()
+		h.player.facing = Vector3(0, 0, -1)
+		h.effigies[0].position = Vector3(0, 0.05, -2.2)
+	func step(f: int) -> bool:
+		var p = h.player
+		var e = h.effigies[0]
+		if lf < 0:
+			lf += 1
+			return false
+		if lf == 0:
+			if run <= 1:
+				p.feathers = 0.0; p.stamina = 100.0
+			elif run == 2:
+				p.feathers = 0.0; p.stamina = 10.0
+			else:
+				p.feathers = 10.0
+		if lf == 5: e._try_attack()
+		if run == 0:
+			h.input.cur.block = true
+		if run == 1 and lf == 49:
+			h.input.cur.block = true
+		if run == 2:
+			h.input.cur.block = true
+		if run == 3 and lf == 49:
+			h.input.cur.dodge = true; h.input.cur.move = Vector2(0, -1)
+		if run == 3 and lf == 50:
+			h.input.cur.move = Vector2.ZERO
+		if run == 4 and lf == 40:
+			h.input.cur.dodge = true; h.input.cur.move = Vector2(0, -1)
+		if run == 4 and lf == 41:
+			h.input.cur.move = Vector2.ZERO
+		lf += 1
+		if lf < 100:
+			return false
+		if run == 0:
+			check(absf(p.hp - 92.5) < 0.01, "held block chips 30%% of 25 through, hp=%.2f" % p.hp)
+			check(p.stamina >= 77.4 and p.stamina <= 78.5, "blocked hit drains stamina ~22.5 (trickle regen after), stamina=%.2f" % p.stamina)
+			var blk := false
+			for ev in Sim.events:
+				if ev.begins_with("BLOCKED"): blk = true
+			check(blk, "block is acknowledged in the log")
+			_start_run(1)
+			return false
+		if run == 1:
+			check(absf(p.hp - 100.0) < 0.01, "tight block press deflects: zero damage, hp=%.2f" % p.hp)
+			check(absf(p.stamina - 100.0) < 0.5, "parry costs no stamina, stamina=%.2f" % p.stamina)
+			check(Sim.events.has("PARRY - DEFLECTED"), "parry is acknowledged")
+			check(e.attack == null and e.stagger_t > 0.5, "deflected effigy reels (punish window), stagger=%.2f" % e.stagger_t)
+			_start_run(2)
+			return false
+		if run == 2:
+			check(absf(p.hp - 75.0) < 0.01, "guard break lets the full 25 through, hp=%.2f" % p.hp)
+			var broke := false
+			for ev in Sim.events:
+				if ev.begins_with("GUARD BREAK"): broke = true
+			check(broke, "guard break is acknowledged")
+			check(p.state == "free", "guard break knocks the guard open, state=%s" % p.state)
+			_start_run(3)
+			return false
+		if run == 3:
+			check(absf(p.hp - 100.0) < 0.01, "perfect dodge takes zero, hp=%.2f" % p.hp)
+			check(absf(p.feathers - 12.0) < 0.01, "perfect dodge pays +2 feathers (10->12), feathers=%.2f" % p.feathers)
+			var perf := false
+			for ev in Sim.events:
+				if ev.begins_with("PERFECT DODGE"): perf = true
+			check(perf, "perfect dodge is acknowledged")
+			_start_run(4)
+			return false
+		check(absf(p.hp - 100.0) < 0.01, "early roll still dodges through, hp=%.2f" % p.hp)
+		check(absf(p.feathers - 10.0) < 0.01, "early roll earns no feathers, feathers=%.2f" % p.feathers)
+		check(Sim.events.has("PLAYER DODGED THROUGH"), "plain dodge-through is acknowledged")
+		return true
+
 class ScenarioLockOn extends Scenario:
 	func setup() -> void:
 		name = "lock_on"
@@ -376,7 +460,7 @@ class ScenarioFeathers extends Scenario:
 		if f == 80:
 			check(absf(e.hp - 36.0) < 0.01, "volley lands 3 feathers x 8 = 24, effigy hp=%.2f" % e.hp)
 			check(count("FEATHER HIT") == 3, "three feather hit events, got %d" % count("FEATHER HIT"))
-			check(p.feathers < 25.0, "volley spent 6 feathers (30->24 + slow regrowth), got %.2f" % p.feathers)
+			check(absf(p.feathers - 24.0) < 0.01, "volley spent 6 feathers (30->24, collection-only), got %.2f" % p.feathers)
 		if f == 90:
 			p.feathers = 5.0
 		if f == 110:
@@ -390,6 +474,26 @@ class ScenarioFeathers extends Scenario:
 			check(p.feathers > pre_pickup + 5.0, "walking over a loose feather feeds the coat (+%.1f)" % (p.feathers - pre_pickup))
 		return f >= 130
 
+
+class ScenarioCameraRelative extends Scenario:
+	func setup() -> void:
+		name = "camera_relative_movement"
+		h.make_world()
+		h.effigies[0].position = Vector3(60.0, 0.05, 60.0)  # clear the lane: no collision bleed
+		h.player.camera_yaw = PI / 2.0  # tests set yaw directly; live play syncs from the rig
+		h.input.at(5, {"move": Vector2(0, -1)})
+	func step(f: int) -> bool:
+		var p = h.player
+		if f == 65:
+			check(p.position.x < -1.0, "forward input with a quarter-turned camera moves along camera forward (-x), x=%.2f" % p.position.x)
+			check(absf(p.position.z) < 0.35, "no world-axis bleed on z, z=%.2f" % p.position.z)
+			p.position = Vector3.ZERO
+			h.input.at(66, {"move": Vector2(1, 0)})
+		if f == 126:
+			check(p.position.z < -1.0, "strafe-right with the same camera moves along camera right (-z), z=%.2f" % p.position.z)
+			check(absf(p.position.x) < 0.35, "no world-axis bleed on x, x=%.2f" % p.position.x)
+		return f >= 130
+
 class ScenarioRegen extends Scenario:
 	func setup() -> void:
 		name = "regen"
@@ -399,7 +503,7 @@ class ScenarioRegen extends Scenario:
 	func step(f: int) -> bool:
 		if f == 100:
 			check(h.player.stamina > 60.0, "stamina climbs back when rested, got %.2f" % h.player.stamina)
-			check(h.player.feathers > 10.9, "the coat slowly regrows, got %.2f" % h.player.feathers)
+			check(absf(h.player.feathers - 10.0) < 0.01, "the coat never regrows on a timer (collection only, Omer directive), got %.2f" % h.player.feathers)
 		return f >= 100
 
 class ScenarioHeavy extends Scenario:
@@ -485,6 +589,8 @@ func _register() -> void:
 		ScenarioHitstop.new(),
 		ScenarioFeathers.new(),
 		ScenarioRegen.new(),
+		ScenarioCameraRelative.new(),
+		ScenarioDefense.new(),
 		ScenarioHeavy.new(),
 		ScenarioDeterminismA.new(),
 		ScenarioDeterminismB.new(),

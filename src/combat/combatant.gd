@@ -21,6 +21,8 @@ var base_color := Color.WHITE
 const HIT_RESULT_MISS := 0
 const HIT_RESULT_HIT := 1
 const HIT_RESULT_DODGED := 2
+const HIT_RESULT_BLOCKED := 3
+const HIT_RESULT_PARRIED := 4
 
 func is_invulnerable() -> bool:
 	return false
