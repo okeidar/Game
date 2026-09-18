@@ -18,6 +18,7 @@ var en_label: Label
 var log_label: Label
 var banner: Label
 var room_label: Label
+var toast_label: Label
 
 func _bar(color: Color, w: int, pos: Vector2) -> ProgressBar:
 	var b := ProgressBar.new()
@@ -79,6 +80,11 @@ func _ready() -> void:
 	room_label.text = ""
 	add_child(room_label)
 
+	toast_label = Label.new()
+	toast_label.position = Vector2(24, 200)
+	toast_label.add_theme_font_size_override("font_size", 17)
+	toast_label.add_theme_color_override("font_color", Color("d8d2c4"))
+	add_child(toast_label)
 	log_label = Label.new()
 	log_label.position = Vector2(24, 70)
 	log_label.add_theme_font_size_override("font_size", 13)
@@ -127,3 +133,5 @@ func _process(_dt: float) -> void:
 	else:
 		en_panel.visible = false
 	log_label.text = "\n".join(Sim.log_lines)
+	var recent: Array = Sim.toasts.slice(maxi(0, Sim.toasts.size() - 4))
+	toast_label.text = "\n".join(recent)

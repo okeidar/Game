@@ -1,4 +1,6 @@
 extends "res://src/combat/combatant.gd"
+
+signal npc_spoke(npc)
 ## The winged one, in greybox form. Stamina pays for body actions (sprint, roll,
 ## swing). Feathers are a second economy: the coat you wear and the shot you fire.
 
@@ -27,6 +29,9 @@ var item_t := 0.0
 const Moveset = preload("res://src/combat/moveset.gd")
 const Attributes = preload("res://src/combat/attributes.gd")
 const Equipment = preload("res://src/combat/equipment.gd")
+const Audio = preload("res://src/combat/audio_bus.gd")
+const Gestures = preload("res://src/combat/gestures.gd")
+var gestures = Gestures.new()   # gesture scaffolding: catalog OPEN
 var moveset: Dictionary
 var attrs = Attributes.new()         # stat scaffolding: catalog/curves OPEN
 var equipment = Equipment.new()      # equipment scaffolding: slots/rules OPEN
@@ -411,6 +416,7 @@ func _start_attack(data: Dictionary, cost: float, label: String, slot := "") -> 
 	facing = attack.direction
 	rotation.y = atan2(facing.x, facing.z)
 	state = "attack"
+	Audio.sfx("swing")
 	Sim.log_event("%s START" % label)
 	if slot != "":
 		Sim.log_event("ATTACK SLOT %s" % slot)
@@ -545,6 +551,10 @@ func _tick_heal(dt: float, _inp: Dictionary) -> void:
 		state = "free"
 
 func _try_interact() -> bool:
+	for n in get_tree().get_nodes_in_group("npcs"):
+		if n.interactable_by(self):
+			npc_spoke.emit(n)
+			return true
 	for c in get_tree().get_nodes_in_group("checkpoints"):
 		var d: Vector3 = c.global_position - global_position
 		d.y = 0.0

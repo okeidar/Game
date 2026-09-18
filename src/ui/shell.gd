@@ -12,6 +12,9 @@ var state := "hidden"          # hidden | title | pause | death | inventory | eq
 var menu_items: Array = []     # each: {"label": String, "action": Callable}
 var sel := 0
 var player = null
+var settings = null   # Settings registry (game.gd injects)
+var map_data = null   # MapData registry (game.gd injects)
+var dialogue = null   # active Dialogue engine while state == "dialogue"
 var on_respawn: Callable = Callable()   # game.gd hooks
 var on_begin: Callable = Callable()
 var on_quit_to_title: Callable = Callable()
@@ -62,7 +65,33 @@ func _build_menu() -> void:
 			_add("QUIT (hook only)", func(): Sim.log_event("SHELL QUIT hook"))
 		"pause":
 			_add("RESUME", func(): close())
+			_add("SETTINGS", func(): open("settings"))
 			_add("QUIT TO TITLE (hook)", func(): if on_quit_to_title.is_valid(): on_quit_to_title.call())
+		"settings":
+			if settings != null:
+				for id in settings.order:
+					var sid: String = id
+					_add(settings.label_for(sid), func(): settings.adjust(sid, 1); _build_menu())
+			_add("BACK", func(): open("pause"))
+		"map":
+			if map_data != null:
+				for rid in map_data.regions.keys():
+					var mark := " (here)" if rid == map_data.current else (" (visited)" if map_data.is_visited(rid) else "")
+					_add("%s%s" % [rid, mark], func(): pass)
+			_add("CLOSE", func(): close())
+		"dialogue":
+			if dialogue != null and not dialogue.ended:
+				for i in dialogue.choices().size():
+					var ci: int = i
+					_add(dialogue.choices()[ci].get("label", "..."), func(): dialogue.choose(ci); _build_menu())
+			if dialogue == null or dialogue.ended or dialogue.choices().is_empty():
+				_add("LEAVE", func(): close())
+		"gestures":
+			if player != null:
+				for gid in player.gestures.order:
+					var g: String = gid
+					_add(g, func(): player.gestures.perform(g, player))
+			_add("CLOSE", func(): close())
 		"death":
 			_add("RISE AT THE LAST CHECKPOINT", func(): if on_respawn.is_valid(): on_respawn.call())
 		"inventory":
@@ -94,6 +123,8 @@ func _render() -> void:
 	var title := state.to_upper()
 	if state == "death":
 		title = "YOU DIED"
+	if state == "dialogue" and dialogue != null and not dialogue.ended:
+		title = dialogue.node().get("text", "...")
 	var txt := "[center][b]%s[/b][/center]\n\n" % title
 	for i in menu_items.size():
 		var mark := "> " if i == sel else "  "

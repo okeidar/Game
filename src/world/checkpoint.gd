@@ -5,6 +5,7 @@ extends Node3D
 
 const T = preload("res://src/combat/tuning.gd")
 const Sim = preload("res://src/combat/combat_sim.gd")
+const Audio = preload("res://src/combat/audio_bus.gd")
 
 var registered := false
 var marker: MeshInstance3D
@@ -33,6 +34,8 @@ func activate(_player) -> void:
 		mat.emission_energy_multiplier = 2.2
 		Sim.log_event("CHECKPOINT REGISTERED")
 	# Resting effect: UNDECIDED (open decision for Omer). Machinery stub only.
+	Audio.sfx("rest")
+	Sim.toast("Rested at the checkpoint (effect undecided)")
 	Sim.log_event("CHECKPOINT REST (stub: what rest does is undecided)")
 
 ## Respawn linkage machinery: where the player rises after death.

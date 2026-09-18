@@ -866,10 +866,10 @@ class ScenarioShell extends Scenario:
 			3:  # menu machinery: nav, activate, hooks
 				if lf == 5:
 					shell.open("pause", false)
-					check(shell.state == "pause" and shell.menu_items.size() == 2, "pause menu builds")
+					check(shell.state == "pause" and shell.menu_items.size() == 3, "pause menu builds (resume/settings/title)")
 					shell.nav(1)
 					check(shell.sel == 1, "navigation moves the cursor")
-					shell.nav(1)
+					shell.nav(-1)
 					check(shell.sel == 0, "navigation wraps")
 					shell.activate()  # RESUME
 					check(shell.state == "hidden", "RESUME closes the menu")
@@ -891,6 +891,208 @@ class ScenarioShell extends Scenario:
 					shell.open("title", false)
 					shell.activate()
 					check(fired == "begin", "title BEGIN hook fires")
+					return true
+		lf += 1
+		return false
+
+
+class ScenarioRound5A extends Scenario:
+	const Sim = preload("res://src/combat/combat_sim.gd")
+	const Audio = preload("res://src/combat/audio_bus.gd")
+	const Settings = preload("res://src/combat/settings.gd")
+	const NGPlus = preload("res://src/combat/ngplus.gd")
+	const Shell = preload("res://src/ui/shell.gd")
+	const Checkpoint = preload("res://src/world/checkpoint.gd")
+	var run := 0
+	var lf := -2
+	var shell
+	func setup() -> void:
+		name = "meta_scaffolds"
+		_start_run(0)
+	func _start_run(r: int) -> void:
+		run = r
+		lf = -2
+		h.make_world()
+		h.effigies[0].position = Vector3(0, 0.05, 60.0)
+		shell = Shell.new()
+		shell.player = h.player
+		h.add_child(shell)
+	func step(f: int) -> bool:
+		var p = h.player
+		if lf < 0:
+			lf += 1
+			return false
+		match run:
+			0:  # audio bus: game events emit semantic audio hooks
+				if lf == 5: h.input.cur.attack = true
+				if lf == 30:
+					var swung := false
+					for id in Audio.sfx_log:
+						if id == "swing": swung = true
+					check(swung, "attacking emits a swing sfx hook")
+					var cp = Checkpoint.new()
+					cp.position = p.position
+					h.sim_root.add_child(cp)
+					cp.activate(p)
+					check(Audio.sfx_log.has("rest"), "checkpoint rest emits an sfx hook")
+					_start_run(1)
+					return false
+			1:  # toast feed: player-facing messages flow to the feed
+				if lf == 5:
+					p.inventory.add_item("test_draught", 2)
+				if lf == 15:
+					var found := false
+					for t in Sim.toasts:
+						if t.contains("test_draught"): found = true
+					check(found, "gaining an item lands on the toast feed")
+					check(Sim.toasts.size() <= 12, "the feed is bounded")
+					_start_run(2)
+					return false
+			2:  # settings machinery: register, adjust, clamp, hook
+				if lf == 5:
+					var st = Settings.new()
+					var seen := {"v": -1.0}
+					st.register_setting("fov", {"label": "camera fov", "min": 60.0, "max": 70.0, "step": 5.0, "value": 65.0, "on_change": func(v): seen.v = v})
+					st.adjust("fov", 1)
+					check(absf(seen.v - 70.0) < 0.01, "adjusting fires the change hook with the new value")
+					st.adjust("fov", 1)
+					check(absf(seen.v - 70.0) < 0.01, "adjustment clamps at the bound")
+					check(st.label_for("fov").contains("70"), "settings render for the menu")
+					_start_run(3)
+					return false
+			3:  # gestures machinery: registry + perform through the shell menu
+				if lf == 5:
+					var did := {"g": false}
+					p.gestures.register_gesture("point", func(_pl): did.g = true)
+					shell.open("gestures", false)
+					check(shell.menu_items.size() == 2, "gesture menu lists the registered gesture plus close")
+					shell.activate()
+					check(did.g, "performing a gesture fires its hook")
+					_start_run(4)
+					return false
+			4:  # NG+ machinery: cycle counter + scaling hooks
+				if lf == 5:
+					NGPlus.reset()
+					check(absf(NGPlus.scaled("enemy_hp", 60.0) - 60.0) < 0.01, "cycle 0 with no scaling is identity")
+					NGPlus.register_scaling("enemy_hp", func(c): return 1.0 + 0.5 * c)
+					NGPlus.next_cycle()
+					check(NGPlus.cycle == 1, "the cycle counter advances")
+					check(absf(NGPlus.scaled("enemy_hp", 60.0) - 90.0) < 0.01, "a registered scaling reshapes values at cycle 1")
+					NGPlus.reset()
+					return true
+		lf += 1
+		return false
+
+
+class ScenarioRound5B extends Scenario:
+	const Sim = preload("res://src/combat/combat_sim.gd")
+	const Npc = preload("res://src/world/npc.gd")
+	const MapData = preload("res://src/combat/map_data.gd")
+	const Tutorial = preload("res://src/combat/tutorial.gd")
+	const Effigy = preload("res://src/actors/effigy.gd")
+	const Shell = preload("res://src/ui/shell.gd")
+	var run := 0
+	var lf := -2
+	var spoke := false
+	func setup() -> void:
+		name = "world_scaffolds"
+		_start_run(0)
+	func _start_run(r: int) -> void:
+		run = r
+		lf = -2
+		spoke = false
+		h.make_world()
+		h.effigies[0].position = Vector3(0, 0.05, 60.0)
+	func step(f: int) -> bool:
+		var p = h.player
+		var e = h.effigies[0]
+		if lf < 0:
+			lf += 1
+			return false
+		match run:
+			0:  # NPC + dialogue machinery
+				if lf == 5:
+					var npc = Npc.new()
+					npc.position = p.position
+					npc.dialogue_tree = {"entry": {"text": "line one", "choices": [{"label": "ask", "next": "two"}, {"label": "leave", "next": ""}]}, "two": {"text": "line two", "choices": []}}
+					h.sim_root.add_child(npc)
+					p.npc_spoke.connect(func(_n): spoke = true)
+					h.input.cur.interact = true
+				if lf == 15:
+					check(spoke, "interacting with an NPC emits the spoke signal")
+					var npc2 = null
+					for n in h.sim_root.get_children():
+						if n is Npc: npc2 = n
+					var d = npc2.start_dialogue()
+					check(d.node().text == "line one", "dialogue opens at the entry node")
+					d.choose(0)
+					check(d.current == "two" and not d.ended, "choices advance the tree")
+					check(d.choices().is_empty(), "a terminal node offers no choices (the shell shows LEAVE)")
+					var d2 = npc2.start_dialogue()
+					d2.choose(1)  # "leave"
+					check(d2.ended, "a choice with an empty next ends the dialogue")
+					_start_run(1)
+					return false
+			1:  # map machinery: regions, links, discovery
+				if lf == 5:
+					var m = MapData.new()
+					m.register_region("MOVE")
+					m.link("MOVE", "STRIKE")
+					check(not m.is_visited("MOVE"), "unvisited until entered")
+					m.set_current("MOVE")
+					check(m.is_visited("MOVE") and m.current == "MOVE", "entering marks discovery")
+					check(m.regions["STRIKE"].links.has("MOVE"), "links are bidirectional")
+					var sh = Shell.new()
+					sh.map_data = m
+					h.add_child(sh)
+					sh.open("map", false)
+					check(sh.menu_items.size() == 3, "map menu lists regions plus close")
+					_start_run(2)
+					return false
+			2:  # boss machinery: hp-threshold phases swap behavior
+				if lf == 5:
+					e.boss_data = {"name": "TESTBOSS", "phases": [{"below": 0.5, "chain": [{"damage": 25.0, "windup": 0.4, "active": 0.12, "recovery": 0.5, "reach": 2.6, "arc_deg": 90.0}]}]}
+					e.apply_hit(31.0, p.global_position, 0.0)  # 60 -> 29, below 50%
+				if lf == 15:
+					check(e.boss_phase == 1, "crossing the threshold advances the phase")
+					check(e.attack_chain.size() == 1, "the phase swapped the attack chain")
+					var ph := false
+					for ev in Sim.events:
+						if ev.begins_with("BOSS TESTBOSS ENTERS PHASE 2"): ph = true
+					check(ph, "phase change is acknowledged")
+					_start_run(3)
+					return false
+			3:  # tutorial hooks: once-only contextual hints
+				if lf == 5:
+					var tut = Tutorial.new()
+					tut.ctx = {"player": p}
+					tut.register_rule("low_stam", func(c): return c.player.stamina < 20.0, "hint text (scaffold)")
+					p.stamina = 10.0
+					tut.tick()
+					var hints := 0
+					for t2 in Sim.toasts:
+						if t2.contains("hint text"): hints += 1
+					check(hints == 1, "the hint fires when its condition holds")
+					tut.tick()
+					hints = 0
+					for t2 in Sim.toasts:
+						if t2.contains("hint text"): hints += 1
+					check(hints == 1, "and never fires twice")
+					_start_run(4)
+					return false
+			4:  # aggro linking: one alerted enemy wakes nearby ones
+				if lf == 5:
+					var e2 = Effigy.new()
+					e2.position = Vector3(3.0, 0.05, 0.0)
+					e2.ai_enabled = true
+					e2.display_name = "SENTRY"
+					h.sim_root.add_child(e2)
+					h.effigies.append(e2)
+					e.position = Vector3(-3.0, 0.05, 0.0)
+					e.ai_enabled = true
+					e.awareness.alert_now(e)
+				if lf == 30:
+					check(h.effigies[1].awareness.state == "alert", "a nearby enemy alerts through the link, state=%s" % h.effigies[1].awareness.state)
 					return true
 		lf += 1
 		return false
@@ -1145,6 +1347,8 @@ func _register() -> void:
 		ScenarioMachinery3.new(),
 		ScenarioMachinery4.new(),
 		ScenarioShell.new(),
+		ScenarioRound5A.new(),
+		ScenarioRound5B.new(),
 		ScenarioHeavy.new(),
 		ScenarioDeterminismA.new(),
 		ScenarioDeterminismB.new(),

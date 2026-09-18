@@ -16,6 +16,8 @@ var ai_enabled := true
 const Awareness = preload("res://src/combat/awareness.gd")
 const Projectile = preload("res://src/combat/projectile.gd")
 var awareness = Awareness.new()
+var boss_data = null   # boss machinery: {name, phases:[{below, chain}]} - catalog OPEN
+var boss_phase := 0
 var forced_attack_data = null   # machinery: tests/future AI inject an attack dict
 var attack_chain: Array = []    # machinery: follow-up links after the first swing
 var chain_delay_t := 0.0
@@ -74,6 +76,14 @@ func apply_hit(damage: float, from_pos: Vector3, stagger: float, flags := {}) ->
 	var r: int = super.apply_hit(damage, from_pos, stagger, flags)
 	if r != HIT_RESULT_MISS:
 		awareness.alert_now(self)
+	if r == HIT_RESULT_HIT and boss_data != null:
+		var frac: float = hp / max_hp
+		var phases: Array = boss_data.get("phases", [])
+		if boss_phase < phases.size() and frac <= phases[boss_phase].get("below", 0.0):
+			boss_phase += 1
+			if phases[boss_phase - 1].has("chain"):
+				attack_chain = phases[boss_phase - 1].chain.duplicate()
+			Sim.log_event("BOSS %s ENTERS PHASE %d (scaffold)" % [boss_data.get("name", display_name), boss_phase + 1])
 	if r == HIT_RESULT_HIT:
 		if attack != null:
 			Sim.log_event("%s STAGGERED OUT OF SWING" % display_name)

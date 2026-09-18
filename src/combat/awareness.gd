@@ -11,6 +11,7 @@ var state := "calm"         # calm | suspicious | alert
 var suspicion := 0.0        # 0..1
 var heard_watermark := 0    # index into Sim.sounds already considered
 var alert_memory := 0.0
+var pulse_watermark := 0   # aggro linking: index into Sim.alert_pulses
 
 func tick(dt: float, owner, player) -> void:
 	var stimulus := 0.0
@@ -34,6 +35,15 @@ func tick(dt: float, owner, player) -> void:
 		if heard:
 			suspicion = minf(1.0, suspicion + T.HEARING_PULSE_SCAFFOLD)  # instantaneous sounds bump, not tick
 			stimulus = maxf(stimulus, T.HEARING_STIMULUS_SCAFFOLD)
+	while pulse_watermark < Sim.alert_pulses.size():
+		var pl: Dictionary = Sim.alert_pulses[pulse_watermark]
+		pulse_watermark += 1
+		if pl.src != owner and state != "alert":
+			var pd: Vector3 = pl.pos - owner.global_position
+			pd.y = 0.0
+			if pd.length() <= T.ALERT_LINK_RADIUS_SCAFFOLD:
+				alert_now(owner)
+				return
 	if state == "alert":
 		if stimulus > 0.0:
 			alert_memory = T.ALERT_MEMORY_SCAFFOLD
@@ -51,6 +61,7 @@ func tick(dt: float, owner, player) -> void:
 	if suspicion >= 1.0:
 		state = "alert"
 		alert_memory = T.ALERT_MEMORY_SCAFFOLD
+		Sim.alert_pulses.append({"pos": owner.global_position, "src": owner})  # aggro link machinery
 		Sim.log_event("ALERT %s" % owner.display_name)
 	elif suspicion >= 0.35 and state == "calm":
 		state = "suspicious"
@@ -63,6 +74,7 @@ func alert_now(owner) -> void:
 	if state != "alert":
 		state = "alert"
 		alert_memory = T.ALERT_MEMORY_SCAFFOLD
+		Sim.alert_pulses.append({"pos": owner.global_position, "src": owner})  # aggro link machinery
 		Sim.log_event("ALERT %s (provoked)" % owner.display_name)
 
 func reset() -> void:

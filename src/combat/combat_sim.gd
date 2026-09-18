@@ -6,6 +6,8 @@ static var events: Array[String] = []   # machine-checkable feed for tests
 static var hitstop_left := 0.0
 static var active_checkpoint = null
 static var sounds: Array = []   # sound bus: awareness reads new entries via a watermark
+static var toasts: Array = []   # player-facing message feed (toast UI machinery)
+static var alert_pulses: Array = []   # aggro-link bus: alerted enemies broadcast position
 
 static func reset() -> void:
 	log_lines.clear()
@@ -13,6 +15,15 @@ static func reset() -> void:
 	hitstop_left = 0.0
 	active_checkpoint = null
 	sounds.clear()
+	toasts.clear()
+	alert_pulses.clear()
+
+static func toast(msg: String) -> void:
+	# Player-facing message machinery: separate from the debug log feed.
+	toasts.append(msg)
+	if toasts.size() > 12:
+		toasts.pop_front()
+	log_event("TOAST %s" % msg)
 
 static func log_event(msg: String) -> void:
 	log_lines.append(msg)

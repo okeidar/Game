@@ -147,3 +147,5 @@ const HEARING_PULSE_SCAFFOLD := 0.4      # SCAFFOLD - suspicion bump per heard s
 const ALERT_MEMORY_SCAFFOLD := 3.0       # SCAFFOLD - how long alert persists undecided
 const FALL_SAFE_SPEED_SCAFFOLD := 12.0   # SCAFFOLD - safe landing speed undecided
 const FALL_DAMAGE_SCALE_SCAFFOLD := 5.0  # SCAFFOLD - damage per m/s over safe undecided
+
+const ALERT_LINK_RADIUS_SCAFFOLD := 8.0  # SCAFFOLD - aggro link radius undecided

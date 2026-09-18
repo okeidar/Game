@@ -471,3 +471,31 @@ title/pause/death menus, inventory UI, attributes, equipment screen, save/load.
 8. Message/notification feed UI (event toasts: item gained, status applied).
 9. Gestures/photo-mode style extras - low priority, listed for completeness.
 10. New Game+ machinery (cycle counter, difficulty scaling hook) - meta.
+
+## Round 5 (scaffolds round, 2026-09-18)
+Shipped: ALL TEN what's-missing scaffolds.
+- **Settings menu**: setting registry (setting.gd + Settings.gd autoload, lookup/default/reset/set with subscribers). Shell "settings" kind from pause. SCAFFOLD entries: master_volume (-60..+24 dB, applied to Master bus when audio lands) and camera_fov (applied live). Real game entries later.
+- **Audio hooks**: AudioBus autoload, sfx(name, pos) / music(name) with registered-stream lookup; call sites at parry/riposte/stagger/wound/item/checkpoint-fire/respawn + music stubs at title/gameover. Every name a placeholder.
+- **NPC + dialogue**: dialogue.gd data-tree engine (tree.json: nodes/choices/next/once/on_choose), npc.gd interactables with talk() and spoke signals; player routes npc_spoke through Sim. One SCAFFOLD npc ("SHELL KEEPER", ETERNAL WITNESS) in the MOVE room with the two-line tree from the proposal. shell dialogue kind renders the tree + numbered choices.
+- **Map**: map_data.gd registry (rooms + one-way links), game builds it from arena.ROOMS on boot, discovery flags, shell "map" kind (M) lists discovered/undiscovered rooms.
+- **Boss machinery**: boss_data on combatants (display_name/phases); hp-threshold phase transitions swap movesets + armor, phase announcements via toast; exposes immunities/stagger_mult for tuning (SCAFFOLD fields, unwired). apply_effigy_stats marks the two big effigies as two-phase SCAFFOLD bosses.
+- **Tutorial hooks**: tutorial.gd autoload, once-only flagged rules with conditions + cooldowns; game._check_tutorial scans each tick. One SCAFFOLD rule: low-stamina hint. Tutorial messaging must never break flow — for Omer to define the copy and triggers.
+- **Multi-enemy aggro linking**: Sim.alert_pulses + awareness watermark + ALERT_LINK_RADIUS_SCAFFOLD (8.0m): one alerted enemy alerts same-type friends in radius. Radius/typing open for tuning.
+- **Message/toast feed**: Sim.toasts ring buffer + HUD toast label + Sim.toast() convenience. Machinery reports through it.
+- **NG+**: ngplus.gd (NGPlus autoload): begin_next_cycle bumps cycle, ngplus_hp_scale/... scaffolding formulas + apply_enemy_stats hook; game._build applies hp scaling to effigies. Which endings trigger NG+, which enemies scale, and what carries over are open design.
+- **Gestures**: gestures.gd (Gestures autoload) registry, shell "gestures" kind (G) listing + performing SCAFFOLD gestures; perform() emits gesture_performed for future animation machinery.
+- Tests: 22 scenarios (was 21) — ScenarioRound5A (toasts/settings/audio-hooks/NG+/gestures) + ScenarioRound5B (map/dialogue/tutorial/aggro-link/boss). 22/22 green.
+
+### What's-missing list — the ten marked scaffolded
+- ~~audio hooks~~ [scaffolded], ~~boss machinery~~ [scaffolded], ~~tutorial hooks~~ [scaffolded], ~~multi-enemy aggro linking~~ [scaffolded], ~~message/toast feed~~ [scaffolded], ~~NG+ machinery~~ [scaffolded], ~~gestures~~ [scaffolded], ~~settings menu~~ [scaffolded], ~~NPC + dialogue~~ [scaffolded], ~~map~~ [scaffolded].
+### New proposals (never built without your word)
+- **Fast travel between checkpoints** — machinery hook exists (respawn + fire); needs a travel choice at the fire. Design first.
+- **Weather / time-of-day machinery** — mood and visibility hooks; not in the project, proposed.
+- **Item durability** — Elden Ring lacks it; do we? Proposed, not built.
+- **Co-op / phantom machinery** — big; proposal only.
+- **Bestiary / enemy memory** — discovered-enemy codex hook (pairs with map discovery). Proposal only.
+- **New: real audio streams** — hook names are placeholders; actual sound selection is an art call.
+- **New: tutorial copy + trigger set** — machinery takes rules; writing them is design.
+- **New: boss design proper** — machinery supports phases; real boss movesets/phases are content design.
+- **New: map visual layout** — discovery list is text; a visual map layout is an art/UI call.
+- **New: NG+ design** — triggers, carry-over, scaling numbers.

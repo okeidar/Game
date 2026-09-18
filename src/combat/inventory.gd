@@ -16,6 +16,7 @@ func add_item(id: String, qty: int = 1) -> void:
 			Sim.log_event("ITEM GAINED %s x%d (have %d)" % [id, qty, it.qty])
 			return
 	slots.append({"id": id, "qty": qty})
+	Sim.toast("%s x%d" % [id, qty])
 	Sim.log_event("ITEM GAINED %s x%d" % [id, qty])
 
 func register_item_def(id: String, on_use: Callable) -> void:

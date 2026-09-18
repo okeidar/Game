@@ -13,6 +13,15 @@ const Checkpoint = preload("res://src/world/checkpoint.gd")
 const DeathPenalty = preload("res://src/combat/death_penalty.gd")
 const Progression = preload("res://src/combat/progression.gd")
 const Shell = preload("res://src/ui/shell.gd")
+const Settings = preload("res://src/combat/settings.gd")
+const NGPlus = preload("res://src/combat/ngplus.gd")
+const Audio = preload("res://src/combat/audio_bus.gd")
+const MapData = preload("res://src/combat/map_data.gd")
+const Tutorial = preload("res://src/combat/tutorial.gd")
+const Npc = preload("res://src/world/npc.gd")
+var map_data
+var tutorial
+var settings
 
 var sim_root: Node3D
 var arena
@@ -59,6 +68,8 @@ func _build() -> void:
 		e.display_name = spec.name
 		sim_root.add_child(e)
 		effigies.append(e)
+		e.max_hp = NGPlus.scaled("enemy_hp", e.max_hp)   # NG+ scaling hook (identity at cycle 0)
+		e.hp = e.max_hp
 		e.died.connect(_on_effigy_died.bind(e))
 		if spec.ai:
 			effigy = e
@@ -84,6 +95,24 @@ func _build() -> void:
 	shell.on_respawn = func(): _respawn(); shell.close()
 	shell.on_quit_to_title = func(): shell.open("title")
 	add_child(shell)
+	settings = Settings.new()
+	settings.register_setting("master_volume", {"label": "master volume", "min": 0.0, "max": 1.0, "step": 0.1, "value": 1.0})  # SCAFFOLD entry
+	settings.register_setting("camera_fov", {"label": "camera fov", "min": 60.0, "max": 100.0, "step": 5.0, "value": 62.0, "on_change": func(v): cam.cam.fov = v})  # SCAFFOLD entry
+	shell.settings = settings
+	map_data = MapData.new()
+	for r in arena.ROOMS:
+		map_data.register_region(r)
+	for i in range(arena.ROOMS.size() - 1):
+		map_data.link(arena.ROOMS[i], arena.ROOMS[i + 1])
+	shell.map_data = map_data
+	tutorial = Tutorial.new()
+	tutorial.register_rule("first_low_stamina", func(c): return c.player.stamina < 20.0, "Stamina runs everything - watch the green bar (SCAFFOLD hint)")
+	tutorial.ctx = {"player": player}
+	player.npc_spoke.connect(func(n): shell.dialogue = n.start_dialogue(); shell.open("dialogue"))
+	var npc = Npc.new()
+	npc.position = Vector3(-23.5, 0.05, -3.0)  # MOVE room - scaffold placement
+	sim_root.add_child(npc)
+	Audio.music("title")
 	if not ("--self-test" in OS.get_cmdline_user_args()):
 		shell.open("title")  # shell machinery: boot lands on the title menu
 
@@ -101,6 +130,10 @@ func _process(delta: float) -> void:
 	# room banner + enemy bar follows the relevant effigy
 	if hud != null and player != null and arena != null:
 		hud.set_room(arena.room_at(player.position))
+		if map_data != null:
+			map_data.set_current(arena.room_at(player.position))
+		if tutorial != null:
+			tutorial.tick()
 		var shown = null
 		if player.lock_target != null:
 			shown = player.lock_target
@@ -119,6 +152,10 @@ func _process(delta: float) -> void:
 			shell.open("inventory")
 		elif Input.is_action_just_pressed("menu_equipment"):
 			shell.open("equipment")
+		elif Input.is_action_just_pressed("menu_gestures"):
+			shell.open("gestures")
+		elif Input.is_action_just_pressed("menu_map"):
+			shell.open("map")
 		elif Input.is_action_just_pressed("ui_cancel"):
 			shell.open("pause")
 	if Input.is_action_just_pressed("ui_cancel") and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED:
@@ -130,6 +167,8 @@ func _on_player_died() -> void:
 	DeathPenalty.drop(player, sim_root)
 	deaths += 1
 	hud.set_banner("YOU DIED")
+	Audio.sfx("death")
+	Audio.music("death")
 	Sim.log_event("YOU DIED x%d" % deaths)
 	death_timer = 0.0
 	shell.open("death")  # death screen: rise on confirm, genre shape

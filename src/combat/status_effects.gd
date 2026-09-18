@@ -23,6 +23,7 @@ func add_buildup(id: String, amount: float, owner_name: String) -> void:
 	Sim.log_event("STATUS BUILDUP %s on %s %.0f/%.0f" % [id, owner_name, meters[id], defs[id].threshold])
 	if meters[id] >= defs[id].threshold:
 		active[id] = {"t_left": defs[id].duration, "tick_t": 0.0}
+		Sim.toast("%s takes hold" % id)
 		Sim.log_event("STATUS TRIGGERED %s on %s" % [id, owner_name])
 
 func tick(dt: float, owner_name: String) -> void:
