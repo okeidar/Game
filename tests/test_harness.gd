@@ -2426,6 +2426,56 @@ class ScenarioLandFeel extends Scenario:
 		lf += 1
 		return false
 
+class ScenarioHitWeight extends Scenario:
+	const Sim = preload("res://src/combat/combat_sim.gd")
+	var run := 0
+	var lf := -2
+	var pools := {}
+	func setup() -> void:
+		name = "hit_weight"
+		_start_run(0)
+	func _start_run(r: int) -> void:
+		run = r
+		lf = -2
+		h.make_world()
+		h.player.facing = Vector3(0, 0, -1)
+		if r == 2:
+			# effigy in front of the player but facing away: its back is exposed, the same light attack crits
+			h.effigies[0].position = Vector3(0, 0.05, -2.2)
+			h.effigies[0].facing = Vector3(0, 0, -1)
+		else:
+			h.effigies[0].position = Vector3(0, 0.05, -2.2)
+			h.effigies[0].facing = Vector3(0, 0, 1)
+	func step(_f: int) -> bool:
+		if lf < 0:
+			lf += 1
+			return false
+		match run:
+			0:  # light connect
+				if lf == 5: h.input.cur.attack = true
+				if lf == 60:
+					pools["light"] = Sim.shake_pool
+					check(Sim.shake_pool > 0.0, "a light connect shakes the camera (pool=%.2f)" % Sim.shake_pool)
+					_start_run(1)
+					return false
+			1:  # heavy connect
+				if lf == 5: h.input.cur.heavy = true
+				if lf == 80:
+					pools["heavy"] = Sim.shake_pool
+					check(Sim.shake_pool > pools["light"], "a heavy connect shakes harder than a light (%.2f > %.2f)" % [Sim.shake_pool, pools["light"]])
+					_start_run(2)
+					return false
+			2:  # backstab crit with the same light attack
+				if lf == 5: h.input.cur.attack = true
+				if lf == 60:
+					check(Sim.shake_pool > pools["light"], "a crit shakes harder than a plain light (%.2f > %.2f)" % [Sim.shake_pool, pools["light"]])
+					return true
+				if lf > 200:
+					check(false, "backstab connect never resolved")
+					return true
+		lf += 1
+		return false
+
 func _register() -> void:
 
 	scenarios = [
@@ -2451,6 +2501,7 @@ func _register() -> void:
 		ScenarioComboCancel.new(),
 		ScenarioJumpFeel.new(),
 		ScenarioLandFeel.new(),
+		ScenarioHitWeight.new(),
 		ScenarioCheckpointRest.new(),
 		ScenarioPatternCycle.new(),
 		ScenarioRemnantPenalty.new(),

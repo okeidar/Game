@@ -39,6 +39,10 @@ const JUMP_BUFFER := 0.12   # jump feel: a press shortly before landing still ju
 const LAND_SQUASH_TIME := 0.14   # landing feel: squash recovers over this long
 const LAND_SHAKE_SPEED := 9.0   # landing feel: falls harder than this dip the camera
 const LAND_SOUND_SPEED := 2.5   # landing feel: only a real touchdown is audible (tiny drops stay silent)
+const SHAKE_HIT_BASE := 0.12   # connect feel: every landed hit shakes at least this much
+const SHAKE_HIT_PER_DMG := 0.005   # connect feel: shake scales with the hit's damage
+const SHAKE_HIT_MAX := 0.35   # connect feel: shake cap for the heaviest connects
+const SHAKE_HIT_CRIT := 0.10   # connect feel: crits (riposte/backstab) add this on top   # landing feel: only a real touchdown is audible (tiny drops stay silent)
 
 # The feather economy. Feathers held = armor. Feathers spent = ammo (volley
 # only - the 2026-09-19 ruling: feathers are never currency, never spent at

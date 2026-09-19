@@ -1544,3 +1544,17 @@ Verification: new `land_feel` scenario asserts outcomes - a normal jump landing 
 
 Harness lesson recorded: the harness steps BEFORE the player's tick each frame, so landing asserts must wait one frame after is_on_floor flips, or they read pre-landing state.
 
+
+## iter48 - connect feel: hits answer with their weight [overnight proposal - awaiting Omer review]
+
+Live: https://feather-iter48-2100-985a927bdb4a.surge.sh
+
+Feel mandate, third iteration. Audit found attacker-side connect feedback was flat: every landed hit shook the camera the same 0.15, light poke or heavy slam. Now the answer scales with the hit:
+
+- `shake = min(0.35, 0.12 + damage * 0.005 + 0.10 if crit)` - lights tap (0.22 at current light damage), heavies thump (0.28), crits punch (0.35 at cap).
+- Hitstop stays flat for now: scaling freeze frames by weight is the obvious next lever, but it touches timing the moveset tests pin down, so it waits for Omer's ear on this round first.
+
+Tradeoffs (per doctrine): heavier shake sells impact but too much on every light would turn the camera into jelly in a chain - the formula keeps lights at 0.22, close to the old flat 0.15, and reserves the big answer for heavies and crits. Constants in tuning.gd (`SHAKE_HIT_BASE/PER_DMG/MAX/CRIT`) are Omer's to retune.
+
+Verification: new `hit_weight` scenario asserts outcomes from real connects against the effigy: light 0.22, heavy 0.28 > light, backstab crit 0.35 > light. 49/49 green. One test-authoring catch: the first backstab geometry put the effigy behind the player's attack sector (no connect at all, pool 0.00) - fixed by facing the effigy away inside the sector.
+
