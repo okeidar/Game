@@ -1558,3 +1558,14 @@ Tradeoffs (per doctrine): heavier shake sells impact but too much on every light
 
 Verification: new `hit_weight` scenario asserts outcomes from real connects against the effigy: light 0.22, heavy 0.28 > light, backstab crit 0.35 > light. 49/49 green. One test-authoring catch: the first backstab geometry put the effigy behind the player's attack sector (no connect at all, pool 0.00) - fixed by facing the effigy away inside the sector.
 
+
+## iter49 - kill feel: the felling blow lands harder [overnight proposal - awaiting Omer review]
+
+Live: https://feather-iter49-2117-75e27a33eda5.surge.sh
+
+Feel mandate, fourth iteration. Audit found the killing blow was indistinguishable from any other hit: same 80ms hitstop, same scaled shake; the death tip-over visual already existed. Now a hit that fells an enemy adds `HITSTOP_KILL` (0.16s, double the normal freeze) and `SHAKE_HIT_KILL` (+0.15) on top of the connect answer. A kill reads as a punchline, not just another tick of damage.
+
+Tradeoffs (per doctrine): a longer freeze on every kill could slow mop-up fights with many weak enemies - 0.16s is inside the genre's kill-freeze band and only fires on the actual felling hit, not overkill chains after. Constants in tuning.gd, Omer's to retune.
+
+Verification: new `kill_feel` scenario - a normal connect freezes 0.080s and shakes 0.22; the felling blow (effigy at 5hp) freezes 0.160s and shakes 0.37, and the effigy dies. 50/50 green. Harness lesson recorded: physics frames freeze during hitstop, so duration can't be measured in frames - the bus now records `hitstop_last` (mirrors the shake_pool observability pattern).
+

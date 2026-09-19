@@ -2476,6 +2476,52 @@ class ScenarioHitWeight extends Scenario:
 		lf += 1
 		return false
 
+class ScenarioKillFeel extends Scenario:
+	const Sim = preload("res://src/combat/combat_sim.gd")
+	var run := 0
+	var lf := -2
+	var base_pool := 0.0
+	var base_span := 0.0
+	func setup() -> void:
+		name = "kill_feel"
+		_start_run(0)
+	func _start_run(r: int) -> void:
+		run = r
+		lf = -2
+		h.make_world()
+		h.player.facing = Vector3(0, 0, -1)
+		h.effigies[0].position = Vector3(0, 0.05, -2.2)
+		h.effigies[0].facing = Vector3(0, 0, 1)
+		if r == 1:
+			h.effigies[0].hp = 5.0   # one light hit fells it
+	func step(_f: int) -> bool:
+		if lf < 0:
+			lf += 1
+			return false
+		match run:
+			0:  # normal connect baseline
+				if lf == 5:
+					h.input.cur.attack = true
+				if lf == 60:
+					check(not h.effigies[0].dead, "baseline hit does not fell a full-health effigy")
+					base_pool = Sim.shake_pool
+					base_span = Sim.hitstop_last   # physics frames freeze during hitstop, so the bus records the request
+					_start_run(1)
+					return false
+			1:  # killing blow: longer freeze, bigger shake
+				if lf == 5:
+					h.input.cur.attack = true
+				if lf == 60:
+					check(h.effigies[0].dead, "the low-health effigy is felled by the hit")
+					check(Sim.hitstop_last > base_span + 0.04, "the felling blow freezes the world longer (%.3fs vs %.3fs)" % [Sim.hitstop_last, base_span])
+					check(Sim.shake_pool > base_pool + 0.10, "the felling blow shakes harder (%.2f vs %.2f)" % [Sim.shake_pool, base_pool])
+					return true
+				if lf > 200:
+					check(false, "killing blow never resolved")
+					return true
+		lf += 1
+		return false
+
 func _register() -> void:
 
 	scenarios = [
@@ -2502,6 +2548,7 @@ func _register() -> void:
 		ScenarioJumpFeel.new(),
 		ScenarioLandFeel.new(),
 		ScenarioHitWeight.new(),
+		ScenarioKillFeel.new(),
 		ScenarioCheckpointRest.new(),
 		ScenarioPatternCycle.new(),
 		ScenarioRemnantPenalty.new(),

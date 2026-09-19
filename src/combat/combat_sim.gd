@@ -4,6 +4,7 @@ extends RefCounted
 static var log_lines: Array[String] = []
 static var events: Array[String] = []   # machine-checkable feed for tests
 static var hitstop_left := 0.0
+static var hitstop_last := 0.0   # last freeze duration requested (test-observable, mirrors shake_pool)
 static var shake_pool := 0.0   # view-layer shake requests; the camera drains this each frame
 static var active_checkpoint = null
 static var sounds: Array = []   # sound bus: awareness reads new entries via a watermark
@@ -14,6 +15,7 @@ static func reset() -> void:
 	log_lines.clear()
 	events.clear()
 	hitstop_left = 0.0
+	hitstop_last = 0.0
 	shake_pool = 0.0
 	active_checkpoint = null
 	sounds.clear()
@@ -62,6 +64,7 @@ static func emit_sound(source_name: String, pos: Vector3, radius: float, loudnes
 
 static func hitstop(d: float) -> void:
 	hitstop_left = maxf(hitstop_left, d)
+	hitstop_last = d
 
 static func shake(a: float) -> void:
 	# Juice pass (Omer directive 2026-09-19): screenshake requests ride the bus

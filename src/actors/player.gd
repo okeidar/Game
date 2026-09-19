@@ -680,6 +680,10 @@ func _resolve_attack_hit() -> void:
 				Sim.hitstop(T.HITSTOP_DEALT)
 				# connect feel: the answer scales with the hit's weight - heavies thump, crits punch
 				Sim.shake(minf(T.SHAKE_HIT_MAX, T.SHAKE_HIT_BASE + dmg * T.SHAKE_HIT_PER_DMG + (T.SHAKE_HIT_CRIT if crit else 0.0)))
+				if e.dead:
+					# kill feel: the felling blow lands harder - longer freeze, extra shake
+					Sim.hitstop(T.HITSTOP_KILL)
+					Sim.shake(T.SHAKE_HIT_KILL)
 				last_attack_hit = true
 				Sim.stat("hit", {"target": e.display_name, "dmg": int(round(dmg)), "crit": crit, "slot": cur_slot, "weapon": moveset.get("id", "?")})
 				if crit:

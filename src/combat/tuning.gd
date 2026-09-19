@@ -42,7 +42,9 @@ const LAND_SOUND_SPEED := 2.5   # landing feel: only a real touchdown is audible
 const SHAKE_HIT_BASE := 0.12   # connect feel: every landed hit shakes at least this much
 const SHAKE_HIT_PER_DMG := 0.005   # connect feel: shake scales with the hit's damage
 const SHAKE_HIT_MAX := 0.35   # connect feel: shake cap for the heaviest connects
-const SHAKE_HIT_CRIT := 0.10   # connect feel: crits (riposte/backstab) add this on top   # landing feel: only a real touchdown is audible (tiny drops stay silent)
+const SHAKE_HIT_CRIT := 0.10
+const HITSTOP_KILL := 0.16   # kill feel: the felling blow freezes twice as long as a normal connect
+const SHAKE_HIT_KILL := 0.15   # kill feel: the felling blow shakes on top of the connect answer   # connect feel: crits (riposte/backstab) add this on top   # landing feel: only a real touchdown is audible (tiny drops stay silent)
 
 # The feather economy. Feathers held = armor. Feathers spent = ammo (volley
 # only - the 2026-09-19 ruling: feathers are never currency, never spent at
