@@ -94,6 +94,13 @@ func _build() -> void:
 	player.facing = Vector3(1, 0, 0)  # face down the hall, toward the rooms
 	player.rotation.y = atan2(player.facing.x, player.facing.z)
 	player.died.connect(_on_player_died)
+	# greybox item seed (iteration 3, overnight): two scaffold consumables so the
+	# inventory UI has something real to show. Effects ride existing machinery;
+	# names/quantities/effects all SCAFFOLD - the item catalog is Omer's.
+	player.inventory.register_item_def("ember draught", func(u): u.hp = minf(u.max_hp, u.hp + 30.0); Sim.stat("item", {"id": "ember draught"}))
+	player.inventory.register_item_def("smoke pellet", func(u): _calm_nearby(u.global_position, 8.0); Sim.stat("item", {"id": "smoke pellet"}))
+	player.inventory.add_item("ember draught", 2)
+	player.inventory.add_item("smoke pellet", 3)
 	shell = Shell.new()
 	shell.player = player
 	shell.on_begin = func(): shell.close()
@@ -189,6 +196,15 @@ func _on_player_died() -> void:
 func _on_effigy_died(e) -> void:
 	player.add_feathers(Tuning.KILL_FEATHERS)
 	Sim.log_event("%s FELLED +%d feathers" % [e.display_name, int(Tuning.KILL_FEATHERS)])
+
+func _calm_nearby(pos: Vector3, radius: float) -> void:
+	# smoke pellet effect (scaffold): enemies in radius lose the trail
+	for e in get_tree().get_nodes_in_group("enemies"):
+		if e.global_position.distance_to(pos) <= radius and e.awareness != null:
+			e.awareness.suspicion = 0.0
+			if e.awareness.state != "calm":
+				e.awareness.state = "calm"
+	Sim.toast("smoke - they lose the trail (scaffold)")
 
 func _respawn() -> void:
 	Sim.stat("respawn")

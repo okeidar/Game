@@ -884,7 +884,7 @@ class ScenarioShell extends Scenario:
 					check(absf(p.hp - 55.0) < 0.01, "using an item through the inventory UI applies the effect, hp=%.1f" % p.hp)
 					shell.on_respawn = func(): fired = "respawn"
 					shell.open("death", false)
-					check(shell.label.text.contains("YOU DIED"), "death screen carries the genre banner")
+					check(shell._death_menu.text.contains("YOU DIED"), "death screen carries the genre banner (full-screen label since iter 3)")
 					shell.activate()
 					check(fired == "respawn", "death screen fires the respawn hook")
 					shell.on_begin = func(): fired = "begin"

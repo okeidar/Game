@@ -15,20 +15,55 @@ var player = null
 var settings = null   # Settings registry (game.gd injects)
 var map_data = null   # MapData registry (game.gd injects)
 var dialogue = null   # active Dialogue engine while state == "dialogue"
+var _death_menu: RichTextLabel = null
 var on_respawn: Callable = Callable()   # game.gd hooks
 var on_begin: Callable = Callable()
 var on_quit_to_title: Callable = Callable()
 var label: RichTextLabel
+var dimmer: ColorRect
+var panel: Panel
+
+# --- Iteration 3 presentation (overnight, 2026-09-19) -----------------------
+# [overnight proposals - awaiting Omer review] Genre-reference feel: dark
+# dimmer over the world, a panel the menu lives in, a highlighted selection
+# row, quiet footer hints. Machinery (items/actions/nav) unchanged.
+const COL_TEXT := "#d8dce6"
+const COL_DIM := "#8a93a6"
+const COL_SEL_BG := "#31435f"
+const COL_ACCENT := "#c9a86a"
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	layer = 10
+	dimmer = ColorRect.new()
+	dimmer.color = Color(0.02, 0.03, 0.06, 0.62)
+	dimmer.set_anchors_preset(Control.PRESET_FULL_RECT)
+	add_child(dimmer)
+	panel = Panel.new()
+	var sb := StyleBoxFlat.new()
+	sb.bg_color = Color(0.05, 0.07, 0.12, 0.92)
+	sb.border_color = Color(0.35, 0.42, 0.55, 0.9)
+	sb.set_border_width_all(2)
+	sb.set_corner_radius_all(4)
+	sb.content_margin_left = 28
+	sb.content_margin_right = 28
+	sb.content_margin_top = 20
+	sb.content_margin_bottom = 16
+	panel.add_theme_stylebox_override("panel", sb)
+	panel.position = Vector2(330, 84)
+	panel.size = Vector2(620, 552)
+	add_child(panel)
 	label = RichTextLabel.new()
 	label.bbcode_enabled = true
-	label.position = Vector2(80, 120)
-	label.size = Vector2(700, 500)
-	label.add_theme_font_size_override("normal_font_size", 26)
-	add_child(label)
+	label.position = Vector2(28, 18)
+	label.size = Vector2(564, 516)
+	label.add_theme_font_size_override("normal_font_size", 24)
+	panel.add_child(label)
+	_death_menu = RichTextLabel.new()
+	_death_menu.bbcode_enabled = true
+	_death_menu.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_death_menu.visible = false
+	add_child(_death_menu)
 	visible = false
 
 func open(kind: String, pause_tree := true) -> void:
@@ -106,7 +141,11 @@ func _build_menu() -> void:
 			for w in Moveset.catalog():
 				var wid: String = w.id
 				var mark := "*" if player.equipment.equipped_id("weapon") == wid else " "
-				_add("%s equip %s (%d-hit chain)" % [mark, wid, w.light_chain.size()], func(): player.equipment.equip("weapon", w, player); Sim.stat("equip", {"weapon": wid}); _build_menu())
+				var l0: Dictionary = w.light_chain[0]
+				var chain_total := 0.0
+				for a in w.light_chain:
+					chain_total += a.damage
+				_add("%s %s - %d-hit chain %d dmg · reach %.1f · stamina x%.1f" % [mark, wid, w.light_chain.size(), int(chain_total), l0.reach, w.get("cost_mult", 1.0)], func(): player.equipment.equip("weapon", w, player); Sim.stat("equip", {"weapon": wid}); _build_menu())
 			_add("CLOSE", func(): close())
 	_render()
 
@@ -122,16 +161,61 @@ func _add(lbl: String, fn: Callable) -> void:
 func _render() -> void:
 	if label == null:
 		return
-	var title := state.to_upper()
-	if state == "death":
-		title = "YOU DIED"
-	if state == "dialogue" and dialogue != null and not dialogue.ended:
-		title = dialogue.node().get("text", "...")
-	var txt := "[center][b]%s[/b][/center]\n\n" % title
+	# death fills the screen; every other kind is a panel over a dimmed world
+	var is_death := state == "death"
+	dimmer.color = Color(0.02, 0.02, 0.04, 0.85) if is_death else Color(0.02, 0.03, 0.06, 0.62)
+	panel.visible = not is_death
+	_death_menu.visible = is_death
+	if is_death:
+		_render_death()
+		return
+	var txt := ""
+	if state == "title":
+		txt += "[center][font_size=64][b][color=%s]FEATHER[/color][/b][/font_size][/center]\n" % COL_ACCENT
+		txt += "[center][color=%s][font_size=16]a phase 0a greybox[/font_size][/color][/center]\n\n" % COL_DIM
+	else:
+		txt += "[color=%s][font_size=30][b]%s[/b][/font_size][/color]\n" % [COL_ACCENT, _kind_title()]
+		txt += "[color=%s][font_size=13]%s[/font_size][/color]\n\n" % [COL_DIM, _kind_subtitle()]
 	for i in menu_items.size():
-		var mark := "> " if i == sel else "  "
-		txt += "%s%s\n" % [mark, menu_items[i].label]
+		if i == sel:
+			txt += "[bgcolor=%s][color=#ffffff]> %s[/color][/bgcolor]\n" % [COL_SEL_BG, menu_items[i].label]
+		else:
+			txt += "[color=%s]  %s[/color]\n" % [COL_TEXT, menu_items[i].label]
+	txt += "\n[color=%s][font_size=14]%s[/font_size][/color]" % [COL_DIM, _footer_hint()]
 	label.text = txt
+
+func _render_death() -> void:
+	# full-screen takeover; the genre's most important screen [overnight feel]
+	var txt := "\n\n[center][font_size=72][b][color=#a03028]YOU DIED[/color][/b][/font_size][/center]\n\n"
+	for i in menu_items.size():
+		if i == sel:
+			txt += "[center][bgcolor=%s][color=#ffffff][font_size=24]> %s[/font_size][/color][/bgcolor][/center]\n" % [COL_SEL_BG, menu_items[i].label]
+		else:
+			txt += "[center][color=%s][font_size=24]  %s[/font_size][/color][/center]\n" % [COL_TEXT, menu_items[i].label]
+	txt += "\n[center][color=%s][font_size=14]%s[/font_size][/color]" % [COL_DIM, _footer_hint()]
+	_death_menu.text = txt
+
+func _kind_title() -> String:
+	if state == "dialogue" and dialogue != null and not dialogue.ended:
+		return dialogue.node().get("text", "...")
+	return state.to_upper()
+
+func _kind_subtitle() -> String:
+	match state:
+		"pause": return "the world waits"
+		"inventory": return "what you carry is all you have"
+		"equipment": return "a weapon is a choice of risks"
+		"settings": return "scaffold entries - more land with the real game"
+		"map": return "where your feet have been"
+		"gestures": return "say it with the body"
+	return ""
+
+func _footer_hint() -> String:
+	match state:
+		"title": return "enter - begin"
+		"death": return "enter - rise"
+		"dialogue": return "enter - choose"
+	return "arrows - choose · enter - confirm · esc - back"
 
 func _unhandled_input(event: InputEvent) -> void:
 	if state == "hidden":

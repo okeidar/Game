@@ -542,3 +542,13 @@ Fangs chain = exactly 44 dmg over 4 hits, first hit lands ~+10 frames; maul firs
 2. **Spawn-drop jump-attack trap**: player spawns 0.1m airborne; an attack in the first ~10 frames silently becomes a jump attack. Old tests masked it (scaffold jump = light data). Tests now attack grounded. Design question for Omer: should a 5cm drop really change your move?
 ### Test fragility lesson (for the record)
 Frame-exact assertions ("swing completes by f=100") break when content timings change by design. New tests assert outcome windows, and the spawn-drop trap is now documented in the affected scenarios.
+
+## Overnight iteration 3 (2026-09-19, ~03:25): shell presentation pass
+Omer's named gap: "The menues and inventory feels bad."
+[overnight proposals - awaiting Omer review] Presentation only - menu machinery (items, actions, nav) untouched.
+- Full-screen dimmer behind every menu (62% dark), deeper (85%) under death.
+- Panel with border + padding that menus live in (was: bare text floating over the world).
+- Selection is a highlighted row (bg band + white text + > cursor), not just a caret.
+- Per-kind structure: header + quiet subtitle line + footer key hints. Title screen gets the game name big with a greybox tag. Death is a full-screen takeover: big red YOU DIED + centered respawn option (genre's most important screen).
+- Equipment rows now carry decision-relevant stats: "fangs - 4-hit chain 44 dmg - reach 1.8 - stamina x0.6" so a weapon swap is an informed tradeoff choice (his doctrine) instead of a name list.
+- Subtitle tone lines are placeholder flavor, all replaceable ("the world waits" etc).
