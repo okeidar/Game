@@ -1064,3 +1064,13 @@ world of vamora."
 
 The iter26 shove proposal is WITH OMER as a choice (A knockback-slide / B
 stamina-bite / C leave it as D). No shove code until he answers.
+
+## Parked by owner (2026-09-19, ~12:08)
+
+OMER RULING (verbatim): "Lets not address this right now." The whole
+hug/stagger topic is PARKED: no shove A/B/C decision (the shove stays
+exactly as shipped in iter20), no hyper-armor, no stagger-rule changes. His
+souls-genre question ("How is it solved in souls games? I think its a
+combination of stagger and interruptions") and the hyper-armor/leap-back
+structural discussion are recorded here for when he reopens the topic.
+Until then: other candidates only.
