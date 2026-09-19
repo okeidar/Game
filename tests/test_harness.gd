@@ -2583,6 +2583,56 @@ class ScenarioSwingSound extends Scenario:
 		lf += 1
 		return false
 
+class ScenarioVolleyFeel extends Scenario:
+	const Sim = preload("res://src/combat/combat_sim.gd")
+	var run := 0
+	var lf := -2
+	func setup() -> void:
+		name = "volley_feel"
+		_start_run(0)
+	func _start_run(r: int) -> void:
+		run = r
+		lf = -2
+		h.make_world()
+		h.player.facing = Vector3(0, 0, -1)
+		h.effigies[0].position = Vector3(0, 0.05, -6.0)
+		h.player.feathers = 30.0
+		if r == 1:
+			h.effigies[0].hp = 4.0   # one feather fells it
+	func _sounds(src: String) -> int:
+		var n := 0
+		for snd in Sim.sounds:
+			if snd.get("source") == src: n += 1
+		return n
+	func step(_f: int) -> bool:
+		if lf < 0:
+			lf += 1
+			return false
+		match run:
+			0:  # the loose is quiet, the impact carries
+				if lf == 5: h.input.cur.volley = true
+				if lf == 90:
+					check(_sounds("volley") == 1, "loosing a feather emits one quiet sound, got %d" % _sounds("volley"))
+					check(_sounds("volley_hit") == 3, "each feather in the spread sounds its own impact, got %d" % _sounds("volley_hit"))
+					check(h.effigies[0].hp < 50.0, "the feather still lands (hp=%.1f)" % h.effigies[0].hp)
+					_start_run(1)
+					return false
+				if lf > 200:
+					check(false, "volley never resolved")
+					return true
+			1:  # a felling shot gets kill-feel parity with melee
+				if lf == 5: h.input.cur.volley = true
+				if lf == 90:
+					check(h.effigies[0].dead, "the feather fells the low-health effigy")
+					check(Sim.hitstop_last > 0.10, "a felling shot freezes like a felling blow (%.3fs)" % Sim.hitstop_last)
+					check(Sim.shake_pool > 0.10, "a felling shot shakes (pool=%.2f)" % Sim.shake_pool)
+					return true
+				if lf > 200:
+					check(false, "volley kill never resolved")
+					return true
+		lf += 1
+		return false
+
 func _register() -> void:
 
 	scenarios = [
@@ -2611,6 +2661,7 @@ func _register() -> void:
 		ScenarioHitWeight.new(),
 		ScenarioKillFeel.new(),
 		ScenarioSwingSound.new(),
+		ScenarioVolleyFeel.new(),
 		ScenarioCheckpointRest.new(),
 		ScenarioPatternCycle.new(),
 		ScenarioRemnantPenalty.new(),

@@ -728,6 +728,8 @@ func _fire_volley(dir: Vector3) -> void:
 		p.target_group = "enemies"
 		p.position = global_position + Vector3(0, 1.3, 0) + dir * 0.7
 		get_parent().add_child(p)
+	# volley feel: the loose is quiet, the impact carries - one sound per volley, not per feather
+	Sim.emit_sound("volley", global_position, T.VOLLEY_FIRE_SOUND, T.VOLLEY_FIRE_SOUND)
 
 func _tick_volley(dt: float, _inp: Dictionary) -> void:
 	volley_t += dt

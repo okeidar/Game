@@ -1580,3 +1580,18 @@ The design point is not just foley: fighting near an enemy is now noisy. A heavy
 
 Verification: new `swing_sound` scenario - one attack emits exactly one swing event (no windup ghost, no double-fire), heavy carries farther than light (4.6 > 4.0), and the hearing outcome is asserted end-to-end: behind an unaware effigy's back at 4.31m, a light swing stays unheard (suspicion 0.00) while a heavy swing is heard (suspicion 0.31 - one pulse bumps without instant-alerting, per the hearing model). 51/51 green.
 
+
+## iter51 - volley feel: quiet loose, loud impact, kill parity [overnight proposal - awaiting Omer review]
+
+Live: https://feather-iter51-2146-38d7708f8edf.surge.sh
+
+Feel mandate, sixth iteration. Audit found the volley had no feedback of its own: no sound on the loose, no sound on impact, and a killing shot got none of iter49's kill emphasis. Now:
+
+- **Loose**: one quiet sound per volley (`VOLLEY_FIRE_SOUND` 2.5m - a feather throw is the stealthy ranged option; one sound per volley, not per feather in the spread).
+- **Impact**: each feather sounds its landing (`VOLLEY_HIT_SOUND` 5.0m - the impact carries farther than the loose).
+- **Kill parity**: a felling shot gets the same `HITSTOP_KILL` freeze and `SHAKE_HIT_KILL` bump as a felling melee blow.
+
+Tradeoffs (per doctrine): impact noise means a missed or sprayed volley can pull attention the loose never would - ranged is quiet to fire, not free to use. Constants in tuning.gd, Omer's to retune.
+
+Verification: new `volley_feel` scenario - one loose sound, three impact sounds (the whole spread connects at test range), the feather still damages, and a felling shot freezes 0.160s and shakes 0.15 exactly like a melee kill. 52/52 green.
+

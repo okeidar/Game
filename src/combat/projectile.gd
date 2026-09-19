@@ -2,6 +2,7 @@ extends Node3D
 ## A spent feather. Straight line, honest speed, no homing.
 
 const Sim = preload("res://src/combat/combat_sim.gd")
+const T = preload("res://src/combat/tuning.gd")
 
 var velocity := Vector3.ZERO
 var damage := 8.0
@@ -40,7 +41,12 @@ func tick(dt: float) -> void:
 		var d: Vector3 = e.global_position + Vector3(0, 0.9, 0) - global_position
 		if d.length() < radius + e.hurt_radius:
 			var r: int = e.apply_hit(damage, global_position, stagger)
+			Sim.emit_sound("volley_hit", global_position, T.VOLLEY_HIT_SOUND, T.VOLLEY_HIT_SOUND)
 			if r == e.HIT_RESULT_HIT:
 				Sim.log_event("%s %s -%d" % [log_prefix, e.display_name, int(round(damage))])
+				if e.dead:
+					# kill feel parity with melee: a felling shot freezes and shakes too
+					Sim.hitstop(T.HITSTOP_KILL)
+					Sim.shake(T.SHAKE_HIT_KILL)
 			queue_free()
 			return
