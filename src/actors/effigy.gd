@@ -160,17 +160,25 @@ func _try_attack() -> bool:
 	var target := _get_target()
 	if target == null:
 		return false
-	attack = MeleeAttack.new(forced_attack_data if forced_attack_data != null else T.DUMMY_ATTACK, target.global_position - global_position)
-	facing = attack.direction
-	state = "attack"
-	# pattern cycle: every DUMMY_PATTERN_PERIOD-th honest swing chains the
-	# follow-up. Skipped when machinery already owns the chain (boss phase,
-	# test injection) or a forced attack is being rehearsed.
+	# pattern cycle, deterministic: every DUMMY_OVERHEAD_PERIOD-th honest
+	# swing is the unblockable overhead; every DUMMY_PATTERN_PERIOD-th other
+	# swing chains the quick follow-up. Skipped when machinery already owns
+	# the chain (boss phase, test injection) or a forced attack is rehearsed.
+	var overhead := false
 	if forced_attack_data == null and boss_data == null and attack_chain.is_empty():
 		pattern_count += 1
-		if pattern_count % T.DUMMY_PATTERN_PERIOD == 0:
+		if pattern_count % T.DUMMY_OVERHEAD_PERIOD == 0:
+			overhead = true
+		elif pattern_count % T.DUMMY_PATTERN_PERIOD == 0:
 			attack_chain = [T.DUMMY_ATTACK_FOLLOWUP.duplicate()]
-	Sim.log_event("%s RAISES ITS CLUB" % display_name)
+	var data: Dictionary = forced_attack_data if forced_attack_data != null else (T.DUMMY_ATTACK_OVERHEAD if overhead else T.DUMMY_ATTACK)
+	attack = MeleeAttack.new(data, target.global_position - global_position)
+	facing = attack.direction
+	state = "attack"
+	if overhead:
+		Sim.log_event("%s HEAVES ITS CLUB OVERHEAD" % display_name)
+	else:
+		Sim.log_event("%s RAISES ITS CLUB" % display_name)
 	return true
 
 func _tick_attack(dt: float) -> void:

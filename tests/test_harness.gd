@@ -923,6 +923,52 @@ class ScenarioPatternCycle extends Scenario:
 					check(e.position.distance_to(e.spawn_pos) < 0.01, "the world reset returns it to its post")
 					check(e.attack_chain.is_empty() and e.pattern_count == 0 and not e.did_chain, "the world reset clears chain and pattern memory")
 					check(e.awareness.state == "calm" and e.awareness.suspicion == 0.0, "the world reset calms its awareness")
+					_start_run(2)
+					return false
+			2:  # the overhead: every 6th swing is unblockable - block fails, full damage lands
+				if lf == 0:
+					p.feathers = 0.0
+				if lf == 2:
+					e._try_attack()
+					check(e.attack_chain.is_empty(), "swing 1 of the rhythm stays plain")
+					e.attack = null
+					e.attack_chain.clear()
+					e.state = "idle"
+				if lf == 4:
+					e._try_attack()
+					check(e.attack_chain.is_empty(), "swing 2 of the rhythm stays plain")
+					e.attack = null
+					e.attack_chain.clear()
+					e.state = "idle"
+				if lf == 6:
+					e._try_attack()
+					check(e.attack_chain.size() == 1, "swing 3 chains the follow-up")
+					e.attack = null
+					e.attack_chain.clear()
+					e.state = "idle"
+				if lf == 8:
+					e._try_attack()
+					check(e.attack_chain.is_empty(), "swing 4 of the rhythm stays plain")
+					e.attack = null
+					e.attack_chain.clear()
+					e.state = "idle"
+				if lf == 10:
+					e._try_attack()
+					check(e.attack_chain.is_empty(), "swing 5 of the rhythm stays plain")
+					e.attack = null
+					e.attack_chain.clear()
+					e.state = "idle"
+				if lf == 12:
+					e._try_attack()
+					check(e.attack.data.get("unblockable", false), "every 6th swing is the unblockable overhead")
+					check(absf(e.attack.data.damage - 25.0) < 0.01, "the overhead is the heavy 25, dmg=%.0f" % e.attack.data.damage)
+					h.input.cur.block = true
+				if lf == 190:
+					var heaved := false
+					for ev in Sim.events:
+						if ev.begins_with("EFFIGY HEAVES ITS CLUB OVERHEAD"): heaved = true
+					check(heaved, "the overhead is announced distinctly")
+					check(absf(p.hp - 75.0) < 0.01, "the overhead goes through the guard at full 25, hp=%.2f" % p.hp)
 					return true
 		lf += 1
 		return false

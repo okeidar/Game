@@ -97,6 +97,17 @@ const DUMMY_ATTACK_FOLLOWUP := {
 const DUMMY_PATTERN_PERIOD := 3     # every 3rd swing chains the follow-up
 const DUMMY_CHAIN_COOLDOWN := 1.6   # the longer rest after the double
 
+# The overhead [overnight proposal - awaiting Omer review]: every 6th swing the
+# effigy heaves the club overhead - slow, heavy, narrow, and UNBLOCKABLE (the
+# red-only tell: the windup glows red instead of yellow). Block fails against
+# it; spacing or a roll beats it. This is the pattern's second attack, the one
+# that punishes a player who only learned to hold block.
+const DUMMY_ATTACK_OVERHEAD := {
+	"damage": 25.0, "windup": 1.2, "active": 0.14, "recovery": 1.2,
+	"reach": 2.8, "arc_deg": 70.0, "unblockable": true,
+}
+const DUMMY_OVERHEAD_PERIOD := 6   # every 6th swing is the overhead
+
 # Defense verbs (Omer playtest directive 2026-09-18; reference: Mortal Shell 2).
 # Doctrine: every defense pays for its safety - block pays stamina + mobility,
 # parry pays a tight timing window, perfect dodge pays proximity to the blow.

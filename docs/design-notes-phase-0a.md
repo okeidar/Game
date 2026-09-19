@@ -636,3 +636,31 @@ cleared). Machinery run 5 (manual chain injection) still passes unchanged.
 
 Prices/values are scaffold tuning awaiting Omer's pass: follow-up damage 10,
 pattern period 3, chain cooldown 1.6s.
+
+## Iteration 10 - pattern depth: the overhead (2026-09-19, overnight)
+
+The effigy's rhythm was one attack plus a follow-up. A player who learned
+"hold block, punish after" had solved it. Iteration 10 gives the pattern a
+second distinct attack.
+
+[overnight proposal - awaiting Omer review] Every 6th swing (deterministic
+counter, no RNG) the effigy heaves the club OVERHEAD: slow (1.2s windup),
+heavy (25 dmg), narrow (70 deg arc), longer reach (2.8) - and UNBLOCKABLE,
+riding the tested unblockable flag machinery. The tell is honest and already
+wired: unblockable windups glow red instead of yellow. Block fails against it
+(full 25 through the guard); spacing or a roll beats it. This is the attack
+that punishes a player who only learned to turtle. Distinct log line
+"HEAVES ITS CLUB OVERHEAD" so footage and stats can see it.
+
+Cycle is now: swings 1-2 plain, 3 chains the quick follow-up, 4-5 plain,
+6 overhead. World reset still zeroes the counter.
+
+Tests: pattern_cycle extended (run 2) - rhythm positions verified swing by
+swing, overhead announced distinctly, unblockable goes through a held block
+for exactly 25. Machinery run 4 (forced unblockable) still green. 28/28.
+
+Scaffold values awaiting Omer: overhead 25 dmg / 1.2s windup / period 6.
+
+Skipped from the candidate list: post-chain vulnerability window (+damage
+after the double-rest) - no honest visual telegraph designed yet; proposing
+without a readable tell would break telegraph honesty. Parked.
