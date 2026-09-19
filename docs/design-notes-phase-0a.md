@@ -1361,3 +1361,22 @@ Harness note: sparkcheck2.js - closed-loop yaw steering from POS deltas
 still -> 4 hits after the fix).
 Live: https://feather-iter37-1648-c296be05c7985b1d59b0.surge.sh
 Pending: footage verify tuned spark + shake (next wake).
+
+## iter38 - juice pass: PARRY BURST + spark footage VERIFIED (2026-09-19 ~17:02)
+[overnight proposal - awaiting Omer review]
+FOOTAGE VERDICT (iter37 build, sparkcheck2 bot, 4 landed hits): the
+tuned hit spark is VISIBLE and reads well - frame f0013 shows the red
+hit flash plus warm orange shard streaks bursting from the contact
+point. Burst spans ~1 frame at the bot's ~1.9s capture cadence. The
+iter37 tune (9 shards / 0.45s / bigger shards) landed. SCREENSHAKE:
+not judgeable from 2fps stills (a static offset is indistinguishable
+from framing) - mechanism is test-verified (trauma banks and decays);
+visual judgment needs Omer's eye in motion. Recorded honestly, not
+claimed.
+PARRY BURST: the deflect now bursts a bright spark (1.0, 1.0, 0.85) at
+the guard contact point, reusing the hit_spark machinery - the parry
+reads in footage, not only as a tint. This also arms the long-open
+parry footage-verification gap: a deflect is now visually findable.
+Tests: defense_feedback extended - "a blocked hit bursts one cold
+spark" and "a timed deflect bursts one bright spark". 45/45 green.
+Live: https://feather-iter38-1702-641e31e6d3bfc209ab4e.surge.sh

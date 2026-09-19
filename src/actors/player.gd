@@ -181,6 +181,12 @@ func apply_hit(damage: float, from_pos: Vector3, stagger: float, flags := {}) ->
 		if block_t <= T.PARRY_WINDOW:
 			guard_flash_t = 0.25   # [overnight proposal] the deflect reads as the win it is
 			guard_flash_color = Color(1.0, 1.0, 0.85)
+			# Juice pass: a bright deflect burst at the guard contact point so the
+			# parry reads in footage, not only as a tint. [overnight proposal]
+			var ptoward: Vector3 = from_pos - global_position
+			ptoward.y = 0.0
+			ptoward = ptoward.normalized() * hurt_radius if ptoward.length_squared() > 0.0001 else Vector3.ZERO
+			HitSpark.burst(get_parent(), global_position + Vector3(0, 1.2, 0) + ptoward, Color(1.0, 1.0, 0.85))
 			Sim.hitstop(T.HITSTOP_DEALT)
 			Sim.shake(0.25)
 			Sim.log_event("PARRY - DEFLECTED")

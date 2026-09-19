@@ -2096,6 +2096,8 @@ class ScenarioToastExpiry extends Scenario:
 
 class ScenarioDefenseFeedback extends Scenario:
 	const Sim = preload("res://src/combat/combat_sim.gd")
+	const HitSpark = preload("res://src/fx/hit_spark.gd")
+	var spark_base := 0
 	var run := 0
 	var lf := -2
 	var saw_flash := false
@@ -2107,6 +2109,7 @@ class ScenarioDefenseFeedback extends Scenario:
 		run = r
 		lf = -2
 		saw_flash = false
+		spark_base = HitSpark.spawned
 		h.make_world()
 		h.player.facing = Vector3(0, 0, -1)
 		h.effigies[0].position = Vector3(0, 0.05, -2.2)
@@ -2126,6 +2129,7 @@ class ScenarioDefenseFeedback extends Scenario:
 					h.input.cur.block = true
 				if lf == 5: e._try_attack()
 				if lf == 70:
+					check(HitSpark.spawned == spark_base + 1, "a blocked hit bursts one cold spark, +%d" % (HitSpark.spawned - spark_base))
 					check(saw_flash, "a blocked hit raises the guard spark")
 					check(saw_color.b > 0.9 and saw_color.r < 0.9, "the spark is cold, not the hurt red")
 					check(p.stamina < 88.0, "the block taxes stamina (15 x 0.9 = 13.5 chip), st=%.1f" % p.stamina)
@@ -2138,6 +2142,7 @@ class ScenarioDefenseFeedback extends Scenario:
 				if lf == 5: e._try_attack()
 				if lf == 49: h.input.cur.block = true
 				if lf == 70:
+					check(HitSpark.spawned == spark_base + 1, "a timed deflect bursts one bright spark, +%d" % (HitSpark.spawned - spark_base))
 					check(saw_flash, "a timed guard raises the deflect flash")
 					check(saw_color.r > 0.95 and saw_color.g > 0.95, "the deflect flash is bright white, not the block spark")
 					check(absf(p.hp - 100.0) < 0.01, "a deflect costs no hp, hp=%.2f" % p.hp)
