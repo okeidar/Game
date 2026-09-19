@@ -1268,3 +1268,55 @@ the run. v10.1 moves death handling before the staleness gate. Remnant
 RECOVERY still unverified (bot was penniless; walk-back also gated on no
 live enemy, and the killer effigy is always alive). Run 2 (v10.1) tests:
 rise -> walk back -> recover -> re-engage.
+
+## iter35 addendum - run 2 wedge diagnosis + v10.2, and the LOOK AND FEEL pivot (2026-09-19 ~15:35)
+
+### Verification run (harness only, no game change)
+Run 2 (v10.1) wedged: the wedge-breaker banned the only legal target
+(the live effigy), then the re-target/re-ban loop spun forever at
+(-3.881,-0.343). v10.2 fixes: ban is lifted when no legal target
+remains; centerline steering added for the x=-17/0/17 gate crossings;
+remnant walk-back now proceeds even with a live enemy (the killer
+effigy is always alive, so the no-live-enemy gate could never open).
+v10.2 300s run launched 15:29:56; results below.
+
+### NEW DIRECTIVE (Omer, 2026-09-19 15:34, verbatim): "Lets make the
+game look and feel better - audio, effects, models, etc". Playtest via
+Jev proposed; waits for a TypeSafe API key from Omer - no signup, no
+wiring until then.
+
+### Juice pass plan [overnight proposal - awaiting Omer review]
+Order by feel-per-risk, all gameplay rules/numbers untouched, parked
+topics (shove/hug/stagger) untouched:
+1. HITSTOP + HIT SPARK - on hit connect: ~60-90ms time freeze and a
+   small particle burst at the contact point. Biggest feel win, fully
+   visible in montage frames.
+2. SCREENSHAKE - camera impulse on player hit / parry / effigy death.
+   Small, self-contained in third_person_camera.gd.
+3. PARRY FLASH VISUAL - the timed 0.25s flash already exists in
+   player.gd; make it a readable burst so the parry window can be
+   verified from footage (also closes the long-open parry
+   verification gap).
+4. AUDIO SFX on existing hooks - Audio.sfx("swing"/"hit"/...) already
+   fires with "(hook, no assets)"; generate small procedural .wav
+   assets (whoosh/thunk/clang/ring/death) and wire them in. Headless
+   verification via hook log lines; cannot be judged by ear here.
+5. MODEL PASS - replace greybox primitives with simple procedural
+   meshes (player knight, effigy, arena dressing). Largest item; one
+   actor at a time, visually verified each step.
+
+### Jev playtest integration - prep notes (NO wiring until key arrives)
+What the integration would need:
+- A decision-adapter layer in the bot harness: today playtest10.js
+  runs a hand-written state machine (target -> approach -> engage ->
+  guard/roll/punch). Jev would replace the *policy* (what to do next
+  given game state), not the *actuators* (key/mouse injection,
+  telemetry reads). The stats feed (stats.json: pos/hp/essence/state)
+  is the observation channel; it would be extended with the fields Jev
+  needs (enemy telegraph state, distance, stamina, own action lockout).
+- Game-side: nothing. The stats feed already exists for tests; the
+  adapter reads the same JSON. No gameplay change, no shipping
+  surface.
+- A TypeSafe API key from Omer (he holds the account; I must not sign
+  up). Until then the hand-written v10.2 policy stays the driver and
+  the juice pass proceeds on the normal cadence.
