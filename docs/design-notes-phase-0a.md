@@ -1234,3 +1234,22 @@ heal_commit and the death/remnant loop need a bot that LOSES (a no-attack
 after the second kill the bot idled ~60% of the run next to the corpse -
 re-engagement works but the respawn wait is dead time; a shorter run or
 multi-target roaming would densify footage.
+
+## Iteration 34 - camera audit (NO BUG) + punching-bag critical-path run [overnight proposal - awaiting Omer review]
+
+NO GAME CODE CHANGED. CAMERA AUDIT (the last footage-backed candidate):
+the camera already carries anti-clip machinery - a sphere-cast pull-in
+("never clips through walls") plus player fade when the distance
+collapses. The montage "half-occluded" frames kept the player readable;
+the corner slabs crossing frame edges are the arena's greybox dressing,
+not the camera losing the fight. No honest game change found this cycle -
+recorded instead of forcing one (Omer's no-feature-creep rule).
+
+So the cycle's work is harness: playtest10 PUNCHING BAG (300s, live
+iter27 build). The bot never swings, never rolls, never guards - it walks
+to the live EFFIGY, stands in reach, takes hits, heals under pressure at
+hp<=60 (interruptions included - part of the test), dies, respawns, and
+walks back to the death spot. Under test: heal_commit organic,
+death penalty (essence -> remnant where you fell), remnant recovery
+("REMNANT RECOVERED - N essence back" is the log anchor), respawn
+re-engagement. These are the last unverified critical-path loops.
