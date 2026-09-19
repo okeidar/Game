@@ -848,3 +848,27 @@ Fixes, all [overnight proposal - awaiting Omer review]:
 
 Open for Omer: the prose wording, whether numbers stay visible at all, and
 whether armor/other slots ever join this menu (his equipment rules).
+
+## Iteration 20 (overnight, 2026-09-19) - the effigy answers the hug
+
+Iter19 playtest footage exposed a dominant strategy: hug the effigy and chain
+into it - it had no close-range answer, and blade hits kept staggering it out
+of swings. A fight with a dominant strategy is not a fight.
+
+THE SHOVE [overnight proposal - awaiting Omer review]: stand inside 1.3m
+(closer than any weapon reach) for 0.8s and the effigy shoves you off - fast
+(0.28s windup), weak (6 dmg), wide (120 deg), telegraphed with the same honest
+yellow->red cycle. The shove BYPASSES the normal cooldown: pressure must be
+answered. COST to the effigy (tradeoff doctrine cuts both ways): the shove
+steps it BACKWARD (2.0 m/s recovery step) and leaves the long rest - the same
+price it pays for the double - so baiting the shove buys a real approach
+window. Both sides pay; the hug is a choice with a price, not a cheat.
+
+Machinery notes: hug pressure accumulates in every effigy state (face-tanking
+through a swing still earns the shove); the shove does not advance the swing
+pattern counter; reset_run clears it all.
+
+Open for Omer: dwell time (0.8s), shove damage (6), whether the shove should
+also push the PLAYER back (knockback machinery does not exist - currently the
+effigy steps back instead, which is honest spacing), and whether other future
+enemies share the shove or get their own hug answers.

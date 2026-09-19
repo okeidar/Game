@@ -1945,6 +1945,48 @@ class ScenarioEquipmentHonest extends Scenario:
 			check(shell.menu_items[1].label.begins_with("* fangs"), "the star follows the equip, got [%s]" % shell.menu_items[1].label)
 		return f >= 15
 
+class ScenarioShove extends Scenario:
+	const Sim2 = preload("res://src/combat/combat_sim.gd")
+	func setup() -> void:
+		name = "effigy_shove"
+		h.make_world()
+		h.effigies[0].ai_enabled = true
+		h.effigies[0].position = Vector3(0, 0.05, -1.0)   # 1.0m: inside shove range, hugging
+		h.effigies[0].facing = Vector3(0, 0, 1)
+		h.player.position = Vector3(0, 0.1, 0)
+	func step(f: int) -> bool:
+		var e = h.effigies[0]
+		var p = h.player
+		if f == 90:   # aggro ramp + 0.8s dwell: the shove has fired by now
+			var saw := false
+			for ev in Sim2.events:
+				if ev == "EFFIGY SHOVES YOU OFF": saw = true
+			check(saw, "hugging past the dwell triggers the shove")
+		if f == 130:
+			check(p.hp < 100.0, "the shove connects for its small damage, hp=%.1f" % p.hp)
+		if f == 190:   # recovery: it has stepped back and pays the long rest
+			var d: float = e.global_position.distance_to(p.global_position)
+			check(d > 1.15, "the effigy steps BACK after shoving (dist %.2f vs hug 1.0)" % d)
+			check(e.cooldown > 0.0 or e.state == "attack", "the shove costs the effigy its long rest")
+		return f >= 200
+
+class ScenarioShoveHonest extends Scenario:
+	const Sim2 = preload("res://src/combat/combat_sim.gd")
+	func setup() -> void:
+		name = "effigy_shove_honest_range"
+		h.make_world()
+		h.effigies[0].ai_enabled = true
+		h.effigies[0].position = Vector3(0, 0.05, -2.0)   # 2.0m: normal spacing, NO hug
+		h.effigies[0].facing = Vector3(0, 0, 1)
+		h.player.position = Vector3(0, 0.1, 0)
+	func step(f: int) -> bool:
+		if f == 150:   # same window as the hug run: at honest range no shove may fire
+			var saw := false
+			for ev in Sim2.events:
+				if ev == "EFFIGY SHOVES YOU OFF": saw = true
+			check(not saw, "honest spacing never triggers the shove")
+		return f >= 160
+
 func _register() -> void:
 
 	scenarios = [
@@ -1983,6 +2025,8 @@ func _register() -> void:
 		ScenarioFinisher.new(),
 		ScenarioInventorySlots.new(),
 		ScenarioEquipmentHonest.new(),
+		ScenarioShove.new(),
+		ScenarioShoveHonest.new(),
 		ScenarioDeterminismB.new(),
 	]
 	for sc in scenarios:

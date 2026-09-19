@@ -109,6 +109,20 @@ const DUMMY_ATTACK_OVERHEAD := {
 }
 const DUMMY_OVERHEAD_PERIOD := 6   # every 6th swing is the overhead
 
+# The shove [overnight proposal - awaiting Omer review]: hugging the effigy is
+# not free. Stand inside DUMMY_SHOVE_RANGE for DUMMY_SHOVE_DWELL seconds and it
+# shoves you off - fast, weak, and telegraphed with the same yellow->red cycle.
+# COST to the effigy (tradeoff doctrine cuts both ways): shoving steps it
+# BACKWARD and leaves the long rest (same price as the double), so baiting the
+# shove buys a real approach window. Both sides pay.
+const DUMMY_SHOVE := {
+	"damage": 6.0, "windup": 0.28, "active": 0.10, "recovery": 0.5,
+	"reach": 1.6, "arc_deg": 120.0,
+}
+const DUMMY_SHOVE_RANGE := 1.3    # closer than any weapon reach: hugging
+const DUMMY_SHOVE_DWELL := 0.8    # seconds of hugging before it answers
+const DUMMY_SHOVE_RETREAT := 2.0  # its backward step speed after the shove
+
 # Defense verbs (Omer playtest directive 2026-09-18; reference: Mortal Shell 2).
 # Doctrine: every defense pays for its safety - block pays stamina + mobility,
 # parry pays a tight timing window, perfect dodge pays proximity to the blow.

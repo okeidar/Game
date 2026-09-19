@@ -25,6 +25,9 @@ var chain_delay_t := 0.0
 var pattern_count := 0            # deterministic swing counter for the pattern cycle
 var did_chain := false            # the double swing earns a longer rest after
 var winded_t := 0.0               # >0 while paying for the double: the opening is VISIBLE (slumped, dim, club down)
+var hug_t := 0.0                 # seconds the target has spent inside shove range
+var shoving := false             # the current attack is the shove
+var shove_recovering := false    # stepping back after the shove: it pays for the space
 var club_pivot: Node3D
 var body_mat: StandardMaterial3D
 var windup_color := Color("8a7a2a")   # sickly yellow: get ready
@@ -118,7 +121,22 @@ func tick(dt: float) -> void:
 		return
 	cooldown = maxf(0.0, cooldown - dt)
 	var target := _get_target()
+	# hug pressure accumulates in any state: face-tanking through a swing still earns the shove
+	if target != null and not target.dead and _dist_to(target) <= T.DUMMY_SHOVE_RANGE:
+		hug_t += dt
+	else:
+		hug_t = 0.0
 	awareness.tick(dt, self, target)   # enemy side of sneak: vision + hearing
+	# the shove's price plays out above state: step back, then fight on
+	if shove_recovering:
+		velocity.x = -facing.x * T.DUMMY_SHOVE_RETREAT
+		velocity.z = -facing.z * T.DUMMY_SHOVE_RETREAT
+		move_and_slide()
+		if cooldown <= T.DUMMY_CHAIN_COOLDOWN - T.DUMMY_SHOVE.recovery - 0.2:
+			shove_recovering = false
+			velocity = Vector3.ZERO
+		_update_visual(dt)
+		return
 	match state:
 		"idle":
 			if target != null and awareness.state == "alert" and _dist_to(target) < T.DUMMY_AGGRO_RANGE * 3.0:
@@ -139,7 +157,10 @@ func tick(dt: float) -> void:
 				else:
 					velocity = Vector3.ZERO
 					facing = to
-					if cooldown <= 0.0 and stagger_t <= 0.0:
+					if hug_t >= T.DUMMY_SHOVE_DWELL:
+						hug_t = 0.0
+						_try_shove()   # the hug answer bypasses cooldown - pressure must be answered
+					elif cooldown <= 0.0 and stagger_t <= 0.0:
 						_try_attack()
 		"attack":
 			_tick_attack(dt)
@@ -182,6 +203,17 @@ func _try_attack() -> bool:
 		Sim.log_event("%s HEAVES ITS CLUB OVERHEAD" % display_name)
 	else:
 		Sim.log_event("%s RAISES ITS CLUB" % display_name)
+	return true
+
+func _try_shove() -> bool:
+	var target := _get_target()
+	if target == null:
+		return false
+	attack = MeleeAttack.new(T.DUMMY_SHOVE, target.global_position - global_position)
+	facing = attack.direction
+	shoving = true
+	state = "attack"
+	Sim.log_event("%s SHOVES YOU OFF" % display_name)
 	return true
 
 func _tick_attack(dt: float) -> void:
@@ -251,10 +283,14 @@ func _tick_attack(dt: float) -> void:
 		else:
 			state = "idle"
 			cooldown = T.DUMMY_CHAIN_COOLDOWN if did_chain else T.DUMMY_COOLDOWN
+			if shoving:
+				cooldown = T.DUMMY_CHAIN_COOLDOWN   # the shove pays the double's price: the long rest
+				shove_recovering = true
 			if did_chain:
 				winded_t = T.DUMMY_CHAIN_COOLDOWN
 				Sim.log_event("%s WINDED - the opening" % display_name)
 			did_chain = false
+			shoving = false
 
 func _in_range_any(target: Node3D) -> bool:
 	return _dist_to(target) <= T.DUMMY_ATTACK.reach + target.hurt_radius + 1.0
@@ -318,6 +354,9 @@ func reset_run(spawn: Vector3, fresh := true) -> void:
 	pattern_count = 0
 	did_chain = false
 	winded_t = 0.0
+	hug_t = 0.0
+	shoving = false
+	shove_recovering = false
 	awareness.suspicion = 0.0
 	awareness.state = "calm"
 	state = "idle"
