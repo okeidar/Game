@@ -1099,6 +1099,64 @@ class ScenarioFeatherScarcity extends Scenario:
 			return true
 		return false
 
+class ScenarioFullLoop extends Scenario:
+	const Sim = preload("res://src/combat/combat_sim.gd")
+	const Shell = preload("res://src/ui/shell.gd")
+	const Progression = preload("res://src/combat/progression.gd")
+	const DeathPenalty = preload("res://src/combat/death_penalty.gd")
+	var shell
+	var lf := -2
+	func setup() -> void:
+		name = "full_loop"
+		h.make_world()
+		shell = Shell.new()
+		shell.player = h.player
+		shell.checkpoint_ctx = {"progression": Progression.new(), "effigies": h.effigies}
+		h.add_child(shell)
+	func step(f: int) -> bool:
+		var _unused = f
+		var p = h.player
+		var e = h.effigies[0]
+		if lf == 0:
+			p.hp = 50.0
+			p.heal_charges = 1
+			p.feathers = 0.0
+		if lf == 2:
+			e.apply_hit(999.0, p.global_position, 1.0)
+			p.add_feathers(e.feather_reward())
+		if lf == 4:
+			check(absf(p.feathers - 6.0) < 0.01, "the kill pays 6 into the coat, feathers=%.0f" % p.feathers)
+			check(p.feather_resist() > 0.0, "the coat protects while it holds feathers")
+		if lf == 6:
+			DeathPenalty.drop(p, h.sim_root)
+			check(absf(p.feathers) < 0.01 and absf(p.feather_resist()) < 0.01, "death drops the feathers AND the protection")
+			var r = h.get_tree().get_nodes_in_group("remnants")[0]
+			check(r.mote.scale.x > 1.05, "the mote's glow names the stash it holds, scale=%.2f" % r.mote.scale.x)
+			p.reset_run(Vector3(0, 0.1, 6.0))  # respawn at the checkpoint, away from the drop
+			check(absf(p.feathers) < 0.01, "respawn does NOT refund the drop - the feathers wait where they fell, feathers=%.0f" % p.feathers)
+			check(absf(p.hp - p.max_hp) < 0.01 and p.heal_charges == p.max_heal_charges, "respawn still restores hp and heals")
+		if lf == 10:
+			p.position = Vector3(0, 0.1, 0.4)  # walk back onto the remnant
+		if lf == 16:
+			check(Sim.events.has("REMNANT RECOVERED - 6 feathers back"), "the recovery walk pays the feathers back")
+			check(absf(p.feathers - 6.0) < 0.01, "the coat is whole again, feathers=%.0f" % p.feathers)
+		if lf == 18:
+			shell.open("checkpoint", false)
+			shell.activate()  # REST
+		if lf == 20:
+			check(not e.dead and e.position.distance_to(e.spawn_pos) < 0.01, "rest brings the felled back at their post")
+			check(absf(e.feather_reward() - 6.0) < 0.01, "the world reset makes the kill worth the full 6 again")
+		if lf == 22:
+			p.feathers = 25.0
+			shell.open("checkpoint", false)
+			shell.nav(1)
+			shell.activate()  # HARDEN
+		if lf == 24:
+			check(absf(p.max_hp - 110.0) < 0.01 and absf(p.feathers - 5.0) < 0.01, "the loop ends with a real spend: harden 20 feathers for +10 max hp")
+			return true
+		lf += 1
+		return false
+
 class ScenarioStaminaClamp extends Scenario:
 	func setup() -> void:
 		name = "stamina_clamp"
@@ -1803,6 +1861,7 @@ func _register() -> void:
 		ScenarioRemnantPenalty.new(),
 		ScenarioHealCommit.new(),
 		ScenarioFeatherScarcity.new(),
+		ScenarioFullLoop.new(),
 		ScenarioStaminaClamp.new(),
 		ScenarioShell.new(),
 		ScenarioRound5A.new(),

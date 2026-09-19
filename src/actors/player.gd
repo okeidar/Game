@@ -713,7 +713,9 @@ func reset_run(spawn: Vector3) -> void:
 	velocity = Vector3.ZERO
 	hp = max_hp
 	stamina = T.STAMINA_MAX
-	feathers = T.FEATHERS_MAX
+	# feathers are NOT refilled here: what you carried is in the remnant where
+	# you fell (iter 14 fix - respawning used to silently refund the drop,
+	# voiding the death penalty). They come back by walking back, or not at all.
 	heal_charges = max_heal_charges
 	dead = false
 	stagger_t = 0.0

@@ -725,3 +725,29 @@ but practice no longer pays.
 Tests: new scenario feather_scarcity (31 scenarios) - fresh kill worth 6,
 auto-risen worth 1, rest/reset restores full value. Note for Omer: the 6/1
 values and the 4s timer are all scaffold economy awaiting his pass.
+
+## Iteration 14 - the death penalty was being silently refunded (2026-09-19, overnight)
+
+The composed-loop audit caught a real bug that unit tests missed:
+player.reset_run (called on every respawn) refilled feathers to full. Death
+dropped your feathers into the remnant - and the respawn quietly handed them
+back, making the remnant pure bonus money. The iter-11 footage was honest at
+the moment of death ("0 feathers . 0% resist"); the undo happened one beat
+later at respawn, invisible to the death-moment checks.
+
+FIX: respawn no longer touches feathers. Death zeroes them, the remnant holds
+them, and they come back only by walking back - or not at all on a second
+death. Initial spawn still starts with a full coat (var init), and REST never
+touched feathers (kills and recovery are the only income - scarcity holds).
+
+Also in this iteration: the remnant's mote now scales with what it holds -
+size and glow grow with the feather count, so the loss is readable from across
+the room (an honest telegraph for the recovery decision: is the walk back
+worth it).
+
+Tests: new scenario full_loop (32 scenarios) - the whole critical path in one
+run: kill pays 6 into the coat and the coat protects, death drops feathers AND
+protection, the mote shows the stash, respawn restores hp/heals but NOT
+feathers, the recovery walk pays them back, rest brings the felled back at
+full value, and the loop closes with a real HARDEN spend. This is the test
+that would have caught the refund bug.

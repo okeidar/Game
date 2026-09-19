@@ -19,7 +19,10 @@ func _ready() -> void:
 	mat.albedo_color = Color("6d5a7a")
 	mat.emission_enabled = true
 	mat.emission = Color("4a3a5a")
-	mat.emission_energy_multiplier = 1.4
+	# the glow names the loss: size and brightness scale with the feathers held
+	var held: float = payload.get("contents", {}).get("feathers", 0.0)
+	mat.emission_energy_multiplier = 1.4 + minf(held, 60.0) / 30.0
+	mote.scale = Vector3.ONE * (1.0 + minf(held, 60.0) / 60.0)
 	mote.material_override = mat
 	mote.position.y = 0.6
 	add_child(mote)
