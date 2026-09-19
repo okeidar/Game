@@ -21,6 +21,8 @@ var volley_t := 0.0
 var facing := Vector3.FORWARD
 var camera_yaw := 0.0
 var block_t := 0.0
+var guard_flash_t := 0.0                                  # [overnight proposal - awaiting Omer review] the guard's answer: a blocked hit sparks cold, a deflect flashes bright
+var guard_flash_color := Color(0.85, 0.92, 1.0)           # block spark (cold); parry sets its own
 var heal_charges := T.HEAL_CHARGES_SCAFFOLD
 var max_heal_charges := T.HEAL_CHARGES_SCAFFOLD   # MEND upgrades raise the ceiling
 var heal_t := 0.0
@@ -177,6 +179,8 @@ func apply_hit(damage: float, from_pos: Vector3, stagger: float, flags := {}) ->
 		return HIT_RESULT_DODGED
 	if state == "block" and not flags.get("unblockable", false):
 		if block_t <= T.PARRY_WINDOW:
+			guard_flash_t = 0.25   # [overnight proposal] the deflect reads as the win it is
+			guard_flash_color = Color(1.0, 1.0, 0.85)
 			Sim.hitstop(T.HITSTOP_DEALT)
 			Sim.log_event("PARRY - DEFLECTED")
 			Sim.stat("parry")
@@ -192,6 +196,8 @@ func apply_hit(damage: float, from_pos: Vector3, stagger: float, flags := {}) ->
 		stamina -= chip
 		since_spend = 0.0
 		var rb: int = super.apply_hit(damage * (1.0 - T.BLOCK_DAMAGE_CUT), from_pos, minf(stagger, 0.15))
+		guard_flash_t = 0.12   # [overnight proposal] the guard held - a cold spark, not the hurt flash
+		guard_flash_color = Color(0.85, 0.92, 1.0)
 		Sim.hitstop(T.HITSTOP_TAKEN * 0.5)
 		Sim.log_event("BLOCKED -%d" % int(round(damage_after_defense(damage) * (1.0 - T.BLOCK_DAMAGE_CUT))))
 		Sim.stat("block", {"dmg": int(round(damage_after_defense(damage) * (1.0 - T.BLOCK_DAMAGE_CUT)))})
@@ -708,6 +714,7 @@ func acquire_lock(cam_forward: Vector3) -> Node3D:
 	return best
 
 func _update_visual(dt: float) -> void:
+	guard_flash_t = maxf(0.0, guard_flash_t - dt)
 	var target_yaw := atan2(facing.x, facing.z)
 	if state == "attack" or state == "roll" or state == "volley":
 		rotation.y = target_yaw
@@ -730,6 +737,8 @@ func _update_visual(dt: float) -> void:
 		mat.albedo_color.a = 0.25 if cam_close else 1.0
 		if state == "block":
 			mat.albedo_color = Color("7f9fcf")  # guard up: cold sheen
+	if guard_flash_t > 0.0:
+		mat.albedo_color = guard_flash_color   # the guard's answer reads through the sheen
 	_update_sword()
 
 func _update_sword() -> void:

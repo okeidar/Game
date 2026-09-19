@@ -969,3 +969,30 @@ the HUD, and the machine record still holds it.
 Considered and deferred: a dedupe window for repeat toasts (no organic
 spam source found in the audit - the stack was staleness, not repeats);
 fade-out animation instead of a hard cutoff (visual polish, Omer's call).
+
+## Iteration 25 (overnight, 2026-09-19) - the guard answers
+
+Defense audit: block had real machinery (70% cut, stamina tax 0.9/dmg, 80%
+regen cut, guard break, move penalty - the costs are all there per doctrine)
+and a cold sheen while held. But the moment that matters - the hit landing
+on the guard - had NO read: the per-frame sheen repaints over the hurt
+flash, so a blocked hit looked like nothing happened. A parry had even
+less: a log line and the effigy's reel, nothing on you. The doctrine says
+the UI shows the tradeoff; the guard's trade and its win were invisible.
+
+[overnight proposal - awaiting Omer review] the guard answers with its own
+flash, painted through the sheen:
+- BLOCKED HIT: a cold spark (0.12s, ice-white-blue). Distinct from the hurt
+  red - "my guard held" vs "I got hit". The cost stays visible where it
+  lives: the stamina bar and the price tick.
+- PARRY: a bright white flash (0.25s, warm white). The deflect reads as the
+  win it is, alongside the effigy's reel and the crit window.
+- GUARD BREAK: unchanged - the real hurt red, because it IS a real hit.
+
+Tests: defense_feedback proves the blocked hit raises the cold spark (not
+red) while the stamina tax and the 30% chip still land, and the timed guard
+raises the bright deflect flash with zero hp cost.
+
+Open for Omer: spark/flash colors and durations; whether a successful block
+should push the attacker at all (today: nothing, the trade is stamina);
+parry sound hook (Audio.sfx has no parry cue - the deflect is silent).

@@ -2094,6 +2094,59 @@ class ScenarioToastExpiry extends Scenario:
 			check(Sim.toasts.size() > 0, "the toast record itself is not erased")
 		return f >= 10
 
+class ScenarioDefenseFeedback extends Scenario:
+	const Sim = preload("res://src/combat/combat_sim.gd")
+	var run := 0
+	var lf := -2
+	var saw_flash := false
+	var saw_color := Color(0, 0, 0)
+	func setup() -> void:
+		name = "defense_feedback"
+		_start_run(0)
+	func _start_run(r: int) -> void:
+		run = r
+		lf = -2
+		saw_flash = false
+		h.make_world()
+		h.player.facing = Vector3(0, 0, -1)
+		h.effigies[0].position = Vector3(0, 0.05, -2.2)
+		h.effigies[0].facing = Vector3(0, 0, 1)   # the proven defense_verbs geometry
+	func step(f: int) -> bool:
+		var _unused = f
+		var p = h.player
+		var e = h.effigies[0]
+		if p.guard_flash_t > 0.0:
+			saw_flash = true
+			saw_color = p.guard_flash_color
+		match run:
+			0:  # a held guard answers with a cold spark, not the hurt flash
+				if lf == 0:
+					p.feathers = 0.0
+					p.stamina = 100.0
+					h.input.cur.block = true
+				if lf == 5: e._try_attack()
+				if lf == 70:
+					check(saw_flash, "a blocked hit raises the guard spark")
+					check(saw_color.b > 0.9 and saw_color.r < 0.9, "the spark is cold, not the hurt red")
+					check(p.stamina < 88.0, "the block taxes stamina (15 x 0.9 = 13.5 chip), st=%.1f" % p.stamina)
+					check(absf(p.hp - 95.5) < 0.01, "the chip still lands 30 percent of 15, hp=%.2f" % p.hp)
+					_start_run(1)
+					return false
+			1:  # a timed guard answers with the bright deflect flash
+				if lf == 0:
+					p.feathers = 0.0
+				if lf == 5: e._try_attack()
+				if lf == 49: h.input.cur.block = true
+				if lf == 70:
+					check(saw_flash, "a timed guard raises the deflect flash")
+					check(saw_color.r > 0.95 and saw_color.g > 0.95, "the deflect flash is bright white, not the block spark")
+					check(absf(p.hp - 100.0) < 0.01, "a deflect costs no hp, hp=%.2f" % p.hp)
+					check(Sim.events.has("PARRY - DEFLECTED"), "the deflect is acknowledged")
+					return true
+		lf += 1
+		return false
+
+
 func _register() -> void:
 
 	scenarios = [
@@ -2121,6 +2174,7 @@ func _register() -> void:
 		ScenarioEssenceScarcity.new(),
 		ScenarioFeatherDecoupling.new(),
 		ScenarioToastExpiry.new(),
+		ScenarioDefenseFeedback.new(),
 		ScenarioFullLoop.new(),
 		ScenarioStaminaClamp.new(),
 		ScenarioShell.new(),
