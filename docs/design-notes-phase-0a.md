@@ -1074,3 +1074,27 @@ souls-genre question ("How is it solved in souls games? I think its a
 combination of stagger and interruptions") and the hyper-armor/leap-back
 structural discussion are recorded here for when he reopens the topic.
 Until then: other candidates only.
+
+## Iteration 28 - guard-bot harness (v9): block/parry footage attempt [overnight proposal - awaiting Omer review]
+
+NO GAME CODE CHANGED. This round built playtest9.js (v9 GUARD): the bot now
+answers telegraphs in rotation - roll / early guard (block held through the
+whole windup, should show the cold spark) / late guard (block pressed ~0.72s
+game into the 0.85s windup so block_t lands in the 0.13s parry window,
+should show the bright flash). Goal: organic footage of the iter25 guard
+feedback, which until now was test-only.
+
+Two harness bugs found and fixed along the way (both in the bot, not the game):
+1. STUCK LOOP (v7 legacy): a comment swallowed `sidestepSign` flip and
+   `lastProgT` update, so a stuck bot sidestepped one fixed way forever
+   (run 1: 90s staring at a wall). Fixed + added a back-off after 3 failed
+   sidesteps.
+2. SWINGS NOT LANDING: at ~9% sim speed the bot's 130ms face-tap is under
+   one physics frame, so facing never turned and clicks swung wherever the
+   capsule last faced - minutes of point-blank clicks, effigy still 60hp.
+   v9 now holds the toward-key through the click so facing tracks.
+
+Open question the footage raised: the training effigy never went alert at
+1.05m for ~11s game (awareness needs "alert" before approach). Whether that
+is too passive for a training partner is a DESIGN question for Omer - not
+changed unilaterally.
