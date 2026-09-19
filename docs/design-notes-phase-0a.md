@@ -1167,7 +1167,7 @@ full combat loop reads organically now. Parry flash still uncaptured
 Montage assembly needs sampling past ~600 frames (ImageMagick cache
 exhausts) - noted for the harness.
 
-## Iteration 31 - parry hunt v9.4/v9.5: whiff audit clean, flash still uncaptured [overnight proposal - awaiting Omer review]
+## Iteration 31 - parry search v9.4/v9.5: whiff audit clean, flash still uncaptured [overnight proposal - awaiting Omer review]
 
 NO GAME CODE CHANGED. WHIFF AUDIT (iter30 footage): all whiffs were bot
 sloppiness, not game feel - swings at out-of-range targets (2.4-3.3m vs
@@ -1175,7 +1175,7 @@ sloppiness, not game feel - swings at out-of-range targets (2.4-3.3m vs
 fix in the game. v9.4 whiff hygiene (no swing at dead/out-of-range) cut
 whiffs 3 -> 1.
 
-PARRY HUNT (two 270s runs): v9.4's single late-guard rep (+7000ms) arrived
+PARRY SEARCH (two 270s runs): v9.4's single late-guard rep (+7000ms) arrived
 at block_t ~0.22s game - a BLOCK, proving the hold connects but misses the
 0.13s window early. v9.5 re-timed the sweep to [8.0-9.8s] and made the
 rotation roll/block/parry - but the parry path never armed: the telegraph
@@ -1187,7 +1187,7 @@ make parry the DEFAULT answer for N consecutive fights; alternatively
 accept block footage as the guard milestone and leave the flash to Omer's
 own playtesting.
 
-## Iteration 32 - parry hunt v9.6: bracket calibrated, hunt paused [overnight proposal - awaiting Omer review]
+## Iteration 32 - parry search v9.6: bracket calibrated, hunt paused [overnight proposal - awaiting Omer review]
 
 NO GAME CODE CHANGED. v9.6 armed all four late-guard presses (8.0/8.6/9.2/
 9.8s real) with parry as the default telegraph answer: 0 parries, 1 block,
