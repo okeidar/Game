@@ -1253,3 +1253,18 @@ walks back to the death spot. Under test: heal_commit organic,
 death penalty (essence -> remnant where you fell), remnant recovery
 ("REMNANT RECOVERED - N essence back" is the log anchor), respawn
 re-engagement. These are the last unverified critical-path loops.
+
+### Iter34 addendum: punching-bag run 1 - heal + death penalty verified, retry bug found
+
+Run 1 (300s): heal_commit fired organically under pressure (1 heal,
+STAT-verified, 19 hits taken); the bot died and the death penalty logged
+"REMNANT LEFT WHERE THEY FELL - 0 essence with it (the coat is
+untouched)" - the remnant path fires AND the feather decoupling holds
+through death (the coat is not dropped). The 0-essence hold is honest:
+the punching bag never earned anything. Montage exposed a harness bug:
+after death POS telemetry stops, the bot's staleness gate (me older than
+3s) skipped every loop iteration, and the YOU DIED screen sat for 60% of
+the run. v10.1 moves death handling before the staleness gate. Remnant
+RECOVERY still unverified (bot was penniless; walk-back also gated on no
+live enemy, and the killer effigy is always alive). Run 2 (v10.1) tests:
+rise -> walk back -> recover -> re-engage.
