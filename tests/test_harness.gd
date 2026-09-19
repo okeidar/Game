@@ -2348,6 +2348,84 @@ class ScenarioJumpFeel extends Scenario:
 		lf += 1
 		return false
 
+class ScenarioLandFeel extends Scenario:
+	const Sim = preload("res://src/combat/combat_sim.gd")
+	var run := 0
+	var lf := -2
+	var was_air := false
+	var baseline := 0
+	var land_frame := -1
+	func setup() -> void:
+		name = "land_feel"
+		_start_run(0)
+	func _start_run(r: int) -> void:
+		run = r
+		lf = -2
+		was_air = false
+		baseline = 0
+		land_frame = -1
+		h.make_world()
+		h.effigies[0].position = Vector3(0, 0.05, 60.0)
+	func _lands() -> Array:
+		var out := []
+		for ev in Sim.events:
+			if ev.begins_with("LAND impact="): out.append(ev)
+		return out
+	func _impact_of(ev: String) -> float:
+		return ev.trim_prefix("LAND impact=").to_float()
+	func step(_f: int) -> bool:
+		if lf < 0:
+			lf += 1
+			return false
+		var p = h.player
+		match run:
+			0:  # normal jump landing: answers with squash + sound, no camera dip
+				if lf == 6:
+					baseline = _lands().size()   # spawn touchdown has logged by now; only the jump arc may add one
+				if lf == 5:
+					h.input.cur.jump = true
+				if lf > 6 and not p.is_on_floor():
+					was_air = true
+				if was_air and p.is_on_floor() and land_frame < 0:
+					land_frame = lf   # harness runs before the player's tick: assert next frame, after the landing tick ran
+				if land_frame >= 0 and lf > land_frame:
+					check(_lands().size() == baseline + 1, "jump landing logs exactly one new LAND, got %d over baseline %d" % [_lands().size(), baseline])
+					var ev: String = _lands().back()
+					check(_impact_of(ev) < 9.0, "jump landing is soft (impact %.1f below the shake floor)" % _impact_of(ev))
+					check(p.land_squash_t > 0.0, "landing squash engaged on touchdown (t=%.3f)" % p.land_squash_t)
+					check(Sim.shake_pool == 0.0, "soft landing does not dip the camera (pool=%.2f)" % Sim.shake_pool)
+					var heard := false
+					for snd in Sim.sounds:
+						if snd.get("source") == "land": heard = true
+					check(heard, "jump landing emits a land sound event")
+					_start_run(1)
+					return false
+				if lf > 300:
+					check(false, "jump landing never happened")
+					return true
+			1:  # high fall: harder squash and a camera dip
+				if lf == 6:
+					baseline = _lands().size()
+				if lf == 5:
+					p.position = Vector3(0, 8.0, 0)
+					p.velocity = Vector3.ZERO
+				if lf > 6 and not p.is_on_floor():
+					was_air = true
+				if was_air and p.is_on_floor() and land_frame < 0:
+					land_frame = lf
+				if land_frame >= 0 and lf > land_frame:
+					var ev: String = _lands().back()
+					var imp := _impact_of(ev)
+					check(imp > 9.0, "high fall lands hard (impact %.1f over the shake floor)" % imp)
+					check(p.land_squash_amp > 0.6, "hard fall squashes deep (amp=%.2f)" % p.land_squash_amp)
+					check(Sim.shake_pool > 0.0, "hard landing dips the camera (pool=%.2f)" % Sim.shake_pool)
+					return true
+				if lf > 400:
+					check(false, "high fall never landed")
+					return true
+		lf += 1
+		return false
+
 func _register() -> void:
 
 	scenarios = [
@@ -2372,6 +2450,7 @@ func _register() -> void:
 		ScenarioMachinery4.new(),
 		ScenarioComboCancel.new(),
 		ScenarioJumpFeel.new(),
+		ScenarioLandFeel.new(),
 		ScenarioCheckpointRest.new(),
 		ScenarioPatternCycle.new(),
 		ScenarioRemnantPenalty.new(),

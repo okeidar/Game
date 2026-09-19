@@ -35,7 +35,10 @@ const PLAYER_STAGGER := 0.35       # C: hitstun length is feel territory
 const ATTACK_STEP_SPEED := 1.6     # C: forward drift during windup + active
 const BUFFER_AFTER_STATE := 0.25   # C: input buffer grace after a state ends
 const COYOTE_TIME := 0.10   # jump feel: grace to jump just after leaving a ledge
-const JUMP_BUFFER := 0.12   # jump feel: a press shortly before landing still jumps   # C: input buffer grace after a state ends
+const JUMP_BUFFER := 0.12   # jump feel: a press shortly before landing still jumps
+const LAND_SQUASH_TIME := 0.14   # landing feel: squash recovers over this long
+const LAND_SHAKE_SPEED := 9.0   # landing feel: falls harder than this dip the camera
+const LAND_SOUND_SPEED := 2.5   # landing feel: only a real touchdown is audible (tiny drops stay silent)
 
 # The feather economy. Feathers held = armor. Feathers spent = ammo (volley
 # only - the 2026-09-19 ruling: feathers are never currency, never spent at

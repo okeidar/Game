@@ -1527,3 +1527,20 @@ Tradeoffs (per doctrine): a buffer can cause an unintended hop if the player mas
 
 Verification: new `jump_feel` harness scenario asserts outcomes - measures natural airtime (41 frames), presses jump 4 frames before landing and asserts a second jump fires on touchdown with rising velocity, and removes a ledge under the player then presses jump 4 frames airborne and asserts it still fires (vy=4.10). 47/47 green.
 
+
+## iter47 - landing feel: touchdown answers [overnight proposal - awaiting Omer review]
+
+Live: https://feather-iter47-2047-9db2b2d45334.surge.sh
+
+Feel mandate, second iteration. Audit found landing had zero feedback: no event, no sound, no squash, no camera response. Now every touchdown answers:
+
+- **Squash**: the body squashes on landing, depth scaled by fall impact (clamp 0.25-1.0), recovering over 0.14s (`T.LAND_SQUASH_TIME`). A jump hop reads as a soft dip; a high fall slams.
+- **Sound**: landings above `T.LAND_SOUND_SPEED` (2.5) emit a `land` sound on the hearing bus at walk radius. Tiny drops (spawn-step height, impact ~1.5) stay silent - this also keeps stealth sane: dropping off a curb should not alert anyone, a real jump landing should.
+- **Camera dip**: falls harder than `T.LAND_SHAKE_SPEED` (9.0) shake the camera, scaled by impact, capped at 0.3. Normal jump landings (impact ~4.9) never dip.
+
+Tradeoffs (per doctrine): squash could read as input lag when a buffered jump fires on the same frame as the landing - the squash is visual-only, never blocks movement or input, and recovers in 0.14s. Audible landings make jumping near enemies a real choice (noise vs speed) - that is intended, but the radius rides the walk-radius scaffold and is Omer's to retune.
+
+Verification: new `land_feel` scenario asserts outcomes - a normal jump landing logs one LAND (impact 4.9, soft), engages the squash (t=0.123 right after touchdown), emits the sound, and does NOT dip the camera; an 8m fall lands at impact 16.8, squashes to full depth (amp 1.0), and dips the camera (shake pool 0.70 incl. the fall-damage hit shake). One real catch during the loop: the first version emitted sound on EVERY touchdown, and the spawn-step sound alerted the effigy in `effigy_shove` through the hearing bus - caught by the suite, fixed with the 2.5 impact floor. 48/48 green.
+
+Harness lesson recorded: the harness steps BEFORE the player's tick each frame, so landing asserts must wait one frame after is_on_floor flips, or they read pre-landing state.
+

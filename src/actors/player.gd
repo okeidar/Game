@@ -51,6 +51,8 @@ var cam: Node3D = null         # camera rig, set by game; null in tests
 var lock_target: Node3D = null
 var buffered := ""
 var jump_buffer_t := 0.0   # jump feel: press shortly before landing still jumps
+var land_squash_t := 0.0   # landing feel: >0 while the landing squash recovers
+var land_squash_amp := 0.0   # landing feel: squash depth, scaled by fall impact
 var coyote_t := 0.0        # jump feel: grace to jump just after leaving a ledge
 var buffer_left := 0.0
 var sprinting := false
@@ -378,6 +380,14 @@ func tick(dt: float) -> void:
 		if fall_v < 0.0:
 			var impact: float = -fall_v
 			fall_v = 0.0
+			# landing feel: every touchdown answers - squash by impact, sound, and a dip on hard falls
+			land_squash_amp = clampf(impact / 12.0, 0.25, 1.0)
+			land_squash_t = T.LAND_SQUASH_TIME
+			if impact > T.LAND_SOUND_SPEED:
+				Sim.emit_sound("land", global_position, T.SOUND_RADIUS_WALK_SCAFFOLD, T.SOUND_RADIUS_WALK_SCAFFOLD)
+			Sim.log_event("LAND impact=%.1f" % impact)
+			if impact > T.LAND_SHAKE_SPEED:
+				Sim.shake(minf(0.3, (impact - T.LAND_SHAKE_SPEED) * 0.04))
 			if impact > T.FALL_SAFE_SPEED_SCAFFOLD and not dead:
 				var fdmg: float = (impact - T.FALL_SAFE_SPEED_SCAFFOLD) * T.FALL_DAMAGE_SCALE_SCAFFOLD
 				apply_hit(fdmg, global_position + facing, 0.2)
@@ -386,6 +396,7 @@ func tick(dt: float) -> void:
 		coyote_t = maxf(0.0, coyote_t - dt)
 		fall_v = minf(fall_v, velocity.y)
 	jump_buffer_t = maxf(0.0, jump_buffer_t - dt)
+	land_squash_t = maxf(0.0, land_squash_t - dt)
 	match state:
 		"free": _tick_free(dt, inp)
 		"roll": _tick_roll(dt, inp)
@@ -865,7 +876,8 @@ func _update_visual(dt: float) -> void:
 		visual.scale = Vector3(1.0, 0.62, 1.0)
 		mat.albedo_color.a = 0.25 if cam_close else (0.45 if is_invulnerable() else 1.0)
 	else:
-		visual.scale = Vector3.ONE
+		var sq: float = land_squash_amp * (land_squash_t / T.LAND_SQUASH_TIME) if land_squash_t > 0.0 else 0.0
+		visual.scale = Vector3(1.0 + 0.10 * sq, 1.0 - 0.20 * sq, 1.0 + 0.10 * sq)
 		mat.albedo_color.a = 0.25 if cam_close else 1.0
 		if state == "block":
 			mat.albedo_color = Color("7f9fcf")  # guard up: cold sheen
