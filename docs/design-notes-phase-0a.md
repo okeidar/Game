@@ -1098,3 +1098,28 @@ Open question the footage raised: the training effigy never went alert at
 1.05m for ~11s game (awareness needs "alert" before approach). Whether that
 is too passive for a training partner is a DESIGN question for Omer - not
 changed unilaterally.
+
+## Iteration 29 - guard-bot harness v9.2: the click mystery solved, the REAL bot bug found [overnight proposal - awaiting Omer review]
+
+NO GAME CODE CHANGED. Diagnosis with two probe scripts (click variants +
+keyboard control) against the live iter27 build:
+
+1. CLICKS WERE NEVER BROKEN. Every variant (plain click, down/up gap,
+   move-first, key held through click) registers ATTACK START on the live
+   build. Heavy (KeyF) also works. The iter28 "clicks don't swing"
+   conclusion was wrong - misread evidence.
+2. THE REAL BUG: the bot's enemy map keyed EPOS telemetry by name - and
+   every effigy is named EFFIGY. Six effigies overwrote ONE map entry, so
+   the bot's "nearest enemy" was whichever effigy logged last. It lurched
+   between phantom targets, froze within swing range with full stamina
+   (target was actually 3m+ away behind geometry), and once got shoved into
+   a corner it could not leave. v9.2 keys enemies by name+position and adds
+   a wedge breaker (a target that eats 5 sidesteps gets banned for 20s).
+3. Supporting fixes: sprint now stops 8m out (arrive with breath - the old
+   5m gate arrived at st=18, under the 20-stamina swing gate), swing gate
+   st>15, death-retry presses Enter every 5s real (YOU DIED shell needs
+   ~15s real to open at 9% sim; the old 2.5s press fired way early).
+
+Footage notes from the frozen run: effigy awareness plates (CALM ->
+SUSPICIOUS) read clearly; the bot picked up a +6 feather world pickup on
+route (economy untouched - feathers stay pickups only, per Omer).
