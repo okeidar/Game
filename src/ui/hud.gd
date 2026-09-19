@@ -202,5 +202,12 @@ func _process(_dt: float) -> void:
 	else:
 		en_panel.visible = false
 	log_label.text = "\n".join(Sim.log_lines)
-	var recent: Array = Sim.toasts.slice(maxi(0, Sim.toasts.size() - 4))
+	# [overnight proposal] toasts fade after T.TOAST_LIFETIME_MS - only what
+	# just happened is on screen; the full record lives in Sim.toasts/events.
+	var recent: Array = []
+	var now_ms: int = Time.get_ticks_msec()
+	for t in Sim.toasts:
+		if now_ms - int(t.get("t", 0)) <= int(T.TOAST_LIFETIME_MS):
+			recent.append(str(t.get("m", "")))
+	recent = recent.slice(maxi(0, recent.size() - 4))
 	toast_label.text = "\n".join(recent)

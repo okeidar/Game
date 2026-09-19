@@ -21,7 +21,10 @@ static func reset() -> void:
 
 static func toast(msg: String) -> void:
 	# Player-facing message machinery: separate from the debug log feed.
-	toasts.append(msg)
+	# [overnight proposal - awaiting Omer review] each toast carries a
+	# timestamp; the HUD fades them after T.TOAST_LIFETIME_MS instead of
+	# stacking stale messages forever. The record itself keeps everything.
+	toasts.append({"m": msg, "t": Time.get_ticks_msec()})
 	if toasts.size() > 12:
 		toasts.pop_front()
 	log_event("TOAST %s" % msg)

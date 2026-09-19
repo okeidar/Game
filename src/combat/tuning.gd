@@ -58,6 +58,7 @@ const VOLLEY_STAGGER := 0.15
 const PICKUP_VALUE := 6.0
 const PICKUP_RADIUS := 0.9
 const PICKUP_RESPAWN := 12.0
+const TOAST_LIFETIME_MS := 6000.0  # [overnight proposal - awaiting Omer review] C: a toast fades off the HUD after 6s; stale messages no longer stack on screen (the record keeps full fidelity)
 const KILL_ESSENCE := 6.0          # [scaffold amount] a felled effigy sheds ESSENCE, the currency - never feathers (Omer ruling 2026-09-19)
 const KILL_ESSENCE_RISEN := 1.0    # [overnight proposal - awaiting Omer review] an effigy that rose on its own timer is worth a token: scarcity stays real, and full-value farming means RESTING to reset the world (the genre's farm loop costs the world reset)
 

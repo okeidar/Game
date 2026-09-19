@@ -951,3 +951,21 @@ full-loop scenarios all re-pointed at essence with coat-untouched checks.
 OPEN for Omer: the currency's canon name (essence is a scaffold label);
 whether the drop/spend/death numbers (6/1, 20/30, drop-everything) carry
 over to the currency as-is; the death rule question survives for essence.
+
+## Iteration 24 (overnight, 2026-09-19) - toasts fade
+
+Audit: the toast line emitted fine, but the HUD showed the last 4 toasts
+FOREVER. Every montage frame carried "ember draught x2 / smoke pellet x3 /
+Stamina runs everything" long after they mattered - stale noise stacked on
+screen from the first second of the run.
+
+[overnight proposal - awaiting Omer review] TOAST_LIFETIME_MS = 6000 (C,
+scaffold): each toast carries a timestamp and the HUD shows only what fired
+in the last 6 seconds. The record keeps full fidelity - Sim.toasts and the
+TOAST log lines are untouched, so tests and the bot lose nothing. Test
+proves both directions: a fresh toast shows, a 30s-old toast is gone from
+the HUD, and the machine record still holds it.
+
+Considered and deferred: a dedupe window for repeat toasts (no organic
+spam source found in the audit - the stack was staleness, not repeats);
+fade-out animation instead of a hard cutoff (visual polish, Omer's call).

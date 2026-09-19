@@ -1347,7 +1347,7 @@ class ScenarioRound5A extends Scenario:
 				if lf == 15:
 					var found := false
 					for t in Sim.toasts:
-						if t.contains("test_draught"): found = true
+						if str(t.get("m", "")).contains("test_draught"): found = true
 					check(found, "gaining an item lands on the toast feed")
 					check(Sim.toasts.size() <= 12, "the feed is bounded")
 					_start_run(2)
@@ -1475,12 +1475,12 @@ class ScenarioRound5B extends Scenario:
 					tut.tick()
 					var hints := 0
 					for t2 in Sim.toasts:
-						if t2.contains("hint text"): hints += 1
+						if str(t2.get("m", "")).contains("hint text"): hints += 1
 					check(hints == 1, "the hint fires when its condition holds")
 					tut.tick()
 					hints = 0
 					for t2 in Sim.toasts:
-						if t2.contains("hint text"): hints += 1
+						if str(t2.get("m", "")).contains("hint text"): hints += 1
 					check(hints == 1, "and never fires twice")
 					_start_run(4)
 					return false
@@ -2071,6 +2071,29 @@ class ScenarioFeatherDecoupling extends Scenario:
 			return true
 		return false
 
+class ScenarioToastExpiry extends Scenario:
+	const Sim = preload("res://src/combat/combat_sim.gd")
+	const Hud3 = preload("res://src/ui/hud.gd")
+	var hud
+	func setup() -> void:
+		name = "toast_expiry"
+		h.make_world()
+		hud = Hud3.new()
+		hud.player = h.player
+		h.add_child(hud)
+	func step(f: int) -> bool:
+		if f == 5:
+			Sim.toast("a fresh word")
+			hud._process(0.016)
+			check(hud.toast_label.text.contains("a fresh word"), "a fresh toast is on the HUD")
+			for t in Sim.toasts:
+				t["t"] = int(t["t"]) - 30000   # age every toast 30s into the past
+			hud._process(0.016)
+			check(not hud.toast_label.text.contains("a fresh word"), "a stale toast fades off the HUD")
+			check(Sim.events.has("TOAST a fresh word"), "the machine record keeps full fidelity")
+			check(Sim.toasts.size() > 0, "the toast record itself is not erased")
+		return f >= 10
+
 func _register() -> void:
 
 	scenarios = [
@@ -2097,6 +2120,7 @@ func _register() -> void:
 		ScenarioHealCommit.new(),
 		ScenarioEssenceScarcity.new(),
 		ScenarioFeatherDecoupling.new(),
+		ScenarioToastExpiry.new(),
 		ScenarioFullLoop.new(),
 		ScenarioStaminaClamp.new(),
 		ScenarioShell.new(),
