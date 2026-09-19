@@ -106,6 +106,21 @@ func _ready() -> void:
 	(spine.mesh as BoxMesh).size = Vector3(67.0, 0.02, 0.16)
 	spine.position = Vector3(0, 0.011, 0)
 	add_child(spine)
+	# MOVE room: a wake circle around the spawn slab (job: names where you
+	# begin) and pale caps on the two drill pillars (job: names the slalom)
+	var wc := Vector3(player_spawn.x, 0.02, player_spawn.z)
+	for i in 16:
+		var a := TAU * float(i) / 16.0
+		var seg := mesh_instance(BoxMesh.new(), Color("6d7a90"), true)
+		(seg.mesh as BoxMesh).size = Vector3(0.6, 0.02, 0.12)
+		seg.position = wc + Vector3(cos(a) * 1.5, 0.0, sin(a) * 1.5)
+		seg.rotation.y = -a + PI * 0.5
+		add_child(seg)
+	for pp in [Vector3(-28, 2.35, -4), Vector3(-22.5, 2.35, 1)]:
+		var cap := mesh_instance(BoxMesh.new(), Color("9fb4d8"), true)
+		(cap.mesh as BoxMesh).size = Vector3(0.5, 0.28, 0.5)
+		cap.position = pp
+		add_child(cap)
 	# MOVE room: pillars to circle and to test the camera against
 	for pp in [Vector3(-28, 1.1, -4), Vector3(-22.5, 1.1, 1)]:
 		_static_box(Vector3(1.4, 2.2, 1.4), pp, Color("2c313b"))

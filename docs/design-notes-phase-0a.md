@@ -151,7 +151,7 @@ proof (two identical 400-frame scripts produce identical state traces).
 - Erthis: protagonist, canon. Everything about who he is and why the coat
   works this way lives in the Callosum mind, not in this repo.
 - Uldor: canon character, guide-shaped. Hook for later phases; story in the mind.
-- Ashitori: canon character, boss-shaped. Hook for a later boss phase;
+- [name withheld - canon]: a boss-shaped character hook for a later boss phase;
   story in the mind.
 - Kelden'gon: canon character, king-shaped. Hook for a later
   region/arc; story in the mind.
@@ -1478,3 +1478,20 @@ language as iter42, now in the practice rooms. Gameplay untouched.
   ammo diamonds are subtle at distance; the dummies themselves are
   still capsules - actor models await Omer's verdicts.
 Preview: https://feather-iter43-1901-9accd5eb833680.surge.sh
+
+## iter44 - LOOK PASS 4: MOVE room rites (2026-09-19 ~19:12)
+[overnight proposal - awaiting Omer review] Last unmarked room dressed.
+- Wake circle around the spawn slab - job: names where you begin.
+- Pale caps on the two drill pillars - job: names the slalom course.
+- Hall dressing now complete: spine = wayfinding, lamps = doorways,
+  ring + cressets = duel, pads = targets, diamonds = ammo, circle =
+  spawn, caps = drill. One grammar, every mark with a job.
+CRITICAL DIRECTION CHANGE (Omer 19:07, verbatim): "He looks like a
+generic knight... He is the same species as a named character from his story. His wings should
+be more pronounced and crooked, with multiple joint. He shouldnt wear
+armor. He should be pale." The armored-knight direction (iter40) is
+REJECTED. Erthis's species (per Omer's story, name kept out of the public repo): pale, no armor,
+crooked multi-jointed wings, species signature. Sheet v2 generated
+from the story traits and delivered 19:11; the low-poly player model
+redesign waits for his v2 verdict. NO Erthis actor model ships before.
+Preview: https://feather-iter44-1911-a2000483834306.surge.sh
