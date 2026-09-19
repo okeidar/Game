@@ -1633,3 +1633,22 @@ Tradeoffs (per doctrine): a break cue risks crying wolf in exactly the stutter c
 
 Verification: new `stamina_break` scenario - the break fires exactly once (sound + feed + body pulse), held-at-zero does not machine-gun, and after recovery past the threshold the break re-arms and fires again. 55/55 green.
 
+
+
+---
+
+## iter55 - low-health cue (2026-09-19)
+
+[overnight proposal - awaiting Omer review]
+
+Feel audit found the hp bar and ghost trail but no critical-health feedback: at 15hp the screen looked exactly like full hp. Souls games make low health *felt* - you should know you're near death without reading the bar.
+
+What shipped:
+- At <= 25% hp (tuning const LOW_HP_PULSE), a radial veil darkens the screen edges in dried-blood red and throbs with a double-thump heartbeat (1.1Hz, thump-thump).
+- Alpha eases toward a 0.40-0.85 band; heal back and it fades out in ~0.3s. Center stays clear - telegraph, not blindfold.
+- Sits behind bars/text in the HUD layer.
+- Tradeoff doctrine: the veil narrows your effective vision at the edges exactly when mistakes are fatal - comfort for safety, information for risk.
+
+Verified: veil throbs in at critical hp (harness peak a=0.58), oscillates (not a static tint), lifts fully on heal. Reviewed live screenshots at critical hp: edges read clearly, center unobstructed. Cannot judge: whether the 1.1Hz heartbeat reads as dread or as UI noise in real play; whether edge-darkening punishes peripheral enemy reads too hard.
+
+Tests: 56/56. Live: https://feather-iter55-2244-19838.surge.sh

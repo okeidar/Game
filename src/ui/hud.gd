@@ -9,6 +9,9 @@ var player: Node3D
 var effigy: Node3D
 var build_id := "dev"
 
+var low_hp_veil: TextureRect   # low-health feel: radial veil that throbs at critical hp
+var low_hp_phase := 0.0
+
 var hp_bar: ProgressBar
 var hp_ghost_bar: ProgressBar   # damage trail: recent loss lingers pale, then drains
 var hp_ghost := 100.0
@@ -47,6 +50,21 @@ func _bar(color: Color, w: int, pos: Vector2) -> ProgressBar:
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	low_hp_veil = TextureRect.new()
+	var gt := GradientTexture2D.new()
+	gt.fill = GradientTexture2D.FILL_RADIAL
+	gt.fill_from = Vector2(0.5, 0.5)
+	gt.fill_to = Vector2(0.85, 0.5)
+	var g := Gradient.new()
+	g.set_color(0, Color(0.30, 0.02, 0.02, 0.0))
+	g.set_color(1, Color(0.30, 0.02, 0.02, 0.90))
+	gt.gradient = g
+	low_hp_veil.texture = gt
+	low_hp_veil.set_anchors_preset(Control.PRESET_FULL_RECT)
+	low_hp_veil.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	low_hp_veil.modulate.a = 0.0
+	add_child(low_hp_veil)
+	move_child(low_hp_veil, 0)   # behind bars and text
 	hp_ghost_bar = _bar(Color("c9a06a"), 260, Vector2(24, 452))  # under the real bar: the pale trail of what was just lost
 	hp_bar = _bar(Color("7e2b26"), 260, Vector2(24, 452))
 	st_bar = _bar(Color("5e6e4a"), 260, Vector2(24, 470))
@@ -168,6 +186,15 @@ func _process(_dt: float) -> void:
 	if player == null:
 		return
 	hp_bar.value = player.hp
+	# low-health feel: at critical hp the edges of the screen throb with the heart
+	if low_hp_veil != null:
+		if player.hp <= player.max_hp * T.LOW_HP_PULSE:
+			low_hp_phase += _dt
+			var ph: float = fposmod(low_hp_phase * 1.1, 1.0)
+			var beat: float = exp(-ph * 12.0) + 0.6 * exp(-maxf(0.0, ph - 0.18) * 14.0)   # thump-thump
+			low_hp_veil.modulate.a = move_toward(low_hp_veil.modulate.a, 0.40 + 0.45 * beat, 2.5 * _dt)
+		else:
+			low_hp_veil.modulate.a = move_toward(low_hp_veil.modulate.a, 0.0, 3.0 * _dt)
 	# [overnight proposal] damage trail: ghost snaps up on heal, drains down slow after a hit
 	if player.hp > hp_ghost:
 		hp_ghost = player.hp

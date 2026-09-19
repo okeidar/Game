@@ -2778,6 +2778,39 @@ class ScenarioStaminaBreak extends Scenario:
 		lf += 1
 		return false
 
+class ScenarioLowHpCue extends Scenario:
+	const Hud = preload("res://src/ui/hud.gd")
+	var lf := -2
+	var hud = null
+	var peak := 0.0
+	var trough := 1.0
+	func setup() -> void:
+		name = "low_hp_cue"
+		h.make_world()
+		h.effigies[0].position = Vector3(0, 0.05, 60.0)
+		hud = Hud.new()
+		h.add_child(hud)
+		hud.player = h.player
+		hud.effigy = h.effigies[0]
+	func step(_f: int) -> bool:
+		if lf < 0:
+			lf += 1
+			return false
+		if lf >= 5 and lf < 120:
+			peak = maxf(peak, hud.low_hp_veil.modulate.a)
+			trough = minf(trough, hud.low_hp_veil.modulate.a)
+		if lf == 5:
+			h.player.hp = 15.0   # critical: under the 25% line
+		if lf == 120:
+			check(peak > 0.25, "at critical hp the veil throbs in (peak a=%.2f)" % peak)
+			check(peak - trough > 0.02, "the veil throbs, not a static tint (%.2f..%.2f)" % [trough, peak])
+			h.player.hp = h.player.max_hp
+		if lf == 260:
+			check(hud.low_hp_veil.modulate.a < 0.05, "healed back, the veil lifts (a=%.2f)" % hud.low_hp_veil.modulate.a)
+			return true
+		lf += 1
+		return false
+
 func _register() -> void:
 
 	scenarios = [
@@ -2810,6 +2843,7 @@ func _register() -> void:
 		ScenarioCameraFov.new(),
 		ScenarioHitstopWeight.new(),
 		ScenarioStaminaBreak.new(),
+		ScenarioLowHpCue.new(),
 		ScenarioCheckpointRest.new(),
 		ScenarioPatternCycle.new(),
 		ScenarioRemnantPenalty.new(),
