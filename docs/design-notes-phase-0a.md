@@ -1123,3 +1123,13 @@ keyboard control) against the live iter27 build:
 Footage notes from the frozen run: effigy awareness plates (CALM ->
 SUSPICIOUS) read clearly; the bot picked up a +6 feather world pickup on
 route (economy untouched - feathers stay pickups only, per Omer).
+
+### Iter29 post-run addendum (v9.2 verified)
+
+150s playtest after the fix: 17 swings, 8 hits, 4 whiffs - first effigy
+60 -> 20hp, zero deaths, zero PLAYER HITs. The bot finally FIGHTS. Montage
+shows organic swing arcs and the effigy hurt flash. NEW OPEN QUESTION: the
+training effigy took 8 hits and never went alert (0 telegraphs) - in the
+iter28 run it only woke after long lingering. Guard/parry organic footage
+still pending - it needs an effigy that fights back, which is Omer's design
+call (how fast should a training partner turn hostile?).
