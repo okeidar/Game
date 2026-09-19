@@ -1466,3 +1466,15 @@ DEFEND room only; gameplay untouched.
   under swiftshader; the parked shot occludes the effigy behind the
   player - the effigy model itself still awaits Omer's actor verdicts.
 Preview: https://feather-iter42b-1849-496ae220832960.surge.sh
+
+## iter43 - LOOK PASS 3: target pads + ammo marks (2026-09-19 ~19:02)
+[overnight proposal - awaiting Omer review] Same jobs-only dressing
+language as iter42, now in the practice rooms. Gameplay untouched.
+- Every training dummy stands on a pale square strike pad - job: names
+  the hittable target, reads from across the room.
+- Every feather pickup gets a small ivory diamond ground mark - job:
+  draws the eye to ammo before the mote itself is visible.
+- Screenshot-verified both rooms (spot/dist hooks). Honest limits: the
+  ammo diamonds are subtle at distance; the dummies themselves are
+  still capsules - actor models await Omer's verdicts.
+Preview: https://feather-iter43-1901-9accd5eb833680.surge.sh

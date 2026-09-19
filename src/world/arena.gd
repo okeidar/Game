@@ -152,6 +152,19 @@ func _ready() -> void:
 		glow.omni_attenuation = 1.6
 		glow.position = cp + Vector3(0, 1.8, 0)
 		add_child(glow)
+	# STRIKE/VOLLEY marks (jobs: name the hittable target, draw the eye to ammo)
+	for spec in enemy_specs:
+		if spec["ai"]: continue
+		var pad := mesh_instance(BoxMesh.new(), Color("6d7a90"), true)
+		(pad.mesh as BoxMesh).size = Vector3(0.95, 0.02, 0.95)
+		pad.position = Vector3(spec["pos"].x, 0.015, spec["pos"].z)
+		add_child(pad)
+	for fp in [Vector3(4, 0, 3.5), Vector3(8.5, 0, -4.5), Vector3(13, 0, 3.5), Vector3(21.5, 0, 3.0), Vector3(29.5, 0, 0.5)]:
+		var mark := mesh_instance(BoxMesh.new(), Color("b8b2a4"), true)
+		(mark.mesh as BoxMesh).size = Vector3(0.5, 0.02, 0.5)
+		mark.position = Vector3(fp.x, 0.015, fp.z)
+		mark.rotation.y = PI * 0.25
+		add_child(mark)
 	# feathers: VOLLEY room stocks the ammo tests, DEFEND offers recovery mid-fight
 	for fp in [Vector3(4, 0, 3.5), Vector3(8.5, 0, -4.5), Vector3(13, 0, 3.5), Vector3(21.5, 0, 3.0), Vector3(29.5, 0, 0.5)]:
 		spawn_pickup(fp)
