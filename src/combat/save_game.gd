@@ -19,6 +19,7 @@ static func capture(player, deaths: int) -> Dictionary:
 	return {
 		"pos": [player.global_position.x, player.global_position.y, player.global_position.z],
 		"hp": player.hp, "stamina": player.stamina, "feathers": player.feathers,
+		"essence": (player.progression.essence if player.progression != null else 0.0),
 		"heal_charges": player.heal_charges, "deaths": deaths,
 		"attributes": player.attrs.attrs.duplicate(),
 		"inventory": inv, "checkpoint": cp,
@@ -30,6 +31,8 @@ static func restore(data: Dictionary, player) -> void:
 	player.hp = data.hp
 	player.stamina = data.stamina
 	player.feathers = data.feathers
+	if player.progression != null:
+		player.progression.essence = data.get("essence", 0.0)
 	player.heal_charges = data.heal_charges
 	player.attrs.attrs = data.get("attributes", {}).duplicate()
 	player.inventory.slots.clear()

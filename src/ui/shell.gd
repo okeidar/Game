@@ -131,10 +131,10 @@ func _build_menu() -> void:
 		"death":
 			_add("RISE AT THE LAST CHECKPOINT", func(): if on_respawn.is_valid(): on_respawn.call())
 		"checkpoint":
-			# [overnight proposals - awaiting Omer review] rest effects + first feather spends; prices are SCAFFOLD
+			# [overnight proposals - awaiting Omer review] rest effects + first essence spends; prices are SCAFFOLD, the currency name is a scaffold label
 			_add("REST - wounds close, heals refill, the fallen rise again", func(): _rest_at_checkpoint())
-			_add("HARDEN +10 max hp - 20 feathers (scaffold price)", func(): _buy_upgrade("harden", 20.0))
-			_add("MEND +1 heal charge - 30 feathers (scaffold price)", func(): _buy_upgrade("mend", 30.0))
+			_add("HARDEN +10 max hp - 20 essence (scaffold price)", func(): _buy_upgrade("harden", 20.0))
+			_add("MEND +1 heal charge - 30 essence (scaffold price)", func(): _buy_upgrade("mend", 30.0))
 			_add("LEAVE", func(): close())
 		"inventory":
 			if player != null:
@@ -179,11 +179,11 @@ func _buy_upgrade(what: String, price: float) -> void:
 	var prog = checkpoint_ctx.get("progression")
 	if prog == null or player == null:
 		return
-	if not prog.spend({"feathers": price}, player):
-		Sim.toast("Not enough feathers")
+	if not prog.spend({"essence": price}, player):
+		Sim.toast("Not enough essence")
 		_build_menu()
 		return
-	# spending feathers on power means not wearing them as coat/resist - the tension is the design
+	# essence spent on power is essence not held for the next price - the spend is the tradeoff
 	if what == "harden":
 		player.max_hp += 10.0
 		player.hp += 10.0
@@ -191,7 +191,7 @@ func _buy_upgrade(what: String, price: float) -> void:
 		player.max_heal_charges += 1
 		player.heal_charges += 1
 	prog.apply_upgrade(what, player)
-	Sim.toast("%s - yours (%d feathers left)" % [what.to_upper(), int(player.feathers)])
+	Sim.toast("%s - yours (%d essence left)" % [what.to_upper(), int(prog.essence)])
 	_build_menu()
 
 func _add(lbl: String, fn: Callable) -> void:

@@ -908,3 +908,46 @@ visible before you ever swing it.
 Open for Omer: whether roll/heavy/item prices deserve their own ticks (one
 tick per verb could clutter), tick styling, and whether the finisher's 1.5x
 price should show when the chain is primed.
+
+## Iteration 23 (overnight, 2026-09-19) - the decoupling: feathers are not currency
+
+OMER RULING (2026-09-19, verbatim): "Feathers are not like runes. They are not
+come from enemies and are not re collectible. They are not currency. We have
+something we get from enemies that is like that. Fethears are a whole system.
+Well think about it but it is separate from currency."
+
+Every economy touchpoint moved off feathers onto ESSENCE (scaffold label -
+the design docs' progression-resource scaffold name; Omer has NOT confirmed
+the name; UI marks it "(scaffold)"):
+
+- ENEMY DROPS: a felled effigy sheds essence (6 fresh / 1 risen - same
+  scaffold amounts, still proposals), never feathers. kill_reward() replaces
+  feather_reward().
+- CHECKPOINT SPENDS: HARDEN +10 max hp / MEND +1 heal charge now price in
+  essence (20/30 - still scaffold placeholders, the economy question survives
+  for the currency, per the ruling relay).
+- DEATH: drops every carried essence where you fell; the remnant holds
+  essence; the walk-back returns it; a second death fades the first remnant's
+  essence. Feathers are NEVER dropped - the coat (resist, volley ammo)
+  survives death untouched.
+- FEATHERS: unchanged system - world pickups only, coat/resist, volley ammo.
+  The feather->essence conversion scaffold is REMOVED (it would have spent
+  feathers; the ruling forecloses it).
+- HUD: the feather line now carries both ledgers:
+  "BLADE . 12 feathers . 20% resist . 6 essence (scaffold)".
+- Save/load persists essence.
+
+The old "feathers spent on power are feathers not worn as coat" tension
+(iter17-19 framing) is VOIDED by the ruling - it was the coupling he
+rejected. His feather system gets thought through later; this change only
+decouples, it does not redesign feathers.
+
+New guard: ScenarioFeatherDecoupling asserts the ruling's outcomes - a fell
+pays essence and NO feathers, death drops essence and leaves the coat and
+its protection intact, the walk-back returns essence, the coat never moves.
+Machinery, checkpoint-rest, remnant-penalty, scarcity, and the composed
+full-loop scenarios all re-pointed at essence with coat-untouched checks.
+
+OPEN for Omer: the currency's canon name (essence is a scaffold label);
+whether the drop/spend/death numbers (6/1, 20/30, drop-everything) carry
+over to the currency as-is; the death rule question survives for essence.

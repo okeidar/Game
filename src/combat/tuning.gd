@@ -1,9 +1,13 @@
 extends RefCounted
 ## Phase 0A greybox tuning, fitted to published souls-like values (see
 ## docs/design-notes-phase-0a.md "Tuning benchmarks" for the full table).
-## One resource doctrine: stamina pays for body actions; FEATHERS are both
-## armor and ammunition. Held feathers harden you; spent feathers buy offense
-## and leave you bare. Every strong option carries a named cost.
+## Two resources, decoupled (Omer ruling 2026-09-19, verbatim: "Feathers are
+## not like runes. They are not come from enemies and are not re collectible.
+## They are not currency."). FEATHERS are the coat: armor and ammunition,
+## refilled only by world pickups - never earned, spent, or dropped. ESSENCE
+## (scaffold label, canon name TBD) is the enemy-drop currency: earned from
+## felled enemies, spent at checkpoints, dropped on death. Every strong
+## option carries a named cost.
 
 const WALK_SPEED := 4.6            # C: feel value, no published analogue
 const SPRINT_SPEED := 7.4          # C: ~1.6x walk, matches souls walk/sprint ratio feel
@@ -31,15 +35,17 @@ const PLAYER_STAGGER := 0.35       # C: hitstun length is feel territory
 const ATTACK_STEP_SPEED := 1.6     # C: forward drift during windup + active
 const BUFFER_AFTER_STATE := 0.25   # C: input buffer grace after a state ends
 
-# The feather economy. Feathers held = armor. Feathers spent = ammo.
+# The feather economy. Feathers held = armor. Feathers spent = ammo (volley
+# only - the 2026-09-19 ruling: feathers are never currency, never spent at
+# checkpoints, never dropped by enemies or on death).
 # Model is A-grade: DS3 absorption is a % reduction applied after flat
 # defense, stacking multiplicatively - the coat is a single absorption slot
 # driven by feathers held. Linear-in-feathers curve is our judgment call (C).
 const FEATHERS_MAX := 30.0
 # Omer directive (2026-09-18, verbatim): "feathers are replenished by
 # collection, not over time". No timer-based regrowth exists. The coat refills
-# only through world pickups (respawning) and feathers from felled enemies,
-# so there is always an earnable path back.
+# only through world pickups (respawning); kills pay essence, never feathers,
+# so the coat and the purse fill by different verbs.
 const RESIST_AT_FULL := 0.5        # C: 50% at a full coat, linear down to 0
 const VOLLEY_COST := 6.0           # C: own economy
 const VOLLEY_DAMAGE := 8.0         # C: per feather projectile
@@ -52,8 +58,8 @@ const VOLLEY_STAGGER := 0.15
 const PICKUP_VALUE := 6.0
 const PICKUP_RADIUS := 0.9
 const PICKUP_RESPAWN := 12.0
-const KILL_FEATHERS := 6.0         # a felled effigy sheds into your coat
-const KILL_FEATHERS_RISEN := 1.0   # [overnight proposal - awaiting Omer review] an effigy that rose on its own timer is worth a token: scarcity stays real, and full-value farming means RESTING to reset the world (the genre's farm loop costs the world reset)
+const KILL_ESSENCE := 6.0          # [scaffold amount] a felled effigy sheds ESSENCE, the currency - never feathers (Omer ruling 2026-09-19)
+const KILL_ESSENCE_RISEN := 1.0    # [overnight proposal - awaiting Omer review] an effigy that rose on its own timer is worth a token: scarcity stays real, and full-value farming means RESTING to reset the world (the genre's farm loop costs the world reset)
 
 # Player light attack. Enemy-reactability rules do not bound player swings;
 # fitted so one full swing ~= one roll cycle (C, DS3 straight-sword feel).
@@ -157,7 +163,6 @@ const CRIT_WINDOW_SCAFFOLD := 1.2       # SCAFFOLD - riposte window undecided
 const CRIT_MULTIPLIER_SCAFFOLD := 2.0   # SCAFFOLD - riposte multiplier undecided
 const BACKSTAB_HALF_ANGLE_SCAFFOLD := 60.0  # SCAFFOLD - backstab condition undecided
 const CHECKPOINT_RADIUS_SCAFFOLD := 1.8 # SCAFFOLD - interact radius undecided
-const ESSENCE_RATE_SCAFFOLD := 1.0      # SCAFFOLD - feather->essence conversion undecided
 
 # Sneak + sound machinery scaffolds (Omer directive 2026-09-18, round 2):
 # sneak = slow walk; movement emits sound events. Enemy-side awareness is

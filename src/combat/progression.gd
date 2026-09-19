@@ -1,33 +1,30 @@
 extends RefCounted
-## Progression machinery (Omer directive 2026-09-18): a spend/sink path and an
-## upgrade application hook, ready for when the details are decided.
-## Costs, conversion rate, and the upgrade catalog are ALL UNDECIDED -
-## the interfaces below are scaffolding, not design.
+## Progression machinery: the spend/sink path and an upgrade application hook.
+## Omer ruling 2026-09-19: feathers are NOT currency - never enemy-dropped,
+## never spent, never death-dropped. ESSENCE (scaffold label from the design
+## docs; canon name TBD - Omer has not confirmed it) is the enemy-drop
+## currency: earned from felled enemies, spent here, dropped on death.
+## Prices and the upgrade catalog remain SCAFFOLD, not design.
 
 const Sim = preload("res://src/combat/combat_sim.gd")
 const T = preload("res://src/combat/tuning.gd")
 
 var applied_upgrades: Array = []
-var essence := 0.0   # bookkeeping exists; what essence IS for is undecided
+var essence := 0.0   # the enemy-drop currency (scaffold label - Omer has not confirmed the name)
 
-func can_afford(cost: Dictionary, player) -> bool:
-	return player.feathers >= cost.get("feathers", 0.0)
+func add_essence(n: float) -> void:
+	essence += n
+
+func can_afford(cost: Dictionary, _player) -> bool:
+	return essence >= cost.get("essence", 0.0)
 
 func spend(cost: Dictionary, player) -> bool:
 	if not can_afford(cost, player):
 		Sim.log_event("PROGRESSION SPEND DENIED %s" % str(cost))
 		return false
-	player.add_feathers(-cost.get("feathers", 0.0))
+	essence -= cost.get("essence", 0.0)
 	Sim.log_event("PROGRESSION SPEND %s" % str(cost))
 	return true
-
-## Feather -> essence conversion interface. Rate is SCAFFOLD, undecided.
-func convert_feathers_to_essence(player, amount: float) -> float:
-	var n: float = minf(amount, player.feathers)
-	player.add_feathers(-n)
-	essence += n * T.ESSENCE_RATE_SCAFFOLD
-	Sim.log_event("CONVERTED %.0f feathers -> %.0f essence (scaffold rate)" % [n, n * T.ESSENCE_RATE_SCAFFOLD])
-	return n * T.ESSENCE_RATE_SCAFFOLD
 
 ## Upgrade application hook. No catalog exists yet (undecided): the hook
 ## records and acknowledges, nothing more.

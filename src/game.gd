@@ -108,6 +108,7 @@ func _build() -> void:
 	hud.build_id = build_id
 	add_child(hud)
 	progression = Progression.new()
+	player.progression = progression   # one shared currency ledger (essence, scaffold label)
 	var cp = Checkpoint.new()
 	cp.position = Vector3(-31.0, 0.05, 1.5)  # MOVE room, beside the slab
 	sim_root.add_child(cp)
@@ -237,12 +238,12 @@ func _on_player_died() -> void:
 	death_menu_t = Tuning.DEATH_SCREEN_DELAY  # death screen: rise on confirm, after the genre beat
 
 func _on_effigy_died(e) -> void:
-	var reward: float = e.feather_reward()
-	player.add_feathers(reward)
-	if reward < Tuning.KILL_FEATHERS:
-		Sim.log_event("%s FELLED +%d feather (risen - worth less until the world resets)" % [e.display_name, int(reward)])
+	var reward: float = e.kill_reward()
+	progression.add_essence(reward)
+	if reward < Tuning.KILL_ESSENCE:
+		Sim.log_event("%s FELLED +%d essence (risen - worth less until the world resets)" % [e.display_name, int(reward)])
 	else:
-		Sim.log_event("%s FELLED +%d feathers" % [e.display_name, int(reward)])
+		Sim.log_event("%s FELLED +%d essence" % [e.display_name, int(reward)])
 
 func _calm_nearby(pos: Vector3, radius: float) -> void:
 	# smoke pellet effect (scaffold): enemies in radius lose the trail

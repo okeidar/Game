@@ -1,11 +1,12 @@
 extends Node3D
 ## Death-penalty machinery: where Erthis falls, a remnant remains. It records
-## the death location and holds a payload for recovery. WHAT is dropped and
-## the recovery rules are UNDECIDED - the payload is empty scaffolding.
+## the death location and holds the dropped ESSENCE (scaffold label - the
+## enemy-drop currency) for recovery. Feathers are never part of the payload
+## (Omer ruling 2026-09-19: feathers are not currency).
 
 const Sim = preload("res://src/combat/combat_sim.gd")
 
-var payload := {}   # UNDECIDED contents - empty until Omer decides the rules
+var payload := {}   # contents.essence = the dropped currency (scaffold label)
 var mote: MeshInstance3D
 var spin := 0.0
 
@@ -19,8 +20,8 @@ func _ready() -> void:
 	mat.albedo_color = Color("6d5a7a")
 	mat.emission_enabled = true
 	mat.emission = Color("4a3a5a")
-	# the glow names the loss: size and brightness scale with the feathers held
-	var held: float = payload.get("contents", {}).get("feathers", 0.0)
+	# the glow names the loss: size and brightness scale with the essence held
+	var held: float = payload.get("contents", {}).get("essence", 0.0)
 	mat.emission_energy_multiplier = 1.4 + minf(held, 60.0) / 30.0
 	mote.scale = Vector3.ONE * (1.0 + minf(held, 60.0) / 60.0)
 	mote.material_override = mat
@@ -38,10 +39,11 @@ func _physics_process(dt: float) -> void:
 		var d: Vector3 = p.global_position - global_position
 		d.y = 0.0
 		if d.length() < 1.0:
-			var held: float = payload.get("contents", {}).get("feathers", 0.0)
+			var held: float = payload.get("contents", {}).get("essence", 0.0)
 			if held > 0.0:
-				p.feathers += held
-				Sim.log_event("REMNANT RECOVERED - %d feathers back" % int(held))
+				if p.progression != null:
+					p.progression.add_essence(held)
+				Sim.log_event("REMNANT RECOVERED - %d essence back" % int(held))
 			else:
 				Sim.log_event("REMNANT RECOVERED (it held nothing)")
 			queue_free()

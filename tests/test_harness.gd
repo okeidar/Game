@@ -447,17 +447,20 @@ class ScenarioMachinery extends Scenario:
 					check(Sim.active_checkpoint != null, "the checkpoint is registered as active")
 					_start_run(2)
 					return false
-			2:  # death remnant: the drop takes the feathers, walking back returns them
+			2:  # death remnant: the drop takes the essence, walking back returns it - the coat is untouched
 				if lf == 0:
-					p.feathers = 40.0
+					p.feathers = 10.0
+					p.progression.essence = 40.0
 					DeathPenalty.drop(p, h.sim_root)
-					check(absf(p.feathers) < 0.01, "death drops every feather where they fell, feathers=%.0f" % p.feathers)
+					check(absf(p.progression.essence) < 0.01, "death drops every essence where they fell, essence=%.0f" % p.progression.essence)
+					check(absf(p.feathers - 10.0) < 0.01, "death does NOT touch the coat (Omer ruling 2026-09-19), feathers=%.0f" % p.feathers)
 				if lf == 20:
 					var rec := false
 					for ev in Sim.events:
 						if ev.begins_with("REMNANT RECOVERED"): rec = true
 					check(rec, "walking over the remnant recovers it")
-					check(absf(p.feathers - 40.0) < 0.01, "the recovery returns every feather, feathers=%.0f" % p.feathers)
+					check(absf(p.progression.essence - 40.0) < 0.01, "the recovery returns every essence, essence=%.0f" % p.progression.essence)
+					check(absf(p.feathers - 10.0) < 0.01, "the coat was never part of the drop, feathers=%.0f" % p.feathers)
 					_start_run(3)
 					return false
 			3:  # riposte machinery: parry opens the crit window, next hit crits
@@ -500,15 +503,15 @@ class ScenarioMachinery extends Scenario:
 					check(absf(p.hp - 60.0) < 0.01, "both linked swings land (15 + 25), hp=%.2f" % p.hp)
 					_start_run(6)
 					return false
-			6:  # progression machinery: spend path, conversion hook, upgrade hook
+			6:  # progression machinery: essence add/spend path, upgrade hook - feathers never involved
 				if lf == 5:
 					var prog = Progression.new()
 					p.feathers = 20.0
-					check(prog.spend({"feathers": 6.0}, p), "spend path accepts an affordable cost")
-					check(absf(p.feathers - 14.0) < 0.01, "spend deducts feathers (20->14), feathers=%.2f" % p.feathers)
-					check(not prog.spend({"feathers": 99.0}, p), "spend path refuses an unaffordable cost")
-					var got: float = prog.convert_feathers_to_essence(p, 4.0)
-					check(absf(got - 4.0) < 0.01 and absf(p.feathers - 10.0) < 0.01, "conversion hook moves feathers to essence at the scaffold rate")
+					prog.add_essence(20.0)
+					check(prog.spend({"essence": 6.0}, p), "spend path accepts an affordable cost")
+					check(absf(prog.essence - 14.0) < 0.01, "spend deducts essence (20->14), essence=%.2f" % prog.essence)
+					check(absf(p.feathers - 20.0) < 0.01, "an essence spend never touches the coat (ruling 2026-09-19), feathers=%.0f" % p.feathers)
+					check(not prog.spend({"essence": 99.0}, p), "spend path refuses an unaffordable cost")
 					check(prog.apply_upgrade("test_upgrade", p) and prog.applied_upgrades.has("test_upgrade"), "upgrade hook records the application")
 					return true
 		lf += 1
@@ -857,20 +860,22 @@ class ScenarioCheckpointRest extends Scenario:
 			check(shell.state == "hidden", "rest closes the menu")
 		if f == 8:
 			p.feathers = 25.0
+			shell.checkpoint_ctx.progression.essence = 25.0
 			shell.open("checkpoint", false)
 			shell.nav(1)
 			shell.activate()  # HARDEN
 		if f == 10:
-			check(absf(p.max_hp - 110.0) < 0.01 and absf(p.feathers - 5.0) < 0.01, "harden spends 20 feathers for +10 max hp, max_hp=%.0f feathers=%.0f" % [p.max_hp, p.feathers])
+			check(absf(p.max_hp - 110.0) < 0.01 and absf(shell.checkpoint_ctx.progression.essence - 5.0) < 0.01, "harden spends 20 essence for +10 max hp, max_hp=%.0f essence=%.0f" % [p.max_hp, shell.checkpoint_ctx.progression.essence])
+			check(absf(p.feathers - 25.0) < 0.01, "the spend never touches the coat (ruling 2026-09-19), feathers=%.0f" % p.feathers)
 		if f == 12:
 			shell.nav(1)
-			shell.activate()  # MEND with only 5 feathers
+			shell.activate()  # MEND with only 5 essence
 		if f == 14:
 			check(p.max_heal_charges == 3, "mend is denied when poor, capacity=%d" % p.max_heal_charges)
-			p.feathers = 35.0
+			shell.checkpoint_ctx.progression.essence = 35.0
 			shell.activate()  # still on MEND
 		if f == 16:
-			check(p.max_heal_charges == 4 and absf(p.feathers - 5.0) < 0.01, "mend spends 30 for +1 charge capacity, capacity=%d feathers=%.0f" % [p.max_heal_charges, p.feathers])
+			check(p.max_heal_charges == 4 and absf(shell.checkpoint_ctx.progression.essence - 5.0) < 0.01, "mend spends 30 for +1 charge capacity, capacity=%d essence=%.0f" % [p.max_heal_charges, shell.checkpoint_ctx.progression.essence])
 			return true
 		return false
 
@@ -995,34 +1000,37 @@ class ScenarioRemnantPenalty extends Scenario:
 		var _unused = f
 		var p = h.player
 		match run:
-			0:  # a second death before recovery: the first remnant's feathers are gone for good
+			0:  # a second death before recovery: the first remnant's essence is gone for good
 				if lf == 0:
-					p.feathers = 40.0
+					p.feathers = 10.0
+					p.progression.essence = 40.0
 					DeathPenalty.drop(p, h.sim_root)
-					check(absf(p.feathers) < 0.01, "the first death drops all 40, feathers=%.0f" % p.feathers)
+					check(absf(p.progression.essence) < 0.01, "the first death drops all 40 essence, essence=%.0f" % p.progression.essence)
+					check(absf(p.feathers - 10.0) < 0.01, "the coat is untouched (ruling 2026-09-19), feathers=%.0f" % p.feathers)
 					p.position = Vector3(12, 0.1, 12)  # walk away so it is not recovered
 				if lf == 4:
-					p.feathers = 15.0
+					p.progression.essence = 15.0
 					DeathPenalty.drop(p, h.sim_root)
 					p.position = Vector3(24, 0.1, 24)  # away from the second drop too
 				if lf == 8:
 					var faded := false
 					for ev in Sim.events:
-						if ev == "THE FIRST REMNANT FADES - 40 feathers gone for good": faded = true
+						if ev == "THE FIRST REMNANT FADES - 40 essence gone for good": faded = true
 					check(faded, "the second death spends the first remnant - 40 gone for good")
 					var left := h.get_tree().get_nodes_in_group("remnants")
 					check(left.size() == 1, "only the latest death leaves a mark, remnants=%d" % left.size())
 					if left.size() == 1:
-						check(absf(left[0].payload.contents.feathers - 15.0) < 0.01, "the new remnant holds only the 15 from the second death")
+						check(absf(left[0].payload.contents.essence - 15.0) < 0.01, "the new remnant holds only the 15 from the second death")
+					check(absf(p.feathers - 10.0) < 0.01, "two deaths later the coat is still whole, feathers=%.0f" % p.feathers)
 					_start_run(1)
 					return false
 			1:  # recovery returns what the remnant holds
 				if lf == 0:
-					p.feathers = 40.0
+					p.progression.essence = 40.0
 					DeathPenalty.drop(p, h.sim_root)
 				if lf == 20:
-					check(Sim.events.has("REMNANT RECOVERED - 40 feathers back"), "the recovery names what it returned")
-					check(absf(p.feathers - 40.0) < 0.01, "every feather is back, feathers=%.0f" % p.feathers)
+					check(Sim.events.has("REMNANT RECOVERED - 40 essence back"), "the recovery names what it returned")
+					check(absf(p.progression.essence - 40.0) < 0.01, "every essence is back, essence=%.0f" % p.progression.essence)
 					return true
 		lf += 1
 		return false
@@ -1082,23 +1090,23 @@ class ScenarioHealCommit extends Scenario:
 		lf += 1
 		return false
 
-class ScenarioFeatherScarcity extends Scenario:
+class ScenarioEssenceScarcity extends Scenario:
 	const Sim = preload("res://src/combat/combat_sim.gd")
 	func setup() -> void:
-		name = "feather_scarcity"
+		name = "essence_scarcity"
 		h.make_world()
 	func step(f: int) -> bool:
 		var e = h.effigies[0]
 		if f == 2:
-			check(absf(e.feather_reward() - 6.0) < 0.01, "a fresh effigy is worth the full 6")
+			check(absf(e.kill_reward() - 6.0) < 0.01, "a fresh effigy is worth the full 6 essence")
 			e.apply_hit(999.0, h.player.global_position, 1.0)
 		if f == 4:
 			check(e.dead, "the effigy is felled")
 		if f == 250:
 			check(not e.dead, "it rose again on its own timer")
-			check(absf(e.feather_reward() - 1.0) < 0.01, "risen on its own timer it is worth only a token 1, reward=%.0f" % e.feather_reward())
+			check(absf(e.kill_reward() - 1.0) < 0.01, "risen on its own timer it is worth only a token 1, reward=%.0f" % e.kill_reward())
 			e.reset_run(e.spawn_pos, true)   # what REST and the world reset call
-			check(absf(e.feather_reward() - 6.0) < 0.01, "after the world resets it is worth the full 6 again")
+			check(absf(e.kill_reward() - 6.0) < 0.01, "after the world resets it is worth the full 6 again")
 			return true
 		return false
 
@@ -1126,36 +1134,39 @@ class ScenarioFullLoop extends Scenario:
 			p.feathers = 0.0
 		if lf == 2:
 			e.apply_hit(999.0, p.global_position, 1.0)
-			p.add_feathers(e.feather_reward())
+			p.progression.add_essence(e.kill_reward())
 		if lf == 4:
-			check(absf(p.feathers - 6.0) < 0.01, "the kill pays 6 into the coat, feathers=%.0f" % p.feathers)
-			check(p.feather_resist() > 0.0, "the coat protects while it holds feathers")
+			check(absf(p.progression.essence - 6.0) < 0.01, "the kill pays 6 essence, essence=%.0f" % p.progression.essence)
+			check(absf(p.feathers) < 0.01, "the kill pays NO feathers (ruling 2026-09-19), feathers=%.0f" % p.feathers)
 		if lf == 6:
 			DeathPenalty.drop(p, h.sim_root)
-			check(absf(p.feathers) < 0.01 and absf(p.feather_resist()) < 0.01, "death drops the feathers AND the protection")
+			check(absf(p.progression.essence) < 0.01, "death drops the essence where they fell")
+			check(absf(p.feathers) < 0.01, "death never touches the coat (ruling), feathers=%.0f" % p.feathers)
 			var r = h.get_tree().get_nodes_in_group("remnants")[0]
 			check(r.mote.scale.x > 1.05, "the mote's glow names the stash it holds, scale=%.2f" % r.mote.scale.x)
 			p.reset_run(Vector3(0, 0.1, 6.0))  # respawn at the checkpoint, away from the drop
-			check(absf(p.feathers) < 0.01, "respawn does NOT refund the drop - the feathers wait where they fell, feathers=%.0f" % p.feathers)
+			check(absf(p.progression.essence) < 0.01, "respawn does NOT refund the drop - the essence waits where they fell, essence=%.0f" % p.progression.essence)
 			check(absf(p.hp - p.max_hp) < 0.01 and p.heal_charges == p.max_heal_charges, "respawn still restores hp and heals")
 		if lf == 10:
 			p.position = Vector3(0, 0.1, 0.4)  # walk back onto the remnant
 		if lf == 16:
-			check(Sim.events.has("REMNANT RECOVERED - 6 feathers back"), "the recovery walk pays the feathers back")
-			check(absf(p.feathers - 6.0) < 0.01, "the coat is whole again, feathers=%.0f" % p.feathers)
+			check(Sim.events.has("REMNANT RECOVERED - 6 essence back"), "the recovery walk pays the essence back")
+			check(absf(p.progression.essence - 6.0) < 0.01, "the purse is whole again, essence=%.0f" % p.progression.essence)
 		if lf == 18:
 			shell.open("checkpoint", false)
 			shell.activate()  # REST
 		if lf == 20:
 			check(not e.dead and e.position.distance_to(e.spawn_pos) < 0.01, "rest brings the felled back at their post")
-			check(absf(e.feather_reward() - 6.0) < 0.01, "the world reset makes the kill worth the full 6 again")
+			check(absf(e.kill_reward() - 6.0) < 0.01, "the world reset makes the kill worth the full 6 essence again")
 		if lf == 22:
 			p.feathers = 25.0
+			shell.checkpoint_ctx.progression.essence = 25.0
 			shell.open("checkpoint", false)
 			shell.nav(1)
 			shell.activate()  # HARDEN
 		if lf == 24:
-			check(absf(p.max_hp - 110.0) < 0.01 and absf(p.feathers - 5.0) < 0.01, "the loop ends with a real spend: harden 20 feathers for +10 max hp")
+			check(absf(p.max_hp - 110.0) < 0.01 and absf(shell.checkpoint_ctx.progression.essence - 5.0) < 0.01, "the loop ends with a real spend: harden 20 essence for +10 max hp")
+			check(absf(p.feathers - 25.0) < 0.01, "the spend never touched the coat (ruling), feathers=%.0f" % p.feathers)
 			return true
 		lf += 1
 		return false
@@ -2029,6 +2040,37 @@ class ScenarioStaminaPriceTick extends Scenario:
 			check(absf(hud.st_tick.position.x - (24.0 + 260.0 * 0.34)) < 0.6, "tick follows the carried weapon's price (x=%.1f)" % hud.st_tick.position.x)
 		return f >= 10
 
+class ScenarioFeatherDecoupling extends Scenario:
+	const Sim = preload("res://src/combat/combat_sim.gd")
+	const DeathPenalty = preload("res://src/combat/death_penalty.gd")
+	# Omer ruling 2026-09-19 (verbatim): "Feathers are not like runes. They are
+	# not come from enemies and are not re collectible. They are not currency."
+	# Kills pay essence, death drops essence, spends charge essence - the coat
+	# (feathers, resist, volley) is never part of the economy.
+	func setup() -> void:
+		name = "feather_decoupling"
+		h.make_world()
+	func step(f: int) -> bool:
+		var p = h.player
+		var e = h.effigies[0]
+		if f == 2:
+			p.feathers = 12.0
+			p.progression.essence = 0.0
+			e.apply_hit(999.0, p.global_position, 1.0)
+			p.progression.add_essence(e.kill_reward())
+			check(absf(p.progression.essence - 6.0) < 0.01, "a fell pays essence, essence=%.0f" % p.progression.essence)
+			check(absf(p.feathers - 12.0) < 0.01, "a fell pays NO feathers (ruling), feathers=%.0f" % p.feathers)
+			DeathPenalty.drop(p, h.sim_root)
+			check(absf(p.progression.essence) < 0.01, "death drops the essence where they fell, essence=%.0f" % p.progression.essence)
+			check(absf(p.feathers - 12.0) < 0.01, "death leaves the coat untouched (ruling), feathers=%.0f" % p.feathers)
+			check(p.feather_resist() > 0.0, "the coat's protection survives death")
+		if f == 26:
+			check(Sim.events.has("REMNANT RECOVERED - 6 essence back"), "the walk-back returns essence")
+			check(absf(p.progression.essence - 6.0) < 0.01, "the essence came back, essence=%.0f" % p.progression.essence)
+			check(absf(p.feathers - 12.0) < 0.01, "the coat never moved through it all, feathers=%.0f" % p.feathers)
+			return true
+		return false
+
 func _register() -> void:
 
 	scenarios = [
@@ -2053,7 +2095,8 @@ func _register() -> void:
 		ScenarioPatternCycle.new(),
 		ScenarioRemnantPenalty.new(),
 		ScenarioHealCommit.new(),
-		ScenarioFeatherScarcity.new(),
+		ScenarioEssenceScarcity.new(),
+		ScenarioFeatherDecoupling.new(),
 		ScenarioFullLoop.new(),
 		ScenarioStaminaClamp.new(),
 		ScenarioShell.new(),
