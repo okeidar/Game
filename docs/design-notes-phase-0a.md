@@ -1671,3 +1671,21 @@ What shipped:
 Verified: scenario perfect_dodge_tell - hit inside half the window dodges (res=2), zero damage, flash holds at 0.30s in pale wind-blue, sfx logged. Reviewed staged live screenshots: the wisp reads at chest height, the blue tint is subtle but present. Cannot judge: whether 0.30s is long enough to read in real combat speed; whether blue-on-greybox is distinct enough from the cold block sheen at a glance.
 
 Tests: 57/57. Live: https://feather-iter56-2308-21261.surge.sh
+
+---
+
+## iter57 - heal feel: the mend as light (2026-09-19)
+
+[overnight proposal - awaiting Omer review]
+
+Audit found the heal commit produced nothing but a log line - no sound, no visual, the single most ritualized action in the genre happening in silence.
+
+What shipped:
+- At heal commit (HEAL_COMMIT 0.9s): warm amber spark burst at chest, "heal" sfx hook, and a mend-light - an OmniLight3D (range 3.0, amber 1.0/0.8/0.5) that burns at energy 2.2 and dims over 0.8s (new tuning const HEAL_GLOW_TIME).
+- Also tints the shared skin material warm - but see the finding below.
+
+FINDING (screenshot review caught what the harness could not): the shared flashing body material (hit flash, winded pulse, block sheen, and now heal tint) covers ONLY the skin - and on the garbed Erthis model the skin is ~90% hidden under cowl, hood, straps, and legs. Body tints barely read in the default camera. The mend-light was added because it reads on garb, wings, pad, and ground. IMPLICATION FOR SHIPPED WORK: iter54's winded pale pulse and the base hit flash likely under-read on the new model too - candidates for the same light treatment in a later iteration.
+
+Verified: scenario heal_glow - mend lands +40, sfx logged, glow peaks 0.78 and settles to 0, skin material tints warm (r 0.95 vs base 0.78), mend-light burns at 2.15 and goes dark. Reviewed staged live screenshots: the light pools warm on the pad and lights the whole silhouette - unmissable. Cannot judge: whether energy 2.2 is too theatrical when healing mid-combat in a dark area (it briefly reveals you - though enemies do not react to light; if they ever do, the mend becomes a real tradeoff).
+
+Tests: 58/58. Live: https://feather-iter57-2335-4067.surge.sh

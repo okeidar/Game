@@ -54,6 +54,8 @@ var winded_t := 0.0   # stamina feel: >0 while the break pulse shows on the body
 var winded_armed := true   # stamina feel: re-arms only after real recovery, so sprint-stutter cannot machine-gun the gasp
 var jump_buffer_t := 0.0   # jump feel: press shortly before landing still jumps
 var land_squash_t := 0.0   # landing feel: >0 while the landing squash recovers
+var heal_glow_t := 0.0        # heal feel: >0 while the mend-warmth lingers on the body
+var heal_light: OmniLight3D   # heal feel: the warmth as light - reads on garb, wings, and ground
 var land_squash_amp := 0.0   # landing feel: squash depth, scaled by fall impact
 var coyote_t := 0.0        # jump feel: grace to jump just after leaving a ledge
 var buffer_left := 0.0
@@ -105,6 +107,13 @@ func _build_visuals() -> void:
 	visual.material_override = mat
 	visual.position.y = 0.95
 	add_child(visual)
+	heal_light = OmniLight3D.new()
+	heal_light.light_color = Color(1.0, 0.80, 0.50)
+	heal_light.light_energy = 0.0
+	heal_light.omni_range = 3.0
+	heal_light.omni_attenuation = 1.4
+	heal_light.position.y = 0.3
+	add_child(heal_light)
 	# gaunt head, shares the skin material so flashes read whole-body
 	var head := MeshInstance3D.new()
 	var hd := SphereMesh.new()
@@ -797,6 +806,10 @@ func _tick_heal(dt: float, _inp: Dictionary) -> void:
 		Sim.stat("heal", {"charges_left": heal_charges})
 		var amt: float = minf(T.HEAL_AMOUNT_SCAFFOLD, max_hp - hp)
 		hp += amt
+		# [overnight proposal] the mend is felt: warmth glows on the body and fades as it settles
+		heal_glow_t = T.HEAL_GLOW_TIME
+		HitSpark.burst(get_parent(), global_position + Vector3(0, 1.0, 0), Color(1.0, 0.85, 0.55))
+		Audio.sfx("heal")
 		Sim.log_event("HEALED +%d (scaffold amount)" % int(round(amt)))
 		state = "free"
 
@@ -887,6 +900,7 @@ func acquire_lock(cam_forward: Vector3) -> Node3D:
 
 func _update_visual(dt: float) -> void:
 	guard_flash_t = maxf(0.0, guard_flash_t - dt)
+	heal_glow_t = maxf(0.0, heal_glow_t - dt)
 	winded_t = maxf(0.0, winded_t - dt)
 	var target_yaw := atan2(facing.x, facing.z)
 	if state == "attack" or state == "roll" or state == "volley":
@@ -913,6 +927,10 @@ func _update_visual(dt: float) -> void:
 			mat.albedo_color = Color("7f9fcf")  # guard up: cold sheen
 	if winded_t > 0.0:
 		mat.albedo_color = mat.albedo_color.lerp(Color(0.78, 0.80, 0.82), (winded_t / 0.7) * 0.7)   # the break pulse: the body pales as it spends
+	if heal_glow_t > 0.0:
+		mat.albedo_color = mat.albedo_color.lerp(Color(1.0, 0.85, 0.55), (heal_glow_t / T.HEAL_GLOW_TIME) * 0.8)   # the mend-warmth settles
+	if heal_light != null:
+		heal_light.light_energy = (heal_glow_t / T.HEAL_GLOW_TIME) * 2.2   # the warmth as light: reads on everything near
 	if guard_flash_t > 0.0:
 		mat.albedo_color = guard_flash_color   # the guard's answer reads through the sheen
 	_update_sword()

@@ -2854,6 +2854,48 @@ class ScenarioPerfectDodgeTell extends Scenario:
 		lf += 1
 		return false
 
+class ScenarioHealGlow extends Scenario:
+	const Sim = preload("res://src/combat/combat_sim.gd")
+	const T = preload("res://src/combat/tuning.gd")
+	var lf := -2
+	var glow_peak := 0.0
+	var healed := false
+	var warm_r := -1.0
+	var light_e := 0.0
+	func setup() -> void:
+		name = "heal_glow"
+		h.make_world()
+		h.effigies[0].position = Vector3(0, 0.05, 60.0)
+		h.player.hp = 40.0
+	func step(_f: int) -> bool:
+		var p = h.player
+		if lf < 0:
+			lf += 1
+			return false
+		if lf == 5:
+			h.input.cur.heal = true
+		glow_peak = maxf(glow_peak, p.heal_glow_t)
+		if not healed and p.hp > 40.0:
+			healed = true
+			check(absf(p.hp - 80.0) < 0.01, "the mend lands +40, hp=%.2f" % p.hp)
+			check(Sim.events.has("AUDIO sfx:heal"), "the mend has a sound")
+		if healed and glow_peak > 0.5 and warm_r < 0.0:
+			var alb: Color = (p.visual.material_override as StandardMaterial3D).albedo_color
+			warm_r = alb.r   # one frame after the glow: the skin should read warm, not ash
+			light_e = p.heal_light.light_energy   # the warmth as light: on at the commit
+		if healed and lf > 200:
+			check(glow_peak > 0.5, "the warmth glows on the commit (peak t=%.2f)" % glow_peak)
+			check(p.heal_glow_t < 0.05, "the glow settles out (t=%.2f)" % p.heal_glow_t)
+			check(warm_r > 0.84, "the body material actually tints warm (r=%.2f, base ash is 0.78)" % warm_r)
+			check(light_e > 1.0, "the mend-light burns at the commit (e=%.2f)" % light_e)
+			check(p.heal_light.light_energy < 0.05, "the mend-light goes dark as the glow settles (e=%.2f)" % p.heal_light.light_energy)
+			return true
+		if lf > 400:
+			check(false, "heal never committed")
+			return true
+		lf += 1
+		return false
+
 func _register() -> void:
 
 	scenarios = [
@@ -2888,6 +2930,7 @@ func _register() -> void:
 		ScenarioStaminaBreak.new(),
 		ScenarioLowHpCue.new(),
 		ScenarioPerfectDodgeTell.new(),
+		ScenarioHealGlow.new(),
 		ScenarioCheckpointRest.new(),
 		ScenarioPatternCycle.new(),
 		ScenarioRemnantPenalty.new(),
