@@ -30,6 +30,7 @@ var _dbg_pos := false
 var _dbg_acc := 0.0
 var _dbg_kill := false  # debug hook (?killme=1): forces one death after begin so the death loop can be exercised headlessly
 var _dbg_hud := false   # debug hook (?hudcheck=1): applies one non-lethal hit, low stamina, and effigy damage so HUD feedback can be screenshot-verified
+var _dbg_photo := -999.0   # debug hook (?photo=<deg>): orbit portrait of the player for the character sheet; shell+hud hidden
 var effigy          # the one real enemy (DEFEND room)
 var effigies: Array = []
 var cam
@@ -61,6 +62,8 @@ func _load_build_id() -> void:
 		_dbg_pos = qp != null and str(qp).find("debugpos") >= 0
 		_dbg_kill = qp != null and str(qp).find("killme") >= 0
 		_dbg_hud = qp != null and str(qp).find("hudcheck") >= 0
+		if str(qp).find("photo=") >= 0:
+			_dbg_photo = float(str(qp).split("photo=")[1].split("&")[0])
 
 func _build() -> void:
 	Sim.reset()
@@ -133,6 +136,10 @@ func _build() -> void:
 		sfx_pool.append(ap)
 	Audio.bind_pool(sfx_pool)
 	shell = Shell.new()
+	if _dbg_photo > -900.0:
+		cam.yaw = deg_to_rad(_dbg_photo)
+		cam.pitch = -0.02
+		cam.distance = 3.4
 	shell.player = player
 	shell.on_begin = func(): shell.close()
 	shell.on_respawn = func(): _respawn(); shell.close()
@@ -162,6 +169,13 @@ func _build() -> void:
 		shell.open("title")  # shell machinery: boot lands on the title menu
 
 func _process(delta: float) -> void:
+	if _dbg_photo > -900.0:
+		if shell != null and shell.state != "hidden":
+			shell.close()
+		if hud != null and hud.visible:
+			hud.visible = false
+		if cam != null:
+			cam.yaw = deg_to_rad(_dbg_photo)   # hold the orbit angle against lock-on easing
 	if Sim.hitstop_left > 0.0:
 		if not get_tree().paused:
 			get_tree().paused = true

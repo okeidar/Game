@@ -1403,3 +1403,28 @@ to LOAD and PLAY (player.stream non-null), not to sound right. Omer's
 ear is the verdict; every asset is one python function, trivially
 tunable or replaceable with real foley.
 Live: https://feather-iter39-1718-41a9eb55c574cb8a1da3.surge.sh
+
+## iter40 - MODEL PASS actor 1: ERTHIS, the player knight (2026-09-19 ~17:36)
+[overnight proposal - awaiting Omer review] Omer 17:28: "You can do
+that. And in parallel do a character design sheet for erthis" - Erthis
+is the player knight's canon name (NAMES ONLY in the repo, no lore).
+This build is a PREVIEW for his judgment, not yet the live default.
+Procedural knight, every vertex in code (player.gd _build_visuals):
+- Torso: capsule r0.42 h1.35 at y0.95 (was r0.5 h1.8 greybox)
+- Helm: squashed sphere r0.24 h0.46 at +0.72 local
+- Pauldrons: two squashed spheres r0.17 at (±0.42, 0.42, 0)
+- Visor slit: near-black box (0.20 x 0.045 x 0.05), no flash
+- Skirt/tassets: dark cloth cylinder (0.30->0.46, h0.45), no flash
+- Kept: sword on the phase-driven pivot, dark back-wings, feather
+  coat motes (the fiction reads through)
+Palette: pale-ash steel c9bfb0 (metallic 0.45, roughness 0.55), visor
+14161a, skirt 2f333b, wings 2a2d33, motes e8e4da/cfc9bb emissive.
+Flash machinery PRESERVED: torso+helm+pauldrons share ONE armor
+material - hit flash, block sheen, guard flash, roll ghost and camera
+fade tint the whole body exactly as before (46/46 tests green).
+Collision capsule untouched - VISUAL ONLY.
+Character sheet: ?photo=<deg> debug hook (orbit portrait, shell+hud
+hidden) - turnarounds shot at 0/120/240 on the preview build.
+Preview: https://feather-iter40-1736-8508cb75c858dfc5d90e.surge.sh
+Next actors after Omer's read: effigy figure, then arena dressing +
+lighting/atmosphere pass (Omer 17:26: "Make it look better as well").

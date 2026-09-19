@@ -80,18 +80,69 @@ func recalculate_derived() -> void:
 	hp = max_hp * hp_frac
 
 func _build_visuals() -> void:
+	# Model pass (Omer juice directive 2026-09-19): the greybox capsule becomes
+	# a simple procedural knight - torso + helm + visor + pauldrons + skirt.
+	# [overnight proposal - awaiting Omer review] proportions and palette are
+	# first-pass. VISUAL ONLY: the collision capsule below is untouched.
+	# Flash/sheen machinery is preserved by sharing ONE armor material across
+	# the torso and armor parts: tinting visual.material_override (hit flash,
+	# block sheen, guard flash, roll ghost, camera fade) tints the whole body.
 	var capsule := CapsuleMesh.new()
-	capsule.radius = 0.5
-	capsule.height = 1.8
+	capsule.radius = 0.42
+	capsule.height = 1.35
 	visual = MeshInstance3D.new()
 	visual.mesh = capsule
 	var mat := StandardMaterial3D.new()
 	mat.albedo_color = base_color
-	mat.roughness = 0.85
+	mat.roughness = 0.55
+	mat.metallic = 0.45
 	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	visual.material_override = mat
-	visual.position.y = 0.9
+	visual.position.y = 0.95
 	add_child(visual)
+	# helm + pauldrons share the armor material so the flash reads whole-body
+	var helm := MeshInstance3D.new()
+	var hm := SphereMesh.new()
+	hm.radius = 0.24
+	hm.height = 0.46
+	helm.mesh = hm
+	helm.material_override = mat
+	helm.position = Vector3(0, 0.72, 0)
+	visual.add_child(helm)
+	for side in [-1.0, 1.0]:
+		var pauldron := MeshInstance3D.new()
+		var pm := SphereMesh.new()
+		pm.radius = 0.17
+		pm.height = 0.30
+		pauldron.mesh = pm
+		pauldron.scale = Vector3(1.2, 0.75, 1.2)
+		pauldron.material_override = mat
+		pauldron.position = Vector3(side * 0.42, 0.42, 0)
+		visual.add_child(pauldron)
+	# visor slit: near-black, does not flash (tiny)
+	var visor := MeshInstance3D.new()
+	var vm := BoxMesh.new()
+	vm.size = Vector3(0.20, 0.045, 0.05)
+	visor.mesh = vm
+	var vmt := StandardMaterial3D.new()
+	vmt.albedo_color = Color("14161a")
+	vmt.roughness = 0.9
+	visor.material_override = vmt
+	visor.position = Vector3(0, 0.70, 0.20)
+	visual.add_child(visor)
+	# skirt/tassets: dark cloth, does not flash
+	var skirt := MeshInstance3D.new()
+	var km := CylinderMesh.new()
+	km.top_radius = 0.30
+	km.bottom_radius = 0.46
+	km.height = 0.45
+	skirt.mesh = km
+	var kmt := StandardMaterial3D.new()
+	kmt.albedo_color = Color("2f333b")
+	kmt.roughness = 0.95
+	skirt.material_override = kmt
+	skirt.position = Vector3(0, -0.55, 0)
+	visual.add_child(skirt)
 	var col := CollisionShape3D.new()
 	var shape := CapsuleShape3D.new()
 	shape.radius = 0.5
