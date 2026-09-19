@@ -34,6 +34,8 @@ const PLAYER_HURT_RADIUS := 0.5    # C: greybox capsule
 const PLAYER_STAGGER := 0.35       # C: hitstun length is feel territory
 const ATTACK_STEP_SPEED := 1.6     # C: forward drift during windup + active
 const BUFFER_AFTER_STATE := 0.25   # C: input buffer grace after a state ends
+const COYOTE_TIME := 0.10   # jump feel: grace to jump just after leaving a ledge
+const JUMP_BUFFER := 0.12   # jump feel: a press shortly before landing still jumps   # C: input buffer grace after a state ends
 
 # The feather economy. Feathers held = armor. Feathers spent = ammo (volley
 # only - the 2026-09-19 ruling: feathers are never currency, never spent at

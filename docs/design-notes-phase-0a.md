@@ -1513,3 +1513,17 @@ player model is rebuilt from it. The iter40 armored knight is GONE.
 - Also delivered tonight: action studies + feather-state sheets (v2:
   FULL / HALF molt / NONE skeletal) generated from v8, for Omer.
 Preview: https://feather-iter45-2001-9549090e837317.surge.sh
+
+## iter46 - jump feel: coyote time + jump buffer [overnight proposal - awaiting Omer review]
+
+Live: https://feather-iter46-2021-fd96c38021ff.surge.sh
+
+Under the feel mandate (combat feedback / juice). Jumping is the one movement verb whose failures read as engine jank, not player error:
+
+- **Coyote time 0.10s** (`T.COYOTE_TIME`): jumping within 100ms after leaving a ledge still works. Walking off the MOVE pillars and jumping late now fires instead of eating the input.
+- **Jump buffer 0.12s** (`T.JUMP_BUFFER`): pressing jump up to 120ms before landing queues the jump and fires it on touchdown. Landing-chained jumps feel connected instead of swallowed.
+
+Tradeoffs (per doctrine): a buffer can cause an unintended hop if the player mashes right before landing, and coyote can let a fall read as a jump. Both windows are short enough (~6-7 physics frames) that this stays rare; they are forgiveness windows, not new capabilities. If Omer wants them tighter or looser they are single constants in `src/combat/tuning.gd`.
+
+Verification: new `jump_feel` harness scenario asserts outcomes - measures natural airtime (41 frames), presses jump 4 frames before landing and asserts a second jump fires on touchdown with rising velocity, and removes a ledge under the player then presses jump 4 frames airborne and asserts it still fires (vy=4.10). 47/47 green.
+

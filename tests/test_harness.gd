@@ -2265,6 +2265,89 @@ class ScenarioAudioHooks extends Scenario:
 		lf += 1
 		return false
 
+class ScenarioJumpFeel extends Scenario:
+	const Sim = preload("res://src/combat/combat_sim.gd")
+	var run := 0
+	var lf := -2
+	var airborne_seen := false
+	var land_lf := -1
+	var measured_land_lf := -1
+	var jump_count := 0
+	var ledge = null
+	func setup() -> void:
+		name = "jump_feel"
+		_start_run(0)
+	func _start_run(r: int) -> void:
+		run = r
+		lf = -2
+		airborne_seen = false
+		land_lf = -1
+		jump_count = 0
+		ledge = null
+		h.make_world()
+		h.effigies[0].position = Vector3(0, 0.05, 60.0)
+		if r == 2:
+			ledge = StaticBody3D.new()
+			var col := CollisionShape3D.new()
+			var shape := BoxShape3D.new()
+			shape.size = Vector3(2.0, 0.5, 2.0)
+			col.shape = shape
+			col.position.y = 0.75
+			ledge.add_child(col)
+			h.sim_root.add_child(ledge)
+			h.player.position = Vector3(0, 1.05, 0)
+	func _jumps() -> int:
+		var n := 0
+		for ev in Sim.events:
+			if ev == "JUMP": n += 1
+		return n
+	func step(_f: int) -> bool:
+		if lf < 0:
+			lf += 1
+			return false
+		var p = h.player
+		match run:
+			0:  # measure: natural jump airtime in frames
+				if lf == 5:
+					h.input.cur.jump = true
+				if lf > 5 and not p.is_on_floor():
+					airborne_seen = true
+				if airborne_seen and p.is_on_floor():
+					land_lf = lf
+					measured_land_lf = lf
+					check(land_lf > 15, "natural jump stays airborne a while, landed at frame %d" % land_lf)
+					_start_run(1)
+					return false
+				if lf > 400:
+					check(false, "jump never landed")
+					return true
+			1:  # jump buffer: press 4 frames before landing, must fire on touchdown
+				if lf == 5:
+					h.input.cur.jump = true
+				if lf == measured_land_lf - 4:
+					h.input.cur.jump = true   # pressed while still airborne, inside the 0.12s buffer window
+				if lf == measured_land_lf + 4:
+					check(_jumps() == 2, "buffered press fired a second jump on landing, got %d jumps" % _jumps())
+					check(p.velocity.y > 0.0, "second jump is actually rising at landing+4, vy=%.2f" % p.velocity.y)
+					_start_run(2)
+					return false
+			2:  # coyote time: floor vanishes, press 4 frames after leaving ground, still jumps
+				if lf == 12:
+					check(p.is_on_floor(), "settled on the ledge before it vanishes")
+					ledge.queue_free()
+				if lf == 16:
+					check(not p.is_on_floor(), "airborne after the ledge is gone")
+					h.input.cur.jump = true
+				if lf == 20:
+					check(_jumps() == 1, "coyote window allowed a jump 4 frames after leaving ground, got %d" % _jumps())
+					check(p.velocity.y > 0.0, "coyote jump is rising, vy=%.2f" % p.velocity.y)
+					return true
+				if lf > 60:
+					check(false, "coyote check never ran")
+					return true
+		lf += 1
+		return false
+
 func _register() -> void:
 
 	scenarios = [
@@ -2288,6 +2371,7 @@ func _register() -> void:
 		ScenarioMachinery3.new(),
 		ScenarioMachinery4.new(),
 		ScenarioComboCancel.new(),
+		ScenarioJumpFeel.new(),
 		ScenarioCheckpointRest.new(),
 		ScenarioPatternCycle.new(),
 		ScenarioRemnantPenalty.new(),

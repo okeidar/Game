@@ -50,6 +50,8 @@ var fall_v := 0.0       # deepest downward velocity of the current fall
 var cam: Node3D = null         # camera rig, set by game; null in tests
 var lock_target: Node3D = null
 var buffered := ""
+var jump_buffer_t := 0.0   # jump feel: press shortly before landing still jumps
+var coyote_t := 0.0        # jump feel: grace to jump just after leaving a ledge
 var buffer_left := 0.0
 var sprinting := false
 var deaths := 0
@@ -371,15 +373,19 @@ func tick(dt: float) -> void:
 	if swap_lockout_t > 0.0:
 		swap_lockout_t -= dt
 	roll_end_t += dt
-	if not is_on_floor():
+	if is_on_floor():
+		coyote_t = T.COYOTE_TIME
+		if fall_v < 0.0:
+			var impact: float = -fall_v
+			fall_v = 0.0
+			if impact > T.FALL_SAFE_SPEED_SCAFFOLD and not dead:
+				var fdmg: float = (impact - T.FALL_SAFE_SPEED_SCAFFOLD) * T.FALL_DAMAGE_SCALE_SCAFFOLD
+				apply_hit(fdmg, global_position + facing, 0.2)
+				Sim.log_event("FALL DAMAGE -%d (scaffold)" % int(round(fdmg)))
+	else:
+		coyote_t = maxf(0.0, coyote_t - dt)
 		fall_v = minf(fall_v, velocity.y)
-	elif fall_v < 0.0:
-		var impact: float = -fall_v
-		fall_v = 0.0
-		if impact > T.FALL_SAFE_SPEED_SCAFFOLD and not dead:
-			var fdmg: float = (impact - T.FALL_SAFE_SPEED_SCAFFOLD) * T.FALL_DAMAGE_SCALE_SCAFFOLD
-			apply_hit(fdmg, global_position + facing, 0.2)
-			Sim.log_event("FALL DAMAGE -%d (scaffold)" % int(round(fdmg)))
+	jump_buffer_t = maxf(0.0, jump_buffer_t - dt)
 	match state:
 		"free": _tick_free(dt, inp)
 		"roll": _tick_roll(dt, inp)
@@ -465,13 +471,16 @@ func _tick_free(dt: float, inp: Dictionary) -> void:
 	elif inp.get("use_item", false):
 		_try_use_item()
 	elif inp.get("jump", false):
-		_try_jump()
+		jump_buffer_t = T.JUMP_BUFFER
 	elif inp.get("weapon_swap", false):
 		_try_weapon_swap()
+	if jump_buffer_t > 0.0 and _try_jump():
+		jump_buffer_t = 0.0
 
 func _try_jump() -> bool:
-	if not is_on_floor():
+	if coyote_t <= 0.0:
 		return false
+	coyote_t = 0.0
 	velocity.y = T.JUMP_VELOCITY_SCAFFOLD  # SCAFFOLD - height/feel/air control undecided
 	Sim.log_event("JUMP")
 	return true
