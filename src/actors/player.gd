@@ -681,7 +681,8 @@ func _resolve_attack_hit() -> void:
 			var dmg: float = d.damage * (T.CRIT_MULTIPLIER_SCAFFOLD if crit else 1.0)
 			var r: int = e.apply_hit(dmg, global_position, d.get("stagger", T.DUMMY_STAGGER))
 			if r == HIT_RESULT_HIT:
-				Sim.hitstop(T.HITSTOP_DEALT)
+				# connect feel: the freeze scales with the attack's weight too - heavies hold, crits hold longer
+				Sim.hitstop((T.HITSTOP_DEALT_HEAVY if cur_slot == "heavy" else T.HITSTOP_DEALT) + (T.HITSTOP_CRIT_BONUS if crit else 0.0))
 				# connect feel: the answer scales with the hit's weight - heavies thump, crits punch
 				Sim.shake(minf(T.SHAKE_HIT_MAX, T.SHAKE_HIT_BASE + dmg * T.SHAKE_HIT_PER_DMG + (T.SHAKE_HIT_CRIT if crit else 0.0)))
 				if e.dead:

@@ -2667,6 +2667,50 @@ class ScenarioCameraFov extends Scenario:
 		lf += 1
 		return false
 
+class ScenarioHitstopWeight extends Scenario:
+	const Sim = preload("res://src/combat/combat_sim.gd")
+	const T = preload("res://src/combat/tuning.gd")
+	var run := 0
+	var lf := -2
+	func setup() -> void:
+		name = "hitstop_weight"
+		_start_run(0)
+	func _start_run(r: int) -> void:
+		run = r
+		lf = -2
+		h.make_world()
+		h.player.facing = Vector3(0, 0, -1)
+		h.effigies[0].position = Vector3(0, 0.05, -2.2)
+		h.effigies[0].facing = Vector3(0, 0, -1) if r == 2 else Vector3(0, 0, 1)   # run 2 exposes its back
+	func step(_f: int) -> bool:
+		if lf < 0:
+			lf += 1
+			return false
+		match run:
+			0:  # light connect freezes at the base
+				if lf == 5: h.input.cur.attack = true
+				if lf == 60:
+					check(absf(Sim.hitstop_last - T.HITSTOP_DEALT) < 0.001, "a light connect freezes at the base (%.3f)" % Sim.hitstop_last)
+					_start_run(1)
+					return false
+			1:  # heavy connect freezes longer
+				if lf == 5: h.input.cur.heavy = true
+				if lf == 90:
+					check(absf(Sim.hitstop_last - T.HITSTOP_DEALT_HEAVY) < 0.001, "a heavy connect freezes longer (%.3f)" % Sim.hitstop_last)
+					check(Sim.hitstop_last > T.HITSTOP_DEALT, "the heavy hold beats the light base")
+					_start_run(2)
+					return false
+			2:  # crit adds its bonus on top of the attack's weight
+				if lf == 5: h.input.cur.attack = true
+				if lf == 60:
+					check(absf(Sim.hitstop_last - (T.HITSTOP_DEALT + T.HITSTOP_CRIT_BONUS)) < 0.001, "a backstab crit adds its bonus (%.3f)" % Sim.hitstop_last)
+					return true
+				if lf > 200:
+					check(false, "backstab never resolved")
+					return true
+		lf += 1
+		return false
+
 func _register() -> void:
 
 	scenarios = [
@@ -2697,6 +2741,7 @@ func _register() -> void:
 		ScenarioSwingSound.new(),
 		ScenarioVolleyFeel.new(),
 		ScenarioCameraFov.new(),
+		ScenarioHitstopWeight.new(),
 		ScenarioCheckpointRest.new(),
 		ScenarioPatternCycle.new(),
 		ScenarioRemnantPenalty.new(),

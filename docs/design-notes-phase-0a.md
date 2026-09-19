@@ -1609,3 +1609,14 @@ Tradeoffs (per doctrine): fov motion can nauseate in long sprints - 4 degrees is
 
 Verification: new `camera_fov` scenario drives a real camera node against the player: rest fov 62.0, sprint 66.0, dodge pulse 66.3, settle back to 62.1. 53/53 green.
 
+
+## iter53 - connect feel, part 2: the freeze scales too [overnight proposal - awaiting Omer review]
+
+Live: https://feather-iter53-2211-4f165d84f043.surge.sh
+
+Feel mandate, eighth iteration. iter48 scaled the shake by attack weight but left hitstop flat, waiting a round. With the shake numbers proven in the harness, the freeze now scales the same way: lights hold 80ms (`HITSTOP_DEALT`, unchanged), heavies hold 120ms (`HITSTOP_DEALT_HEAVY`), and crits add 40ms on top of the attack's weight (`HITSTOP_CRIT_BONUS`). The kill freeze (160ms) still dominates via the bus's max. A heavy backstab holds 160ms - the same as a kill - which is intended: a heavy backstab IS a near-kill moment.
+
+Tradeoffs (per doctrine): longer freezes on heavies slow the game's pulse if everything holds - lights keep the old 80ms so chains stay snappy; only commitments (heavy, crit) buy time. Constants in tuning.gd, Omer's to retune.
+
+Verification: new `hitstop_weight` scenario asserts against the bus's `hitstop_last`: light 0.080, heavy 0.120, backstab crit 0.120 (light base + crit bonus). 54/54 green.
+
