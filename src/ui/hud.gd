@@ -14,6 +14,7 @@ var hp_ghost_bar: ProgressBar   # damage trail: recent loss lingers pale, then d
 var hp_ghost := 100.0
 var st_bar: ProgressBar
 var st_fill: StyleBoxFlat
+var st_tick: ColorRect   # price marker: where one swing of the carried weapon lands on the bar
 var heal_pips: Array[ColorRect] = []
 var fe_bar: ProgressBar
 var fe_text: Label
@@ -50,6 +51,11 @@ func _ready() -> void:
 	hp_bar = _bar(Color("7e2b26"), 260, Vector2(24, 452))
 	st_bar = _bar(Color("5e6e4a"), 260, Vector2(24, 470))
 	st_fill = st_bar.get_theme_stylebox("fill") as StyleBoxFlat
+	st_tick = ColorRect.new()   # [overnight proposal] the tradeoff, on the bar: one swing's price
+	st_tick.custom_minimum_size = Vector2(2, 13)
+	st_tick.size = Vector2(2, 13)
+	st_tick.color = Color(1.0, 1.0, 1.0, 0.45)
+	add_child(st_tick)
 	fe_bar = _bar(Color("d9d3c3"), 260, Vector2(24, 488))
 	fe_bar.max_value = 30.0
 	# heal charges as pips (genre shape), not a text count
@@ -169,6 +175,10 @@ func _process(_dt: float) -> void:
 		hp_ghost = move_toward(hp_ghost, player.hp, 25.0 * _dt)
 	hp_ghost_bar.value = hp_ghost
 	st_bar.value = player.stamina
+	if st_tick != null:
+		var swing_cost: float = T.ATTACK_COST * player.moveset.get("cost_mult", 1.0)
+		st_tick.position = Vector2(st_bar.position.x + st_bar.custom_minimum_size.x * clampf(swing_cost / st_bar.max_value, 0.0, 1.0), st_bar.position.y)
+		st_tick.color = Color(0.85, 0.28, 0.22, 0.9) if player.stamina < swing_cost else Color(1.0, 1.0, 1.0, 0.45)
 	# [overnight proposal] stamina low-warning: below roll cost the bar pulses hot
 	if st_fill != null:
 		if player.stamina < T.ROLL_COST:

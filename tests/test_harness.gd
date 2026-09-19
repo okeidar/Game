@@ -2006,6 +2006,29 @@ class ScenarioQuietFeed extends Scenario:
 			check(snd_in_feed == 0, "the visible feed carries no footstep noise, got %d" % snd_in_feed)
 		return f >= 70
 
+class ScenarioStaminaPriceTick extends Scenario:
+	const Hud2 = preload("res://src/ui/hud.gd")
+	const M2 = preload("res://src/combat/moveset.gd")
+	var hud
+	func setup() -> void:
+		name = "stamina_price_tick"
+		h.make_world()
+		hud = Hud2.new()
+		hud.player = h.player
+		h.add_child(hud)
+	func step(f: int) -> bool:
+		if f == 5:
+			hud._process(0.016)
+			check(absf(hud.st_tick.position.x - 76.0) < 0.5, "tick sits at one blade swing's price (x=%.1f)" % hud.st_tick.position.x)
+			check(hud.st_tick.color.a < 0.9, "tick is quiet while a swing is affordable")
+			h.player.stamina = 10.0
+			hud._process(0.016)
+			check(hud.st_tick.color.r > 0.7, "tick turns hot when a swing is unaffordable")
+			h.player.equipment.equip("weapon", M2.catalog()[2], h.player)   # maul: x1.7 = 34 stamina
+			hud._process(0.016)
+			check(absf(hud.st_tick.position.x - (24.0 + 260.0 * 0.34)) < 0.6, "tick follows the carried weapon's price (x=%.1f)" % hud.st_tick.position.x)
+		return f >= 10
+
 func _register() -> void:
 
 	scenarios = [
@@ -2047,6 +2070,7 @@ func _register() -> void:
 		ScenarioShove.new(),
 		ScenarioShoveHonest.new(),
 		ScenarioQuietFeed.new(),
+		ScenarioStaminaPriceTick.new(),
 		ScenarioDeterminismB.new(),
 	]
 	for sc in scenarios:

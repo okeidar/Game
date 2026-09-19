@@ -891,3 +891,20 @@ Paired evidence work: playtest8.js, a HUGGER bot variant that fights inside
 
 Open for Omer: whether sound telemetry wants a debug toggle to reappear on the
 feed, and whether toasts (ITEM GAINED spam at spawn) want the same treatment.
+
+## Iteration 22 (overnight, 2026-09-19) - the price tick
+
+Design law says the UI shows the tradeoff. The stamina bar showed a pulse when
+you were already broke, but never told you the PRICE of anything before you
+spent it. You learned swing costs by eating DENIED swings.
+
+The price tick [overnight proposal - awaiting Omer review]: a thin pale marker
+on the stamina bar at exactly one swing's price for the CARRIED weapon (blade
+20, fangs 12, maul 34 - cost_mult moves it). Pale while you can afford a
+swing, hot red when you cannot. No numbers, no clutter: the bar itself teaches
+the cost. Swapping weapons moves the tick - the maul's heavier price is
+visible before you ever swing it.
+
+Open for Omer: whether roll/heavy/item prices deserve their own ticks (one
+tick per verb could clutter), tick styling, and whether the finisher's 1.5x
+price should show when the chain is primed.
