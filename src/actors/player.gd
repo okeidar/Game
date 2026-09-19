@@ -206,7 +206,7 @@ func add_feathers(n: float) -> void:
 	_update_coat()
 
 func _spend_stamina(n: float) -> void:
-	stamina -= n
+	stamina = maxf(0.0, stamina - n)  # clamp at 0: negative stamina was hidden regen debt (telemetry showed st=-19); genre clamps at 0
 	since_spend = 0.0
 
 func _physics_process(dt: float) -> void:

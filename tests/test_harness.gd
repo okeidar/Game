@@ -260,7 +260,7 @@ class ScenarioIFrames extends Scenario:
 		if lf < 95:
 			return false
 		if run == 0:
-			check(absf(p.hp - 75.0) < 0.01, "standing player takes full 25, hp=%.2f" % p.hp)
+			check(absf(p.hp - 85.0) < 0.01, "standing player takes full 15 (iter4 balance proposal), hp=%.2f" % p.hp)
 			_start_run(1)
 			return false
 		if run == 1:
@@ -268,7 +268,7 @@ class ScenarioIFrames extends Scenario:
 			check(Sim.events.has("PLAYER DODGED THROUGH"), "dodge-through is acknowledged")
 			_start_run(2)
 			return false
-		check(absf(p.hp - 75.0) < 0.01, "roll that ends before the blow still gets hit, hp=%.2f" % p.hp)
+		check(absf(p.hp - 85.0) < 0.01, "roll that ends before the blow still gets hit, hp=%.2f" % p.hp)
 		return true
 
 
@@ -296,7 +296,7 @@ class ScenarioDefense extends Scenario:
 			if run <= 1:
 				p.feathers = 0.0; p.stamina = 100.0
 			elif run == 2:
-				p.feathers = 0.0; p.stamina = 10.0
+				p.feathers = 0.0; p.stamina = 3.0  # block regen (9/s) climbs ~8 by impact; 3 stays under the 13.5 chip
 			else:
 				p.feathers = 10.0
 		if lf == 5: e._try_attack()
@@ -318,8 +318,8 @@ class ScenarioDefense extends Scenario:
 		if lf < 100:
 			return false
 		if run == 0:
-			check(absf(p.hp - 92.5) < 0.01, "held block chips 30 percent of 25 through, hp=%.2f" % p.hp)
-			check(p.stamina >= 77.4 and p.stamina <= 78.5, "blocked hit drains stamina ~22.5 (trickle regen after), stamina=%.2f" % p.stamina)
+			check(absf(p.hp - 95.5) < 0.01, "held block chips 30 percent of 15 through, hp=%.2f" % p.hp)
+			check(p.stamina >= 86.4 and p.stamina <= 87.5, "blocked hit drains stamina ~13.5 (trickle regen after), stamina=%.2f" % p.stamina)
 			var blk := false
 			for ev in Sim.events:
 				if ev.begins_with("BLOCKED"): blk = true
@@ -334,7 +334,7 @@ class ScenarioDefense extends Scenario:
 			_start_run(2)
 			return false
 		if run == 2:
-			check(absf(p.hp - 75.0) < 0.01, "guard break lets the full 25 through, hp=%.2f" % p.hp)
+			check(absf(p.hp - 85.0) < 0.01, "guard break lets the full 15 through, hp=%.2f" % p.hp)
 			var broke := false
 			for ev in Sim.events:
 				if ev.begins_with("GUARD BREAK"): broke = true
@@ -499,7 +499,7 @@ class ScenarioMachinery extends Scenario:
 				if lf == 5: e._try_attack()
 				if lf == 200:
 					check(Sim.events.has("EFFIGY CHAINS AGAIN"), "the chain follow-up fires")
-					check(absf(p.hp - 50.0) < 0.01, "both linked swings land (25 + 25), hp=%.2f" % p.hp)
+					check(absf(p.hp - 60.0) < 0.01, "both linked swings land (15 + 25), hp=%.2f" % p.hp)
 					_start_run(6)
 					return false
 			6:  # progression machinery: spend path, conversion hook, upgrade hook
@@ -783,6 +783,23 @@ class ScenarioMachinery4 extends Scenario:
 		lf += 1
 		return false
 
+
+class ScenarioStaminaClamp extends Scenario:
+	func setup() -> void:
+		name = "stamina_clamp"
+		h.make_world()
+	func step(f: int) -> bool:
+		var p = h.player
+		if f == 2:
+			p.stamina = 5.0
+		if f == 5:
+			h.input.cur.dodge = true
+		if f == 7:
+			check(p.stamina == 0.0, "roll from 5 stamina clamps at 0, never negative, st=%.2f" % p.stamina)
+		if f == 90:
+			check(p.stamina > 0.0, "stamina regenerates from a clamped zero, st=%.2f" % p.stamina)
+			return true
+		return false
 
 class ScenarioShell extends Scenario:
 	const Sim = preload("res://src/combat/combat_sim.gd")
@@ -1465,6 +1482,7 @@ func _register() -> void:
 		ScenarioMachinery2.new(),
 		ScenarioMachinery3.new(),
 		ScenarioMachinery4.new(),
+		ScenarioStaminaClamp.new(),
 		ScenarioShell.new(),
 		ScenarioRound5A.new(),
 		ScenarioRound5B.new(),

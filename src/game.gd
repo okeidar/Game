@@ -28,6 +28,7 @@ var arena
 var player
 var _dbg_pos := false
 var _dbg_acc := 0.0
+var _dbg_kill := false  # debug hook (?killme=1): forces one death after begin so the death loop can be exercised headlessly
 var effigy          # the one real enemy (DEFEND room)
 var effigies: Array = []
 var cam
@@ -36,6 +37,7 @@ var build_id := "dev"
 var progression
 var shell
 var death_timer := 0.0
+var death_menu_t := -1.0   # counts down after death; YOU DIED screen waits its genre beat
 var deaths := 0
 
 func _ready() -> void:
@@ -55,6 +57,7 @@ func _load_build_id() -> void:
 	if OS.has_feature("web"):
 		var qp = JavaScriptBridge.eval("location.search", true)
 		_dbg_pos = qp != null and str(qp).find("debugpos") >= 0
+		_dbg_kill = qp != null and str(qp).find("killme") >= 0
 
 func _build() -> void:
 	Sim.reset()
@@ -139,6 +142,13 @@ func _process(delta: float) -> void:
 		death_timer -= delta
 		if death_timer <= 0.0:
 			_respawn()
+	if death_menu_t >= 0.0:
+		death_menu_t -= delta
+		if death_menu_t < 0.0 and shell != null and shell.state != "death":
+			shell.open("death")  # the banner lands first; the screen takes over after its beat
+	if _dbg_kill and player != null and not player.dead and shell != null and shell.state == "hidden":
+		_dbg_kill = false
+		player.apply_hit(99999.0, player.global_position + Vector3(0, 0, 1), 0.0)
 	if _dbg_pos and player != null:
 		_dbg_acc += delta
 		if _dbg_acc >= 0.5:
@@ -191,7 +201,7 @@ func _on_player_died() -> void:
 	Audio.music("death")
 	Sim.log_event("YOU DIED x%d" % deaths)
 	death_timer = 0.0
-	shell.open("death")  # death screen: rise on confirm, genre shape
+	death_menu_t = Tuning.DEATH_SCREEN_DELAY  # death screen: rise on confirm, after the genre beat
 
 func _on_effigy_died(e) -> void:
 	player.add_feathers(Tuning.KILL_FEATHERS)

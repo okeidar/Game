@@ -552,3 +552,15 @@ Omer's named gap: "The menues and inventory feels bad."
 - Per-kind structure: header + quiet subtitle line + footer key hints. Title screen gets the game name big with a greybox tag. Death is a full-screen takeover: big red YOU DIED + centered respawn option (genre's most important screen).
 - Equipment rows now carry decision-relevant stats: "fangs - 4-hit chain 44 dmg - reach 1.8 - stamina x0.6" so a weapon swap is an informed tradeoff choice (his doctrine) instead of a name list.
 - Subtitle tone lines are placeholder flavor, all replaceable ("the world waits" etc).
+
+## Iteration 4 - game-feel juice + genre benchmark (overnight)
+
+Reference frame: Dark Souls 3 mechanics cheat sheet (gastevens/dark-souls-3-mechanics-cheat-sheet) + tuning ledger at /tmp/deep-research/soulslike-tuning/. We are not duplicating a game; these numbers are calibration anchors.
+
+1. BUG FIX (not a proposal): stamina spend never clamped. Sprint-attack chains drove stamina to -19 (telemetry, iteration 1), which is hidden regen debt the player cannot see. `_spend_stamina` now clamps at 0, matching genre behavior (DS3 pool bottoms out at 0). New scenario `stamina_clamp` asserts roll-from-5 lands exactly 0 and regen recovers from a clamped zero.
+2. [overnight proposal - awaiting Omer review] Hitstop dealt 50ms -> 80ms (taken stays 90ms). Action-game standard band is 50-150ms; at 50ms our landed hits were barely readable. Tradeoff: more hitstop slows chained offense slightly - the cost of punchier feedback is a hair less flow.
+3. [overnight proposal - awaiting Omer review] Death-screen delay 1.4s (new tuning const DEATH_SCREEN_DELAY). Previously YOU DIED took over the screen the same frame the blow landed; genre shape is a beat of world first (DS3 ~1.2s fade). Tradeoff: 1.4s of dead time per death vs. the death actually reading as an event.
+4. [overnight proposal - awaiting Omer review] Training effigy damage 25 -> 15. At 25 vs 100hp the FIRST enemy killed in 4 clean hits; genre tutorial enemies take ~10-15% of a bar per hit (now 15%). Tradeoff: gentler onboarding vs. less early menace. All hurt/block/parry test expectations updated (they are derived from tuning).
+5. Roll i-frames already render as a ghost tuck (alpha 0.45 inside the window) - verified in code; no change needed.
+
+Open (his call, flagged again): spawn-drop jump-attack quirk (attack within the first ~10 frames after landing silently becomes a jump attack). Bot-level death-respawn verification happens live this round.

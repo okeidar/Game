@@ -70,7 +70,7 @@ const HEAVY_ATTACK := {
 # must give >= 340ms to be reactable; training enemy stays generous (0.85s).
 # Recovery is the Window of Opportunity and should be the longest phase.
 const DUMMY_ATTACK := {
-	"damage": 25.0, "windup": 0.85, "active": 0.12, "recovery": 1.05,
+	"damage": 15.0, "windup": 0.85, "active": 0.12, "recovery": 1.05,  # [overnight proposal - awaiting Omer review] 25->15: training effigy killed in 4 hits; genre tutorial hits take ~10-15% of a bar
 	"reach": 2.6, "arc_deg": 90.0,
 }
 const DUMMY_HP := 60.0
@@ -99,8 +99,9 @@ const PERFECT_DODGE_WINDOW := 0.15   # C: hit must connect within this of roll s
 # invent stuff. ask me first." Standing rule: never invent reward/economy/
 # design numbers - propose, get his word, then build.
 
-const HITSTOP_DEALT := 0.05        # C: action-game standard 50-150ms band
+const HITSTOP_DEALT := 0.08        # [overnight proposal - awaiting Omer review] 50->80ms inside the 50-150ms action-game band; dealt hits were hard to feel
 const HITSTOP_TAKEN := 0.09
+const DEATH_SCREEN_DELAY := 1.4   # [overnight proposal - awaiting Omer review] beat of world between the killing blow and YOU DIED (DS3 ~1.2s fade)
 
 const LOCK_RANGE := 18.0           # C: souls lock-on range unpublished
 const LOCK_BREAK_RANGE := 26.0
