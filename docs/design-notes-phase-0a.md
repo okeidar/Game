@@ -1186,3 +1186,17 @@ test-only. NEXT LEVER (iter32): widen telegraph freshness to ~800ms and
 make parry the DEFAULT answer for N consecutive fights; alternatively
 accept block footage as the guard milestone and leave the flash to Omer's
 own playtesting.
+
+## Iteration 32 - parry hunt v9.6: bracket calibrated, hunt paused [overnight proposal - awaiting Omer review]
+
+NO GAME CODE CHANGED. v9.6 armed all four late-guard presses (8.0/8.6/9.2/
+9.8s real) with parry as the default telegraph answer: 0 parries, 1 block,
+6 hits taken mid-arm. READING: three of four holds missed the impact
+entirely, and v9.4's +7000ms arm DID block - so the true telegraph->impact
+delay is ~7s real (sim ~13%, not the assumed 9%), and the 8.0-9.8s bracket
+raised the guard AFTER the blow. Calibrated next bracket: [5.5, 6.0, 6.5,
+7.0]s. HUNT PAUSED HERE per plan - the guard milestone on record is the
+organic BLOCK footage (iter30: BLOCK UP -> BLOCKED -2 chip, cold-sheen
+guard readable in frames); the bright parry flash stays test-only, and one
+calibrated run is queued behind real game work. Fight stats this run: 21
+attacks / 9 hits / 3 whiffs, 7 telegraphs, 1 block, 0 deaths.
