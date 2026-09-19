@@ -20,12 +20,27 @@ const Sim = preload("res://src/combat/combat_sim.gd")
 const SHAKE_DECAY := 1.7
 const SHAKE_MAX_OFF := 0.16
 const SHAKE_MAX_ROLL := 0.06
+const FOV_BASE := 62.0
+const FOV_SPRINT := 4.0   # fov feel: sprinting widens the world - speed you can feel in the edges
+const FOV_ROLL := 6.0   # fov feel: the dodge pulses wider, then settles back
+const FOV_EASE := 8.0
 
 func add_shake(a: float) -> void:
 	trauma = minf(1.0, trauma + a)
 
 func shake_tick(dt: float) -> void:
 	trauma = maxf(0.0, trauma - SHAKE_DECAY * dt)
+
+var fov_kick := 0.0   # roll pulse; decays back to still
+
+func fov_tick(dt: float) -> void:
+	if cam == null or player == null:
+		return
+	if player.get("state") == "roll":
+		fov_kick = FOV_ROLL
+	fov_kick = maxf(0.0, fov_kick - FOV_EASE * dt * 2.0)
+	var target: float = FOV_BASE + (FOV_SPRINT if player.get("sprinting") == true else 0.0) + fov_kick
+	cam.fov = lerpf(cam.fov, target, FOV_EASE * dt)
 
 func _apply_shake() -> void:
 	if cam == null or trauma <= 0.0:
@@ -42,7 +57,7 @@ func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	cam = Camera3D.new()
 	cam.current = true
-	cam.fov = 62.0
+	cam.fov = FOV_BASE
 	add_child(cam)
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -88,3 +103,4 @@ func _physics_process(dt: float) -> void:
 		Sim.shake_pool = 0.0
 	shake_tick(dt)
 	_apply_shake()
+	fov_tick(dt)

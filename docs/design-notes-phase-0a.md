@@ -1595,3 +1595,17 @@ Tradeoffs (per doctrine): impact noise means a missed or sprayed volley can pull
 
 Verification: new `volley_feel` scenario - one loose sound, three impact sounds (the whole spread connects at test range), the feather still damages, and a felling shot freezes 0.160s and shakes 0.15 exactly like a melee kill. 52/52 green.
 
+
+## iter52 - camera feel: fov kick on sprint and dodge [overnight proposal - awaiting Omer review]
+
+Live: https://feather-iter52-2159-93f72cd97c7b.surge.sh
+
+Feel mandate, seventh iteration. Audit found the camera completely static: fov pinned at 62 with no dynamics (trauma shake was the only life it had). Now:
+
+- **Sprint widens** the fov by 4 (`FOV_SPRINT`) - speed you feel in the edges of the frame, eased at 8/s so it breathes in and out instead of snapping.
+- **Dodge pulses** the fov by 6 (`FOV_ROLL`), decaying back over the roll's length - the i-frame dash reads as a lurch of speed.
+
+Tradeoffs (per doctrine): fov motion can nauseate in long sprints - 4 degrees is deliberately under the queasy line, and the roll pulse is short enough to read as an accent, not a zoom. All three constants (`FOV_SPRINT`, `FOV_ROLL`, `FOV_EASE`) sit next to the shake constants in the camera script, Omer's to retune.
+
+Verification: new `camera_fov` scenario drives a real camera node against the player: rest fov 62.0, sprint 66.0, dodge pulse 66.3, settle back to 62.1. 53/53 green.
+

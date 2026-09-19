@@ -2633,6 +2633,40 @@ class ScenarioVolleyFeel extends Scenario:
 		lf += 1
 		return false
 
+class ScenarioCameraFov extends Scenario:
+	const Cam = preload("res://src/camera/third_person_camera.gd")
+	var lf := -2
+	var c = null
+	func setup() -> void:
+		name = "camera_fov"
+		h.make_world()
+		h.effigies[0].position = Vector3(0, 0.05, 60.0)
+		c = Cam.new()
+		h.add_child(c)
+		c.player = h.player
+	func step(_f: int) -> bool:
+		if lf < 0:
+			lf += 1
+			return false
+		if lf == 20:
+			check(absf(c.cam.fov - 62.0) < 0.5, "at rest the fov sits at base (%.1f)" % c.cam.fov)
+		if lf == 25:
+			h.input.cur.move = Vector2(0, -1)
+			h.input.cur.sprint = true
+		if lf == 70:
+			check(c.cam.fov > 63.5, "sprinting widens the fov (%.1f)" % c.cam.fov)
+			h.input.cur.sprint = false
+			h.input.cur.move = Vector2.ZERO
+		if lf == 75:
+			h.input.cur.dodge = true
+		if lf == 82:
+			check(c.cam.fov > 65.0, "the dodge pulses the fov wider (%.1f)" % c.cam.fov)
+		if lf == 160:
+			check(c.cam.fov < 63.0, "the pulse settles back toward base (%.1f)" % c.cam.fov)
+			return true
+		lf += 1
+		return false
+
 func _register() -> void:
 
 	scenarios = [
@@ -2662,6 +2696,7 @@ func _register() -> void:
 		ScenarioKillFeel.new(),
 		ScenarioSwingSound.new(),
 		ScenarioVolleyFeel.new(),
+		ScenarioCameraFov.new(),
 		ScenarioCheckpointRest.new(),
 		ScenarioPatternCycle.new(),
 		ScenarioRemnantPenalty.new(),
