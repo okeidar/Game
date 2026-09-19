@@ -49,7 +49,11 @@ static func emit_sound(source_name: String, pos: Vector3, radius: float, loudnes
 	sounds.append({"pos": pos, "radius": radius, "loudness": loudness, "source": source_name})
 	if sounds.size() > 200:
 		sounds.pop_front()
-	log_event("SOUND %s at (%.1f, %.1f) r=%.1f loud=%.1f" % [source_name, pos.x, pos.z, radius, loudness])
+	# [overnight proposal - awaiting Omer review] feet stay OFF the visible feed:
+	# log_lines (the HUD) is for combat signal; events/console keep full fidelity.
+	var msg := "SOUND %s at (%.1f, %.1f) r=%.1f loud=%.1f" % [source_name, pos.x, pos.z, radius, loudness]
+	events.append(msg)
+	print("[combat] ", msg)
 
 static func hitstop(d: float) -> void:
 	hitstop_left = maxf(hitstop_left, d)

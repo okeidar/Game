@@ -872,3 +872,22 @@ Open for Omer: dwell time (0.8s), shove damage (6), whether the shove should
 also push the PLAYER back (knockback machinery does not exist - currently the
 effigy steps back instead, which is honest spacing), and whether other future
 enemies share the shove or get their own hug answers.
+
+## Iteration 21 (overnight, 2026-09-19) - quiet feed + organic shove evidence
+
+Audit: hit feedback already exists (0.12s red hit flash, hitstop, telegraph
+colors, stagger-out-of-swing, riposte). What the footage actually showed
+buried: the on-screen event feed was ~90% "SOUND footstep at ..." telemetry,
+drowning EFFIGY RAISES ITS CLUB / WINDED / FINISHER - the lines a player reads
+the fight by.
+
+Fix [overnight proposal - awaiting Omer review]: footsteps (all emit_sound
+lines) stay OFF log_lines, the visible HUD feed. They still record to the
+machine feed (Sim.events - tests and AI awareness lose nothing) and to the
+console. The HUD feed is combat signal only now.
+
+Paired evidence work: playtest8.js, a HUGGER bot variant that fights inside
+1.3m to provoke the iter20 shove organically in the live build.
+
+Open for Omer: whether sound telemetry wants a debug toggle to reappear on the
+feed, and whether toasts (ITEM GAINED spam at spawn) want the same treatment.

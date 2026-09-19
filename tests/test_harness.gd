@@ -1987,6 +1987,25 @@ class ScenarioShoveHonest extends Scenario:
 			check(not saw, "honest spacing never triggers the shove")
 		return f >= 160
 
+class ScenarioQuietFeed extends Scenario:
+	const Sim2 = preload("res://src/combat/combat_sim.gd")
+	func setup() -> void:
+		name = "quiet_feed"
+		h.make_world()
+		h.input.at(5, {"move": Vector2(0, -1)})   # walk: footsteps fire
+		h.input.at(40, {"move": Vector2.ZERO})
+	func step(f: int) -> bool:
+		if f == 60:
+			var snd_in_events := 0
+			var snd_in_feed := 0
+			for ev in Sim2.events:
+				if ev.begins_with("SOUND"): snd_in_events += 1
+			for ln in Sim2.log_lines:
+				if ln.begins_with("SOUND"): snd_in_feed += 1
+			check(snd_in_events > 0, "sound machinery still records every footstep for tests and AI, got %d" % snd_in_events)
+			check(snd_in_feed == 0, "the visible feed carries no footstep noise, got %d" % snd_in_feed)
+		return f >= 70
+
 func _register() -> void:
 
 	scenarios = [
@@ -2027,6 +2046,7 @@ func _register() -> void:
 		ScenarioEquipmentHonest.new(),
 		ScenarioShove.new(),
 		ScenarioShoveHonest.new(),
+		ScenarioQuietFeed.new(),
 		ScenarioDeterminismB.new(),
 	]
 	for sc in scenarios:
