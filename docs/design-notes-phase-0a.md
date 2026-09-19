@@ -597,3 +597,14 @@ The HUD had the right data but no FEEL: bars snapped instantly and nothing warne
 3. [overnight proposal - awaiting Omer review] Heal charges are pips (3 gold squares, filled/dim), not "heal x3" text - readable at a glance mid-fight.
 
 Verification: new ?hudcheck=1 debug hook (applies a 35-dmg hit, drops stamina to 10, damages the effigy) so the feedback can be screenshot-verified headlessly. No damage numbers - genre doesn't float them; skipped deliberately.
+
+## Iteration 8 - checkpoint rest becomes real (overnight)
+
+Critical path items: progression + checkpoint behavior. The rest stub is gone; the checkpoint now opens a menu.
+
+1. [overnight proposal - awaiting Omer review] REST: closes wounds (hp to max), refills stamina and heal charges, and THE FALLEN RISE AGAIN - every felled effigy respawns at its post. The genre loop: comfort is real, and its price is that the world resets. The training effigy's own auto-respawn timer is untouched (load-bearing for a training room; rest-triggered respawn now ALSO exists).
+2. [overnight proposal - awaiting Omer review] First feather spends, riding the Progression machinery: HARDEN (+10 max hp, 20 feathers) and MEND (+1 heal charge capacity, 30 feathers). PRICES ARE SCAFFOLD PLACEHOLDERS awaiting his economy. The tradeoff is built into the currency itself: feathers spent on power are feathers not worn as coat/resist - spending is a real decision, not a free upgrade.
+3. Interact (E) at the checkpoint now opens this menu (registers first, as before). The death remnant is untouched by rest - what you dropped still waits where you fell.
+4. HUD shows the results immediately: heal pips refill, hp bar ghost snaps up, feather count drops on a buy.
+
+Tests: checkpoint_rest scenario (menu rows, rest refill + respawn-at-post, exact spend amounts, denial when poor); machinery_scaffolds run 1 updated (no more stub event; menu wiring covered by the new scenario).

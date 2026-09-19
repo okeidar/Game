@@ -8,6 +8,7 @@ const Sim = preload("res://src/combat/combat_sim.gd")
 const Audio = preload("res://src/combat/audio_bus.gd")
 
 var registered := false
+var on_activate: Callable = Callable()   # game.gd wires the rest menu; undecided-effect stub era ended in iter 8
 var marker: MeshInstance3D
 var mat: StandardMaterial3D
 
@@ -33,10 +34,12 @@ func activate(_player) -> void:
 		mat.emission = Color("cfc8b8")
 		mat.emission_energy_multiplier = 2.2
 		Sim.log_event("CHECKPOINT REGISTERED")
-	# Resting effect: UNDECIDED (open decision for Omer). Machinery stub only.
-	Audio.sfx("rest")
-	Sim.toast("Rested at the checkpoint (effect undecided)")
-	Sim.log_event("CHECKPOINT REST (stub: what rest does is undecided)")
+	# Rest effects are decided (iteration 8, overnight proposals): the shell menu owns them.
+	Audio.sfx("rest")   # the fire answers every approach; rest itself is chosen in the menu
+	if on_activate.is_valid():
+		on_activate.call()
+	else:
+		Sim.log_event("CHECKPOINT OPENED (no shell wired)")
 
 ## Respawn linkage machinery: where the player rises after death.
 ## (Rest effects themselves remain undecided.)

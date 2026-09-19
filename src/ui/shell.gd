@@ -15,6 +15,7 @@ var player = null
 var settings = null   # Settings registry (game.gd injects)
 var map_data = null   # MapData registry (game.gd injects)
 var dialogue = null   # active Dialogue engine while state == "dialogue"
+var checkpoint_ctx: Dictionary = {}   # game.gd injects {progression, effigies} for the checkpoint menu
 var _death_menu: RichTextLabel = null
 var on_respawn: Callable = Callable()   # game.gd hooks
 var on_begin: Callable = Callable()
@@ -129,6 +130,12 @@ func _build_menu() -> void:
 			_add("CLOSE", func(): close())
 		"death":
 			_add("RISE AT THE LAST CHECKPOINT", func(): if on_respawn.is_valid(): on_respawn.call())
+		"checkpoint":
+			# [overnight proposals - awaiting Omer review] rest effects + first feather spends; prices are SCAFFOLD
+			_add("REST - wounds close, heals refill, the fallen rise again", func(): _rest_at_checkpoint())
+			_add("HARDEN +10 max hp - 20 feathers (scaffold price)", func(): _buy_upgrade("harden", 20.0))
+			_add("MEND +1 heal charge - 30 feathers (scaffold price)", func(): _buy_upgrade("mend", 30.0))
+			_add("LEAVE", func(): close())
 		"inventory":
 			if player != null:
 				for i in player.inventory.slots.size():
@@ -154,6 +161,40 @@ func _use_item(slot: int) -> void:
 	if player != null:
 		player._try_use_item()   # slot-0 commit machinery; slot routing is OPEN
 		Sim.log_event("SHELL used inventory slot %d (routing scaffold)" % slot)
+
+func _rest_at_checkpoint() -> void:
+	# genre shape: resting refills you AND brings the world back - the cost of comfort is the fight resetting
+	if player != null:
+		player.hp = player.max_hp
+		player.stamina = T.STAMINA_MAX
+		player.heal_charges = player.max_heal_charges
+	var risen := 0
+	for e in checkpoint_ctx.get("effigies", []):
+		if e.dead:
+			e.reset_run(e.spawn_pos)
+			risen += 1
+	Sim.log_event("RESTED - wounds close, heals refill, %d rise again" % risen)
+	Sim.toast("Rested - heals refilled; %d rise again" % risen)
+	close()
+
+func _buy_upgrade(what: String, price: float) -> void:
+	var prog = checkpoint_ctx.get("progression")
+	if prog == null or player == null:
+		return
+	if not prog.spend({"feathers": price}, player):
+		Sim.toast("Not enough feathers")
+		_build_menu()
+		return
+	# spending feathers on power means not wearing them as coat/resist - the tension is the design
+	if what == "harden":
+		player.max_hp += 10.0
+		player.hp += 10.0
+	elif what == "mend":
+		player.max_heal_charges += 1
+		player.heal_charges += 1
+	prog.apply_upgrade(what, player)
+	Sim.toast("%s - yours (%d feathers left)" % [what.to_upper(), int(player.feathers)])
+	_build_menu()
 
 func _add(lbl: String, fn: Callable) -> void:
 	menu_items.append({"label": lbl, "action": fn})
@@ -208,6 +249,7 @@ func _kind_subtitle() -> String:
 		"settings": return "scaffold entries - more land with the real game"
 		"map": return "where your feet have been"
 		"gestures": return "say it with the body"
+		"checkpoint": return "a breath before the road again"
 	return ""
 
 func _footer_hint() -> String:
@@ -226,5 +268,5 @@ func _unhandled_input(event: InputEvent) -> void:
 		nav(-1)
 	elif event.is_action_pressed("ui_accept") or event.is_action_pressed("interact"):
 		activate()
-	elif event.is_action_pressed("ui_cancel") and state in ["pause", "inventory", "equipment"]:
+	elif event.is_action_pressed("ui_cancel") and state in ["pause", "inventory", "equipment", "checkpoint"]:
 		close()

@@ -442,10 +442,7 @@ class ScenarioMachinery extends Scenario:
 				if lf == 5: h.input.cur.interact = true
 				if lf == 20:
 					check(Sim.events.has("CHECKPOINT REGISTERED"), "checkpoint registers on interact")
-					var stub := false
-					for ev in Sim.events:
-						if ev.begins_with("CHECKPOINT REST (stub"): stub = true
-					check(stub, "rest is an acknowledged stub, not a decided effect")
+					check(Sim.events.has("CHECKPOINT OPENED (no shell wired)"), "interact asks for the rest menu (menu itself is covered by checkpoint_rest)")
 					check(Sim.active_checkpoint != null, "the checkpoint is registered as active")
 					_start_run(2)
 					return false
@@ -824,6 +821,53 @@ class ScenarioComboCancel extends Scenario:
 				check(p.state == "roll", "dodge cancel fires inside late recovery, state=%s" % p.state)
 				return true
 		lf += 1
+		return false
+
+class ScenarioCheckpointRest extends Scenario:
+	const Sim = preload("res://src/combat/combat_sim.gd")
+	const Shell = preload("res://src/ui/shell.gd")
+	const Progression = preload("res://src/combat/progression.gd")
+	var shell
+	func setup() -> void:
+		name = "checkpoint_rest"
+		h.make_world()
+		shell = Shell.new()
+		shell.player = h.player
+		shell.checkpoint_ctx = {"progression": Progression.new(), "effigies": h.effigies}
+		h.add_child(shell)
+	func step(f: int) -> bool:
+		var p = h.player
+		var e = h.effigies[0]
+		if f == 2:
+			p.heal_charges = 1
+			p.hp = 40.0
+			e.apply_hit(999.0, p.global_position, 1.0)
+			shell.open("checkpoint", false)
+		if f == 4:
+			check(shell.menu_items.size() == 4, "checkpoint menu offers rest, two upgrades, leave - got %d" % shell.menu_items.size())
+			check(e.dead, "the effigy is felled before the rest")
+			shell.activate()  # REST
+		if f == 6:
+			check(p.heal_charges == p.max_heal_charges and absf(p.hp - p.max_hp) < 0.01, "rest refills heals and hp, charges=%d hp=%.0f" % [p.heal_charges, p.hp])
+			check(not e.dead and e.position.distance_to(e.spawn_pos) < 0.01, "the fallen rise again at their post")
+			check(shell.state == "hidden", "rest closes the menu")
+		if f == 8:
+			p.feathers = 25.0
+			shell.open("checkpoint", false)
+			shell.nav(1)
+			shell.activate()  # HARDEN
+		if f == 10:
+			check(absf(p.max_hp - 110.0) < 0.01 and absf(p.feathers - 5.0) < 0.01, "harden spends 20 feathers for +10 max hp, max_hp=%.0f feathers=%.0f" % [p.max_hp, p.feathers])
+		if f == 12:
+			shell.nav(1)
+			shell.activate()  # MEND with only 5 feathers
+		if f == 14:
+			check(p.max_heal_charges == 3, "mend is denied when poor, capacity=%d" % p.max_heal_charges)
+			p.feathers = 35.0
+			shell.activate()  # still on MEND
+		if f == 16:
+			check(p.max_heal_charges == 4 and absf(p.feathers - 5.0) < 0.01, "mend spends 30 for +1 charge capacity, capacity=%d feathers=%.0f" % [p.max_heal_charges, p.feathers])
+			return true
 		return false
 
 class ScenarioStaminaClamp extends Scenario:
@@ -1525,6 +1569,7 @@ func _register() -> void:
 		ScenarioMachinery3.new(),
 		ScenarioMachinery4.new(),
 		ScenarioComboCancel.new(),
+		ScenarioCheckpointRest.new(),
 		ScenarioStaminaClamp.new(),
 		ScenarioShell.new(),
 		ScenarioRound5A.new(),

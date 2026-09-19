@@ -20,6 +20,7 @@ var facing := Vector3.FORWARD
 var camera_yaw := 0.0
 var block_t := 0.0
 var heal_charges := T.HEAL_CHARGES_SCAFFOLD
+var max_heal_charges := T.HEAL_CHARGES_SCAFFOLD   # MEND upgrades raise the ceiling
 var heal_t := 0.0
 const Inventory = preload("res://src/combat/inventory.gd")
 var inventory = Inventory.new()
@@ -711,7 +712,7 @@ func reset_run(spawn: Vector3) -> void:
 	hp = max_hp
 	stamina = T.STAMINA_MAX
 	feathers = T.FEATHERS_MAX
-	heal_charges = T.HEAL_CHARGES_SCAFFOLD
+	heal_charges = max_heal_charges
 	dead = false
 	stagger_t = 0.0
 	state = "free"

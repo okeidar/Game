@@ -127,6 +127,8 @@ func _build() -> void:
 	shell.on_respawn = func(): _respawn(); shell.close()
 	shell.on_quit_to_title = func(): shell.open("title")
 	add_child(shell)
+	cp.on_activate = func(): shell.open("checkpoint")
+	shell.checkpoint_ctx = {"progression": progression, "effigies": effigies}
 	settings = Settings.new()
 	settings.register_setting("master_volume", {"label": "master volume", "min": 0.0, "max": 1.0, "step": 0.1, "value": 1.0})  # SCAFFOLD entry
 	settings.register_setting("camera_fov", {"label": "camera fov", "min": 60.0, "max": 100.0, "step": 5.0, "value": 62.0, "on_change": func(v): cam.cam.fov = v})  # SCAFFOLD entry
