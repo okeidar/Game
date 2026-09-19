@@ -195,7 +195,7 @@ func apply_hit(damage: float, from_pos: Vector3, stagger: float, flags := {}) ->
 			return rg
 		stamina -= chip
 		since_spend = 0.0
-		var rb: int = super.apply_hit(damage * (1.0 - T.BLOCK_DAMAGE_CUT), from_pos, minf(stagger, 0.15))
+		var rb: int = super.apply_hit(damage * (1.0 - T.BLOCK_DAMAGE_CUT), from_pos, minf(stagger, 0.15), {"spark_color": Color(0.85, 0.92, 1.0)})
 		guard_flash_t = 0.12   # [overnight proposal] the guard held - a cold spark, not the hurt flash
 		guard_flash_color = Color(0.85, 0.92, 1.0)
 		Sim.hitstop(T.HITSTOP_TAKEN * 0.5)

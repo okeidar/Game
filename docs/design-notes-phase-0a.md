@@ -1320,3 +1320,23 @@ What the integration would need:
 - A TypeSafe API key from Omer (he holds the account; I must not sign
   up). Until then the hand-written v10.2 policy stays the driver and
   the juice pass proceeds on the normal cadence.
+
+## iter36 - juice pass item 1: HIT SPARK (2026-09-19 ~16:19)
+[overnight proposal - awaiting Omer review] First look-and-feel change
+under Omer's 15:34 directive ("audio, effects, models"). A spark burst
+at the hit contact point: 7 procedural unshaded shards, 0.22s lifetime,
+warm (1.0, 0.72, 0.32) by default; the block chip path passes the cold
+guard color (0.85, 0.92, 1.0) so a held guard never reads as a wound.
+Hooked in combatant.apply_hit - both directions (player hits effigy,
+effigy hits player, projectiles) get it from one site. The burst holds
+its first beat through hitstop (tree pause freezes it mid-burst) -
+intended punch. Numbers are first-pass juice, awaiting Omer's eye.
+AUDIT FINDING: hitstop was already fully wired (80ms dealt / 90ms
+taken, tree pause in game.gd) - verified existing, not rebuilt.
+Tests: new ScenarioHitSpark (4 checks) - 44/44 green.
+Environment note: the workspace container was rebuilt mid-iteration
+(OOM thrash on 2GB RAM: swiftshader chrome + export concurrently).
+Code recreated verbatim from transcript; toolchain reinstalled. Lesson
+recorded: serialize heavy jobs; commit early.
+Live: https://feather-iter36-1619-62a499c6e8e3f0ed36c4.surge.sh
+Playtest footage review (spark visibility) pending next wake.

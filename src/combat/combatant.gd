@@ -5,6 +5,7 @@ signal took_hit(amount: float, from_pos: Vector3)
 signal died
 
 const Sim = preload("res://src/combat/combat_sim.gd")
+const HitSpark = preload("res://src/fx/hit_spark.gd")
 
 var display_name := "COMBATANT"
 var team := "neutral"
@@ -33,7 +34,7 @@ func is_invulnerable() -> bool:
 func damage_after_defense(damage: float) -> float:
 	return damage
 
-func apply_hit(damage: float, from_pos: Vector3, stagger: float, _flags := {}) -> int:
+func apply_hit(damage: float, from_pos: Vector3, stagger: float, flags := {}) -> int:
 	if dead:
 		return HIT_RESULT_MISS
 	if is_invulnerable():
@@ -41,6 +42,14 @@ func apply_hit(damage: float, from_pos: Vector3, stagger: float, _flags := {}) -
 	var final := damage_after_defense(damage)
 	hp = maxf(0.0, hp - final)
 	hit_flash_t = 0.12
+	# Juice pass (Omer directive 2026-09-19): spark burst at the contact point.
+	# [overnight proposal - awaiting Omer review] warm by default; the block
+	# path passes the cold guard color so a held guard never reads as a wound.
+	var spark_col: Color = flags.get("spark_color", Color(1.0, 0.72, 0.32))
+	var toward: Vector3 = global_position - from_pos
+	toward.y = 0.0
+	toward = toward.normalized() * hurt_radius * 0.8 if toward.length_squared() > 0.0001 else Vector3.ZERO
+	HitSpark.burst(get_parent(), global_position + Vector3(0, 1.0, 0) + toward, spark_col)
 	since_hit = 0.0
 	stagger_t = maxf(stagger_t, stagger)
 	took_hit.emit(final, from_pos)

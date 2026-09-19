@@ -2147,6 +2147,50 @@ class ScenarioDefenseFeedback extends Scenario:
 		return false
 
 
+
+class ScenarioHitSpark extends Scenario:
+	const Sim = preload("res://src/combat/combat_sim.gd")
+	const HitSpark = preload("res://src/fx/hit_spark.gd")
+	var lf := -2
+	var run := 0
+	var base := 0
+	func setup() -> void:
+		name = "hit_spark"
+		_start_run(0)
+	func _start_run(r: int) -> void:
+		run = r
+		lf = -2
+		h.make_world()
+		h.player.facing = Vector3(0, 0, -1)
+		h.effigies[0].position = Vector3(0, 0.05, -2.0)
+		h.effigies[0].facing = Vector3(0, 0, 1)   # the proven hit_window geometry
+		base = HitSpark.spawned
+	func sparks_alive() -> int:
+		return h.get_tree().get_nodes_in_group("hit_sparks").size()
+	func step(f: int) -> bool:
+		var _unused = f
+		match run:
+			0:  # a landed swing bursts a spark at the victim, then cleans up
+				if lf == 16:
+					h.input.cur.attack = true   # grounded: past the spawn-drop window (hit_window idiom)
+				if lf == 45:
+					check(HitSpark.spawned == base + 1, "a landed swing spawns exactly one burst, +%d" % (HitSpark.spawned - base))
+					check(sparks_alive() >= 1, "the burst is alive in the world right after the hit")
+				if lf == 70:
+					check(sparks_alive() == 0, "the burst cleans itself up after its lifetime")
+					_start_run(1)
+					return false
+			1:  # an effigy hit on the player bursts a spark too
+				if lf == 0:
+					h.player.feathers = 0.0
+				if lf == 5:
+					h.effigies[0]._try_attack()
+				if lf == 80:
+					check(HitSpark.spawned == base + 1, "an effigy hit on the player spawns one burst, +%d" % (HitSpark.spawned - base))
+					return true
+		lf += 1
+		return false
+
 func _register() -> void:
 
 	scenarios = [
@@ -2157,6 +2201,7 @@ func _register() -> void:
 		ScenarioLockOn.new(),
 		ScenarioTelegraph.new(),
 		ScenarioHitstop.new(),
+		ScenarioHitSpark.new(),
 		ScenarioFeathers.new(),
 		ScenarioRegen.new(),
 		ScenarioCameraRelative.new(),
