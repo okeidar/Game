@@ -664,3 +664,23 @@ Scaffold values awaiting Omer: overhead 25 dmg / 1.2s windup / period 6.
 Skipped from the candidate list: post-chain vulnerability window (+damage
 after the double-rest) - no honest visual telegraph designed yet; proposing
 without a readable tell would break telegraph honesty. Parked.
+
+## Iteration 11 - the death penalty is REAL (2026-09-19, overnight)
+
+Death penalty is on Omer's critical path and was empty scaffolding: the
+remnant recorded a position, held nothing, and recovery did nothing
+("(what it holds: undecided)"). Now it is the genre loop.
+
+[overnight proposal - awaiting Omer review] Death drops EVERY carried feather
+where you fell; your count goes to zero. Walking back over the remnant returns
+them ("REMNANT RECOVERED - N feathers back"). Dying again before the recovery
+walk spends the first remnant - its feathers are gone for good
+("THE FIRST REMNANT FADES - N feathers gone for good"), and only the latest
+death leaves a mark. The tradeoff is the one the doctrine wants: the feather
+coat protects you most when you carry the most - which is exactly when a death
+costs the most. Rich is safe and rich is exposed, at the same time.
+
+Tests: new scenario remnant_penalty (29 scenarios) - the drop zeroes the
+count, a second death fades the first remnant and leaves only the new one
+holding only the new amount, the recovery names and returns every feather.
+The old empty-payload machinery expectation was updated to the real rule.

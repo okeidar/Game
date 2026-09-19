@@ -446,14 +446,17 @@ class ScenarioMachinery extends Scenario:
 					check(Sim.active_checkpoint != null, "the checkpoint is registered as active")
 					_start_run(2)
 					return false
-			2:  # death remnant machinery
+			2:  # death remnant: the drop takes the feathers, walking back returns them
 				if lf == 0:
+					p.feathers = 40.0
 					DeathPenalty.drop(p, h.sim_root)
+					check(absf(p.feathers) < 0.01, "death drops every feather where they fell, feathers=%.0f" % p.feathers)
 				if lf == 20:
 					var rec := false
 					for ev in Sim.events:
 						if ev.begins_with("REMNANT RECOVERED"): rec = true
-					check(rec, "walking over the remnant recovers it (empty payload, rules undecided)")
+					check(rec, "walking over the remnant recovers it")
+					check(absf(p.feathers - 40.0) < 0.01, "the recovery returns every feather, feathers=%.0f" % p.feathers)
 					_start_run(3)
 					return false
 			3:  # riposte machinery: parry opens the crit window, next hit crits
@@ -969,6 +972,54 @@ class ScenarioPatternCycle extends Scenario:
 						if ev.begins_with("EFFIGY HEAVES ITS CLUB OVERHEAD"): heaved = true
 					check(heaved, "the overhead is announced distinctly")
 					check(absf(p.hp - 75.0) < 0.01, "the overhead goes through the guard at full 25, hp=%.2f" % p.hp)
+					return true
+		lf += 1
+		return false
+
+class ScenarioRemnantPenalty extends Scenario:
+	const Sim = preload("res://src/combat/combat_sim.gd")
+	const DeathPenalty = preload("res://src/combat/death_penalty.gd")
+	var run := 0
+	var lf := -2
+	func setup() -> void:
+		name = "remnant_penalty"
+		_start_run(0)
+	func _start_run(r: int) -> void:
+		run = r
+		lf = -2
+		h.make_world()
+	func step(f: int) -> bool:
+		var _unused = f
+		var p = h.player
+		match run:
+			0:  # a second death before recovery: the first remnant's feathers are gone for good
+				if lf == 0:
+					p.feathers = 40.0
+					DeathPenalty.drop(p, h.sim_root)
+					check(absf(p.feathers) < 0.01, "the first death drops all 40, feathers=%.0f" % p.feathers)
+					p.position = Vector3(12, 0.1, 12)  # walk away so it is not recovered
+				if lf == 4:
+					p.feathers = 15.0
+					DeathPenalty.drop(p, h.sim_root)
+					p.position = Vector3(24, 0.1, 24)  # away from the second drop too
+				if lf == 8:
+					var faded := false
+					for ev in Sim.events:
+						if ev == "THE FIRST REMNANT FADES - 40 feathers gone for good": faded = true
+					check(faded, "the second death spends the first remnant - 40 gone for good")
+					var left := h.get_tree().get_nodes_in_group("remnants")
+					check(left.size() == 1, "only the latest death leaves a mark, remnants=%d" % left.size())
+					if left.size() == 1:
+						check(absf(left[0].payload.contents.feathers - 15.0) < 0.01, "the new remnant holds only the 15 from the second death")
+					_start_run(1)
+					return false
+			1:  # recovery returns what the remnant holds
+				if lf == 0:
+					p.feathers = 40.0
+					DeathPenalty.drop(p, h.sim_root)
+				if lf == 20:
+					check(Sim.events.has("REMNANT RECOVERED - 40 feathers back"), "the recovery names what it returned")
+					check(absf(p.feathers - 40.0) < 0.01, "every feather is back, feathers=%.0f" % p.feathers)
 					return true
 		lf += 1
 		return false
@@ -1674,6 +1725,7 @@ func _register() -> void:
 		ScenarioComboCancel.new(),
 		ScenarioCheckpointRest.new(),
 		ScenarioPatternCycle.new(),
+		ScenarioRemnantPenalty.new(),
 		ScenarioStaminaClamp.new(),
 		ScenarioShell.new(),
 		ScenarioRound5A.new(),

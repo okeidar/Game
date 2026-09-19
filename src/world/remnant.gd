@@ -10,6 +10,7 @@ var mote: MeshInstance3D
 var spin := 0.0
 
 func _ready() -> void:
+	add_to_group("remnants")
 	mote = MeshInstance3D.new()
 	var bm := BoxMesh.new()
 	bm.size = Vector3(0.22, 0.22, 0.22)
@@ -34,7 +35,11 @@ func _physics_process(dt: float) -> void:
 		var d: Vector3 = p.global_position - global_position
 		d.y = 0.0
 		if d.length() < 1.0:
-			# Recovery rules UNDECIDED: payload is applied here when decided.
-			Sim.log_event("REMNANT RECOVERED (payload empty - rules undecided)")
+			var held: float = payload.get("contents", {}).get("feathers", 0.0)
+			if held > 0.0:
+				p.feathers += held
+				Sim.log_event("REMNANT RECOVERED - %d feathers back" % int(held))
+			else:
+				Sim.log_event("REMNANT RECOVERED (it held nothing)")
 			queue_free()
 			return
