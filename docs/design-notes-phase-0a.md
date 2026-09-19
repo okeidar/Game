@@ -1217,3 +1217,20 @@ damage triggers heal_commit organically; (3) death-loop verification -
 on death the bot records the spot, respawns, and walks back to stand on
 the remnant. Critical-path loops under test: heal, death penalty,
 remnant recovery, respawn re-engagement.
+
+### Iter33 addendum (v9.7 results): respawn economy verified organically
+
+300s run: the bot felled the EFFIGY (+6 essence), it ROSE AGAIN, and the
+bot felled it a second time for +1 essence "(risen - worth less until the
+world resets)" - the respawn-economy rule now has organic end-to-end
+evidence (kill -> respawn -> reduced-reward kill). Fight stats: 10
+attacks / 6 hits / 2 whiffs, 4 telegraphs, 2 hits taken, 0 deaths. PARRY:
+3 arms across the calibrated [5.5-7.0s] bracket, 0 parries, 0 blocks - the
+effigy barely swung (short fight) and the flash stays test-only; the
+organic BLOCK footage from iter30 remains the guard milestone. HEAL: never
+triggered (bot took only 2 hits, hp stayed above 65) - organic
+heal_commit and the death/remnant loop need a bot that LOSES (a no-attack
+"punching bag" mode is the honest way; queued, harness only). Harness note:
+after the second kill the bot idled ~60% of the run next to the corpse -
+re-engagement works but the respawn wait is dead time; a shorter run or
+multi-target roaming would densify footage.
