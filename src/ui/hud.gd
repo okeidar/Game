@@ -126,7 +126,7 @@ func _process(_dt: float) -> void:
 	hp_bar.value = player.hp
 	st_bar.value = player.stamina
 	fe_bar.value = player.feathers
-	fe_text.text = "%d feathers · %d%% resist · heal x%d%s" % [int(player.feathers), int(round(player.feather_resist() * 100.0)), player.heal_charges, (" · SNEAK" if player.sneaking else "")]
+	fe_text.text = "%s · %d feathers · %d%% resist · heal x%d%s" % [player.moveset.get("id", "?").to_upper(), int(player.feathers), int(round(player.feather_resist() * 100.0)), player.heal_charges, (" · SNEAK" if player.sneaking else "")]
 	if effigy != null and (player.lock_target == effigy or effigy.since_hit < 4.0) and not effigy.dead:
 		en_panel.visible = true
 		en_bar.value = effigy.hp

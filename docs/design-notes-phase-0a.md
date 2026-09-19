@@ -523,3 +523,22 @@ Built first because every later iteration is judged by it:
 - **Playtest bot** (verify/playtest.js): real keyboard/mouse input via headless Chrome; steers to nearest living effigy by telemetry (8-way), sprints past 5m, attacks in range with chain presses, rolls on telegraph console lines, heals under 40 hp. Captures console + screenshot frames; assembles film.mp4 + montage.png for footage review; writes run.log + stats.json.
 - **Analyzer** (verify/analyze.py): duration, attacks/hits/whiffs/hit-rate, dmg dealt/taken, dps, deaths, rolls, slot mix, time-to-first-hit.
 Overnight-design-choice log begins next iteration (weapons/combos). All overnight choices are marked [overnight proposal - awaiting Omer review].
+
+## Overnight iteration 2 (2026-09-19, ~02:50): real weapon catalog + combo chains
+Omer's named gap: "No real combos and weapon changes."
+ALL CHOICES BELOW ARE [overnight proposals - awaiting Omer review]. Genre reference points used as calibration only (DS3-class light swing ~0.9s total, heavy ~1.3s), not duplicated.
+
+### The roster (machinery: moveset tables + equipment swap, both pre-existing)
+- **BLADE** (id blade) - the standard; the ruler others are measured against. 2-hit light chain 20/22, heavy 32. No strengths, no weaknesses. cost_mult 1.0.
+- **TWIN FANGS** (id fangs) - speed. 4-hit light chain 9/9/11/15 (44 total), windups .14-.22s, cheapest stamina (cost_mult 0.6). COST: reach 1.8 (must hug), stagger ~0.15 (cannot interrupt an enemy swing - every approach is dodge-dependent). Pays for safety with reach, for speed with stagger.
+- **MAUL** (id maul) - commitment. 2-hit light chain 34/42, heavy 55, stagger 1.3-2.2 (breaks enemy swings). COST: windup .52-.75s exposed and interruptible, cost_mult 1.7, long recovery - a whiffed maul is a free hit for the enemy. Pays for power with exposure.
+- Weapon switching: equipment menu (O) now lists the catalog with live-equip markers, swap resets the chain; HUD shows the current weapon name; equip/attack stats carry weapon id. Greybox acquisition: all three carried from start (loot/acquisition design stays Omer's).
+
+### Frame-data verification (ScenarioWeapons, real outcomes)
+Fangs chain = exactly 44 dmg over 4 hits, first hit lands ~+10 frames; maul first hit lands ~+31 frames for 34 (no hit before - the commitment is measurable); blade light 20; equip swap live-resets the chain.
+
+### Two real bugs the stats/telemetry work surfaced this iteration
+1. **Stamina goes negative** (telemetry showed st=-19): _spend_stamina never clamps, gates only check <= 0 - hidden stamina debt. Souls clamps at 0. NOT YET FIXED - candidate for iteration 4 (feel/pacing) or Omer's call since it changes punishment feel.
+2. **Spawn-drop jump-attack trap**: player spawns 0.1m airborne; an attack in the first ~10 frames silently becomes a jump attack. Old tests masked it (scaffold jump = light data). Tests now attack grounded. Design question for Omer: should a 5cm drop really change your move?
+### Test fragility lesson (for the record)
+Frame-exact assertions ("swing completes by f=100") break when content timings change by design. New tests assert outcome windows, and the spawn-drop trap is now documented in the affected scenarios.

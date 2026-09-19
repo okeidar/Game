@@ -177,16 +177,16 @@ class ScenarioCommitment extends Scenario:
 	func setup() -> void:
 		name = "attack_commitment"
 		h.make_world()
-		h.input.at(5, {"attack": true})
-		h.input.at(10, {"dodge": true})
-		h.input.at(30, {"dodge": true})
+		h.input.at(15, {"attack": true})   # grounded: f<10 attacks land as airborne jump-attacks (spawn drop)
+		h.input.at(20, {"dodge": true})
+		h.input.at(45, {"dodge": true})
 	func step(f: int) -> bool:
 		var p = h.player
 		if f > 5 and done_frame < 0 and p.state == "free":
 			done_frame = f
-		if f >= 6 and f <= 48 and p.state != "attack":
+		if f >= 16 and f <= 62 and p.state != "attack":
 			interrupted = true
-		if f > 48 and p.state == "roll":
+		if f > 62 and p.state == "roll":
 			saw_roll = true
 		if f == 100:
 			check(not interrupted, "dodge input during windup/active never interrupts the swing")
@@ -206,7 +206,7 @@ class ScenarioHitWindow extends Scenario:
 		h.player.facing = Vector3(0, 0, -1)
 		h.effigies[0].position = Vector3(0, 0.05, -2.0)
 		h.effigies[0].facing = Vector3(0, 0, 1)
-		h.input.at(5, {"attack": true})
+		h.input.at(15, {"attack": true})   # grounded (spawn drop makes earlier attacks jump-attacks)
 		h.input.at(65, {"attack": true})
 		h.input.at(115, {"attack": true})
 	func hits() -> int:
@@ -1165,7 +1165,7 @@ class ScenarioHitstop extends Scenario:
 		h.player.facing = Vector3(0, 0, -1)
 		h.effigies[0].position = Vector3(0, 0.05, -2.0)
 		h.effigies[0].facing = Vector3(0, 0, 1)
-		h.input.at(5, {"attack": true})
+		h.input.at(15, {"attack": true})   # grounded
 	func step(f: int) -> bool:
 		if f == 80:
 			check(h.saw_pause, "landing a hit freezes the world briefly (hitstop)")
@@ -1313,6 +1313,67 @@ class ScenarioSprintOutcome extends Scenario:
 			check(spd > T2.WALK_SPEED * 0.95 and spd < T2.WALK_SPEED * 1.05, "REAL walk velocity matches WALK_SPEED %.2f, measured %.2f m/s" % [T2.WALK_SPEED, spd])
 		return f >= 215
 
+
+class ScenarioWeapons extends Scenario:
+	# Iteration 2 (overnight): REAL weapon catalog outcomes via the stats feed -
+	# no frame-exact guesses (they break whenever content timings change by
+	# design). Asserts on Sim.stats: per-weapon hit damage sets and real
+	# attack->hit delays (the commitment each weapon actually carries).
+	const T2 = preload("res://src/combat/tuning.gd")
+	const Moveset2 = preload("res://src/combat/moveset.gd")
+	func setup() -> void:
+		name = "weapons"
+		h.make_world()
+		h.effigies[0].position = Vector3(0.0, 0.05, -1.8)  # in reach of every weapon
+		h.effigies[0].facing = Vector3(0, 0, 1)          # facing the player: no accidental backstab crits
+		h.effigies[0].max_hp = 500.0
+		h.effigies[0].hp = 500.0                          # survive the whole exercise
+		h.player.camera_yaw = 0.0
+		check(Moveset2.catalog().size() == 3, "catalog offers three weapons")
+		h.player.equipment.equip("weapon", Moveset2.fangs(), h.player)
+		h.input.at(12, {"attack": true})   # grounded (spawn drop)
+		h.input.at(37, {"attack": true})
+		h.input.at(62, {"attack": true})
+		h.input.at(87, {"attack": true})
+	func _hits(weapon: String) -> Array:
+		var out := []
+		for st in Sim.stats:
+			if st.get("k") == "hit" and st.get("weapon") == weapon:
+				out.append(st)
+		return out
+	func _attack_t(weapon: String) -> int:
+		for st in Sim.stats:
+			if st.get("k") == "attack" and st.get("weapon") == weapon:
+				return st.t
+		return -1
+	func step(f: int) -> bool:
+		var p = h.player
+		if f == 160:   # fangs chain fully resolved (buffering makes links land late)
+			var fh := _hits("fangs")
+			var dmgs := []
+			for hh in fh:
+				dmgs.append(hh.dmg)
+			dmgs.sort()
+			check(fh.size() == 4 and dmgs == [9, 9, 11, 15], "fangs 4-hit chain lands exactly 9/9/11/15, got %s" % str(dmgs))
+			var delay: float = ((fh[0].t - _attack_t("fangs")) / 1000.0) if fh.size() > 0 else 99.0
+			check(delay < 0.35, "fangs first hit is fast (windup 0.16s), measured %.2fs" % delay)
+			p.equipment.equip("weapon", Moveset2.maul(), p)
+			check(p.moveset.id == "maul" and p.chain_index == 0, "equip swaps the live moveset and resets the chain")
+			h.input.at(163, {"attack": true})
+		if f == 230:
+			var mh := _hits("maul")
+			check(mh.size() == 1 and mh[0].dmg == 34, "maul light 1 lands exactly 34, got %s" % str(mh.map(func(x): return x.dmg)))
+			var mdelay: float = ((mh[0].t - _attack_t("maul")) / 1000.0) if mh.size() > 0 else 0.0
+			check(mdelay >= 0.5, "maul carries real commitment (windup 0.52s), measured %.2fs" % mdelay)
+			p.equipment.equip("weapon", Moveset2.blade(), p)
+			h.input.at(233, {"attack": true})
+		if f == 290:
+			var bh := _hits("blade")
+			check(bh.size() == 1 and bh[0].dmg == 20, "blade light 1 lands exactly 20, got %s" % str(bh.map(func(x): return x.dmg)))
+			check(p.moveset.id == "blade", "blade equipped")
+		return f >= 295
+
+
 class ScenarioHeavy extends Scenario:
 	const Sim = preload("res://src/combat/combat_sim.gd")
 	const T = preload("res://src/combat/tuning.gd")
@@ -1408,6 +1469,7 @@ func _register() -> void:
 		ScenarioRound5A.new(),
 		ScenarioRound5B.new(),
 		ScenarioSprintOutcome.new(),
+		ScenarioWeapons.new(),
 		ScenarioHeavy.new(),
 		ScenarioDeterminismA.new(),
 		ScenarioDeterminismB.new(),

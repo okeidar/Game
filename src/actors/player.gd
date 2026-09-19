@@ -405,10 +405,10 @@ func _try_attack() -> bool:
 		data = moveset.light_chain[chain_index]
 		chain_index = (chain_index + 1) % moveset.light_chain.size()
 		chain_window_t = data.windup + data.active + data.recovery + T.CHAIN_WINDOW_SCAFFOLD
-	return _start_attack(data, T.ATTACK_COST, "ATTACK", slot)
+	return _start_attack(data, T.ATTACK_COST * moveset.get("cost_mult", 1.0), "ATTACK", slot)
 
 func _try_heavy() -> bool:
-	return _start_attack(moveset.heavy, T.HEAVY_COST, "HEAVY", "heavy")
+	return _start_attack(moveset.heavy, T.HEAVY_COST * moveset.get("cost_mult", 1.0), "HEAVY", "heavy")
 
 func _start_attack(data: Dictionary, cost: float, label: String, slot := "") -> bool:
 	if stamina <= 0.0:
@@ -426,7 +426,7 @@ func _start_attack(data: Dictionary, cost: float, label: String, slot := "") -> 
 	Sim.log_event("%s START" % label)
 	cur_slot = slot if slot != "" else label
 	last_attack_hit = false
-	Sim.stat("attack", {"slot": cur_slot, "dmg": data.damage, "windup": data.windup})
+	Sim.stat("attack", {"slot": cur_slot, "weapon": moveset.get("id", "?"), "dmg": data.damage, "windup": data.windup})
 	if slot != "":
 		Sim.log_event("ATTACK SLOT %s" % slot)
 	return true
@@ -473,7 +473,7 @@ func _resolve_attack_hit() -> void:
 			if r == HIT_RESULT_HIT:
 				Sim.hitstop(T.HITSTOP_DEALT)
 				last_attack_hit = true
-				Sim.stat("hit", {"target": e.display_name, "dmg": int(round(dmg)), "crit": crit, "slot": cur_slot})
+				Sim.stat("hit", {"target": e.display_name, "dmg": int(round(dmg)), "crit": crit, "slot": cur_slot, "weapon": moveset.get("id", "?")})
 				if crit:
 					Sim.log_event("RIPOSTE %s -%d (scaffold x%.1f)" % [e.display_name, int(round(dmg)), T.CRIT_MULTIPLIER_SCAFFOLD])
 				else:

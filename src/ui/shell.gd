@@ -102,9 +102,11 @@ func _build_menu() -> void:
 					_add("%s x%d" % [it.id, it.qty], func(): _use_item(slot))
 			_add("CLOSE", func(): close())
 		"equipment":
-			if player != null:
-				_add("weapon: %s" % player.equipment.equipped_id("weapon"), func(): Sim.log_event("EQUIPMENT weapon slot (swap machinery)"))
-				_add("swap to scaffold moveset", func(): player.equipment.equip("weapon", Moveset.scaffold_moveset(), player))
+			_add("weapon: %s" % player.equipment.equipped_id("weapon"), func(): pass)
+			for w in Moveset.catalog():
+				var wid: String = w.id
+				var mark := "*" if player.equipment.equipped_id("weapon") == wid else " "
+				_add("%s equip %s (%d-hit chain)" % [mark, wid, w.light_chain.size()], func(): player.equipment.equip("weapon", w, player); Sim.stat("equip", {"weapon": wid}); _build_menu())
 			_add("CLOSE", func(): close())
 	_render()
 
