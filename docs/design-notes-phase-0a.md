@@ -1133,3 +1133,22 @@ training effigy took 8 hits and never went alert (0 telegraphs) - in the
 iter28 run it only woke after long lingering. Guard/parry organic footage
 still pending - it needs an effigy that fights back, which is Omer's design
 call (how fast should a training partner turn hostile?).
+
+## Iteration 30 - CORRECTION + guard-bot v9.3: the dummies were never the question [overnight proposal - awaiting Omer review]
+
+NO GAME CODE CHANGED. CORRECTION of the iter29 "open design question":
+arena.gd already answers it. The first five enemies are ai:false training
+dummies ("never strikes", BY DESIGN - DUMMY..DUMMY5). The sixth, at
+(25.5,-2.0) in the DEFEND room, is the live EFFIGY (ai:true) - the intended
+sparring partner for guard work, and the source of iter28-run3's
+telegraphs. There is no effigy-aggression decision pending; I misread
+passive dummies as a design gap. Awareness model (for the record): vision
+cone 12m/65deg fills suspicion over 0.9s game; heard sounds bump +0.4; any
+landed hit provokes instant alert (awareness.alert_now on apply_hit);
+alert persists 3s without stimulus. All SCAFFOLD-marked, all Omer's to
+tune.
+
+v9.3 bot: skips the five known dummy positions, targets only the live
+EFFIGY. 270s playtest running: walk the gauntlet, then guard-rotation
+against a real opponent - the cold spark / parry flash should finally get
+organic footage.
