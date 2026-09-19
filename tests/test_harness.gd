@@ -2226,6 +2226,45 @@ class ScenarioScreenShake extends Scenario:
 		lf += 1
 		return false
 
+
+class ScenarioAudioHooks extends Scenario:
+	const Sim = preload("res://src/combat/combat_sim.gd")
+	const Audio = preload("res://src/combat/audio_bus.gd")
+	var lf := -2
+	func setup() -> void:
+		name = "audio_hooks"
+		h.make_world()
+		h.player.facing = Vector3(0, 0, -1)
+		h.effigies[0].position = Vector3(0, 0.05, -2.0)
+		h.effigies[0].facing = Vector3(0, 0, 1)   # the proven hit_window geometry
+	func has_event(prefix: String) -> bool:
+		for e in Sim.events:
+			if e.begins_with(prefix):
+				return true
+		return false
+	func step(f: int) -> bool:
+		var _unused = f
+		if lf == 0:
+			# tests have no game.gd pool: bind one by hand, the bus plays through it
+			var pool: Array = []
+			for i in 2:
+				var ap := AudioStreamPlayer.new()
+				h.sim_root.add_child(ap)
+				pool.append(ap)
+			Audio.bind_pool(pool)
+		if lf == 16:
+			h.input.cur.attack = true   # grounded: past the spawn-drop window
+		if lf == 45:
+			check(has_event("AUDIO sfx:swing"), "the swing hook fires its audio event")
+			check(has_event("AUDIO sfx:hit"), "a landed hit fires the hit audio event")
+			check(not has_event("(hook, no assets)"), "the no-assets scaffolding tag is gone")
+			Audio.sfx("block")
+			var p: AudioStreamPlayer = Audio._pool[0]
+			check(p.stream != null, "the bus loads a real stream for a known id, stream=%s" % [p.stream])
+			return true
+		lf += 1
+		return false
+
 func _register() -> void:
 
 	scenarios = [
@@ -2238,6 +2277,7 @@ func _register() -> void:
 		ScenarioHitstop.new(),
 		ScenarioHitSpark.new(),
 		ScenarioScreenShake.new(),
+		ScenarioAudioHooks.new(),
 		ScenarioFeathers.new(),
 		ScenarioRegen.new(),
 		ScenarioCameraRelative.new(),

@@ -6,6 +6,7 @@ signal died
 
 const Sim = preload("res://src/combat/combat_sim.gd")
 const HitSpark = preload("res://src/fx/hit_spark.gd")
+const Audio = preload("res://src/combat/audio_bus.gd")
 
 var display_name := "COMBATANT"
 var team := "neutral"
@@ -50,6 +51,7 @@ func apply_hit(damage: float, from_pos: Vector3, stagger: float, flags := {}) ->
 	toward.y = 0.0
 	toward = toward.normalized() * hurt_radius * 0.8 if toward.length_squared() > 0.0001 else Vector3.ZERO
 	HitSpark.burst(get_parent(), global_position + Vector3(0, 1.0, 0) + toward, spark_col)
+	Audio.sfx("hit")
 	since_hit = 0.0
 	stagger_t = maxf(stagger_t, stagger)
 	took_hit.emit(final, from_pos)

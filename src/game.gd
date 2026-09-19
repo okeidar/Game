@@ -124,6 +124,14 @@ func _build() -> void:
 	player.inventory.register_item_desc("smoke pellet", "they lose your trail within 8m - one breath of cover, then gone")
 	player.inventory.add_item("ember draught", 2)
 	player.inventory.add_item("smoke pellet", 3)
+	# Juice pass: a small round-robin SFX player pool; the audio bus plays through it.
+	var sfx_pool: Array = []
+	for i in 4:
+		var ap := AudioStreamPlayer.new()
+		ap.bus = "Master"
+		add_child(ap)
+		sfx_pool.append(ap)
+	Audio.bind_pool(sfx_pool)
 	shell = Shell.new()
 	shell.player = player
 	shell.on_begin = func(): shell.close()

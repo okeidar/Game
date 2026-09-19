@@ -1380,3 +1380,26 @@ parry footage-verification gap: a deflect is now visually findable.
 Tests: defense_feedback extended - "a blocked hit bursts one cold
 spark" and "a timed deflect bursts one bright spark". 45/45 green.
 Live: https://feather-iter38-1702-641e31e6d3bfc209ab4e.surge.sh
+
+## iter39 - juice pass: AUDIO SFX live on the hooks (2026-09-19 ~17:18)
+[overnight proposal - awaiting Omer review]
+The audio hooks now PLAY: six procedural wav assets (python-synthesized
+placeholders, not final mix) - swing whoosh (noise, falling lowpass),
+hit thunk (72Hz burst + click), block clang (inharmonic partials),
+parry ring (1580/2370Hz ping, 0.38s tail), death descending tone,
+rest pad blip. audio_bus.sfx() plays through a 4-player round-robin
+pool bound by game.gd; the hook log lines stay ("AUDIO sfx:swing", the
+"(hook, no assets)" scaffolding tag is gone). New hooks added: hit
+(combatant.apply_hit - both directions), block, parry (player defense
+paths); swing/rest/death already existed. Music hooks (title/death)
+remain hooks only - no music assets yet.
+Gotcha recorded: new .wav assets need `godot --headless --import`
+before tests/export - headless runs do not import on demand ("No
+loader found for resource"). Export pck grew 210->234KB with the wavs.
+Tests: ScenarioAudioHooks (4 checks: swing/hit events fire, scaffolding
+tag gone, bus loads a real stream) - 46/46 green.
+HONEST LIMIT: cannot be judged by ear here - the assets are verified
+to LOAD and PLAY (player.stream non-null), not to sound right. Omer's
+ear is the verdict; every asset is one python function, trivially
+tunable or replaceable with real foley.
+Live: https://feather-iter39-1718-41a9eb55c574cb8a1da3.surge.sh

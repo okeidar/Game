@@ -35,7 +35,6 @@ var pending_item_slot := 0   # which inventory slot the item commit will consume
 const Moveset = preload("res://src/combat/moveset.gd")
 const Attributes = preload("res://src/combat/attributes.gd")
 const Equipment = preload("res://src/combat/equipment.gd")
-const Audio = preload("res://src/combat/audio_bus.gd")
 const Gestures = preload("res://src/combat/gestures.gd")
 var gestures = Gestures.new()   # gesture scaffolding: catalog OPEN
 var moveset: Dictionary
@@ -187,6 +186,7 @@ func apply_hit(damage: float, from_pos: Vector3, stagger: float, flags := {}) ->
 			ptoward.y = 0.0
 			ptoward = ptoward.normalized() * hurt_radius if ptoward.length_squared() > 0.0001 else Vector3.ZERO
 			HitSpark.burst(get_parent(), global_position + Vector3(0, 1.2, 0) + ptoward, Color(1.0, 1.0, 0.85))
+			Audio.sfx("parry")
 			Sim.hitstop(T.HITSTOP_DEALT)
 			Sim.shake(0.25)
 			Sim.log_event("PARRY - DEFLECTED")
@@ -208,6 +208,7 @@ func apply_hit(damage: float, from_pos: Vector3, stagger: float, flags := {}) ->
 		guard_flash_color = Color(0.85, 0.92, 1.0)
 		Sim.hitstop(T.HITSTOP_TAKEN * 0.5)
 		Sim.shake(0.15)
+		Audio.sfx("block")
 		Sim.log_event("BLOCKED -%d" % int(round(damage_after_defense(damage) * (1.0 - T.BLOCK_DAMAGE_CUT))))
 		Sim.stat("block", {"dmg": int(round(damage_after_defense(damage) * (1.0 - T.BLOCK_DAMAGE_CUT)))})
 		return rb
