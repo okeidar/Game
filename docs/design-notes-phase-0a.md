@@ -1340,3 +1340,24 @@ Code recreated verbatim from transcript; toolchain reinstalled. Lesson
 recorded: serialize heavy jobs; commit early.
 Live: https://feather-iter36-1619-62a499c6e8e3f0ed36c4.surge.sh
 Playtest footage review (spark visibility) pending next wake.
+
+## iter37 - juice pass: spark tune + SCREENSHAKE (2026-09-19 ~16:48)
+[overnight proposal - awaiting Omer review]
+SPARK TUNE: iter36 footage review (4 landed hits, 55 frames) showed the
+burst UNREADABLE - 0.22s lifetime sampled between frames, 0.2m shards
+too small at camera distance. Tuned: 9 shards, 0.45s, 4.2 speed,
+0.07x0.32m shards, emission 3.0. Hit flash (red albedo) WAS clearly
+visible; combat loop, audio hook logs and the sword swing all read well.
+SCREENSHAKE: trauma-based shake in third_person_camera.gd - requests
+ride the combat bus (Sim.shake), camera drains the pool each frame,
+trauma^2 amplitude (0.16m offset, 0.06 roll), 1.7/s decay. Runs through
+hitstop (PROCESS_MODE_ALWAYS) so the freeze trembles. Amounts: hit
+taken 0.4, guard break 0.5, parry 0.25, block 0.15, hit dealt 0.15.
+Tests: ScenarioScreenShake (3 checks) - 45/45 green.
+Harness note: sparkcheck2.js - closed-loop yaw steering from POS deltas
+(arrows) + waypoint gate crossing; effigy registry keyed by POSITION
+(all share the name EFFIGY); facing follows movement not cursor, so a
+350ms step squares up the swing before clicking (34/34 whiffs standing
+still -> 4 hits after the fix).
+Live: https://feather-iter37-1648-c296be05c7985b1d59b0.surge.sh
+Pending: footage verify tuned spark + shake (next wake).

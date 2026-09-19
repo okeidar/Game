@@ -1,6 +1,10 @@
 extends Node3D
 ## Behind-the-back orbit camera. Never clips through walls: a sphere query
 ## pulls it in before the wall eats it. Lock-on eases it behind the target line.
+## Juice pass (Omer directive 2026-09-19): trauma-based screenshake. Requests
+## arrive via Sim.shake(); the shake keeps breathing through hitstop because
+## this node runs PROCESS_MODE_ALWAYS. [overnight proposal - awaiting Omer
+## review] decay and amplitudes are first-pass juice numbers.
 
 var player: Node3D
 var yaw := 0.0
@@ -10,6 +14,25 @@ var current_distance := 5.4   # live pull-in distance; player fades when this co
 var pivot_height := 1.7
 var lock_target: Node3D = null
 var cam: Camera3D
+var trauma := 0.0
+
+const Sim = preload("res://src/combat/combat_sim.gd")
+const SHAKE_DECAY := 1.7
+const SHAKE_MAX_OFF := 0.16
+const SHAKE_MAX_ROLL := 0.06
+
+func add_shake(a: float) -> void:
+	trauma = minf(1.0, trauma + a)
+
+func shake_tick(dt: float) -> void:
+	trauma = maxf(0.0, trauma - SHAKE_DECAY * dt)
+
+func _apply_shake() -> void:
+	if cam == null or trauma <= 0.0:
+		return
+	var sh := trauma * trauma
+	cam.position += Vector3(randf_range(-1.0, 1.0), randf_range(-1.0, 1.0), randf_range(-1.0, 1.0)) * (SHAKE_MAX_OFF * sh)
+	cam.rotation.z += randf_range(-1.0, 1.0) * (SHAKE_MAX_ROLL * sh)
 var pitch_min := -1.15
 var pitch_max := 0.55
 var sens := 0.0026
@@ -60,3 +83,8 @@ func _physics_process(dt: float) -> void:
 	current_distance = want
 	cam.position = off * want
 	cam.look_at(pivot + Vector3(0, 0.1, 0), Vector3.UP)
+	if Sim.shake_pool > 0.0:
+		add_shake(Sim.shake_pool)
+		Sim.shake_pool = 0.0
+	shake_tick(dt)
+	_apply_shake()

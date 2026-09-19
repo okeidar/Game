@@ -182,6 +182,7 @@ func apply_hit(damage: float, from_pos: Vector3, stagger: float, flags := {}) ->
 			guard_flash_t = 0.25   # [overnight proposal] the deflect reads as the win it is
 			guard_flash_color = Color(1.0, 1.0, 0.85)
 			Sim.hitstop(T.HITSTOP_DEALT)
+			Sim.shake(0.25)
 			Sim.log_event("PARRY - DEFLECTED")
 			Sim.stat("parry")
 			return HIT_RESULT_PARRIED
@@ -191,6 +192,7 @@ func apply_hit(damage: float, from_pos: Vector3, stagger: float, flags := {}) ->
 			state = "free"
 			var rg: int = super.apply_hit(damage, from_pos, T.GUARD_BREAK_STAGGER)
 			Sim.hitstop(T.HITSTOP_TAKEN)
+			Sim.shake(0.5)
 			Sim.log_event("GUARD BREAK - full hit -%d" % int(round(damage_after_defense(damage))))
 			return rg
 		stamina -= chip
@@ -199,6 +201,7 @@ func apply_hit(damage: float, from_pos: Vector3, stagger: float, flags := {}) ->
 		guard_flash_t = 0.12   # [overnight proposal] the guard held - a cold spark, not the hurt flash
 		guard_flash_color = Color(0.85, 0.92, 1.0)
 		Sim.hitstop(T.HITSTOP_TAKEN * 0.5)
+		Sim.shake(0.15)
 		Sim.log_event("BLOCKED -%d" % int(round(damage_after_defense(damage) * (1.0 - T.BLOCK_DAMAGE_CUT))))
 		Sim.stat("block", {"dmg": int(round(damage_after_defense(damage) * (1.0 - T.BLOCK_DAMAGE_CUT)))})
 		return rb
@@ -210,6 +213,7 @@ func apply_hit(damage: float, from_pos: Vector3, stagger: float, flags := {}) ->
 		state = "free"
 		buffered = ""
 		Sim.hitstop(T.HITSTOP_TAKEN)
+		Sim.shake(0.4)
 		Sim.log_event("PLAYER HIT -%d" % int(round(damage_after_defense(damage))))
 		Sim.stat("player_hurt", {"dmg": int(round(damage_after_defense(damage))), "hp": hp})
 	return r
@@ -536,6 +540,7 @@ func _resolve_attack_hit() -> void:
 			var r: int = e.apply_hit(dmg, global_position, d.get("stagger", T.DUMMY_STAGGER))
 			if r == HIT_RESULT_HIT:
 				Sim.hitstop(T.HITSTOP_DEALT)
+				Sim.shake(0.15)
 				last_attack_hit = true
 				Sim.stat("hit", {"target": e.display_name, "dmg": int(round(dmg)), "crit": crit, "slot": cur_slot, "weapon": moveset.get("id", "?")})
 				if crit:

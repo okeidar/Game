@@ -4,6 +4,7 @@ extends RefCounted
 static var log_lines: Array[String] = []
 static var events: Array[String] = []   # machine-checkable feed for tests
 static var hitstop_left := 0.0
+static var shake_pool := 0.0   # view-layer shake requests; the camera drains this each frame
 static var active_checkpoint = null
 static var sounds: Array = []   # sound bus: awareness reads new entries via a watermark
 static var toasts: Array = []   # player-facing message feed (toast UI machinery)
@@ -13,6 +14,7 @@ static func reset() -> void:
 	log_lines.clear()
 	events.clear()
 	hitstop_left = 0.0
+	shake_pool = 0.0
 	active_checkpoint = null
 	sounds.clear()
 	toasts.clear()
@@ -60,6 +62,12 @@ static func emit_sound(source_name: String, pos: Vector3, radius: float, loudnes
 
 static func hitstop(d: float) -> void:
 	hitstop_left = maxf(hitstop_left, d)
+
+static func shake(a: float) -> void:
+	# Juice pass (Omer directive 2026-09-19): screenshake requests ride the bus
+	# so combat code never touches the camera. [overnight proposal - awaiting
+	# Omer review] amounts are first-pass juice.
+	shake_pool = minf(1.5, shake_pool + a)
 
 ## Sector hit test in the XZ plane. Facing need not be normalized.
 static func in_sector(from: Vector3, facing: Vector3, to: Vector3, target_radius: float, reach: float, arc_deg: float) -> bool:

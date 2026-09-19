@@ -2191,6 +2191,36 @@ class ScenarioHitSpark extends Scenario:
 		lf += 1
 		return false
 
+
+class ScenarioScreenShake extends Scenario:
+	const Sim = preload("res://src/combat/combat_sim.gd")
+	const Cam = preload("res://src/camera/third_person_camera.gd")
+	var lf := -2
+	func setup() -> void:
+		name = "screenshake"
+		h.make_world()
+		h.player.facing = Vector3(0, 0, -1)
+		h.effigies[0].position = Vector3(0, 0.05, -2.2)
+		h.effigies[0].facing = Vector3(0, 0, 1)   # the proven defense_verbs geometry
+	func step(f: int) -> bool:
+		var _unused = f
+		if lf == 0:
+			h.player.feathers = 0.0
+		if lf == 5:
+			h.effigies[0]._try_attack()
+		if lf == 80:
+			check(Sim.shake_pool > 0.0, "a hit on the player requests screenshake, pool=%.2f" % Sim.shake_pool)
+			var c = Cam.new()
+			c.add_shake(0.4)
+			check(c.trauma > 0.39 and c.trauma <= 1.0, "the camera banks the request as trauma, t=%.2f" % c.trauma)
+			for i in 60:
+				c.shake_tick(0.016)
+			check(c.trauma == 0.0, "the shake decays back to still, t=%.2f" % c.trauma)
+			c.free()
+			return true
+		lf += 1
+		return false
+
 func _register() -> void:
 
 	scenarios = [
@@ -2202,6 +2232,7 @@ func _register() -> void:
 		ScenarioTelegraph.new(),
 		ScenarioHitstop.new(),
 		ScenarioHitSpark.new(),
+		ScenarioScreenShake.new(),
 		ScenarioFeathers.new(),
 		ScenarioRegen.new(),
 		ScenarioCameraRelative.new(),

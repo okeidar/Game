@@ -2,15 +2,16 @@ extends Node3D
 ## Juice pass (Omer directive 2026-09-19 "audio, effects, models"): a spark
 ## burst at the hit contact point. Procedural unshaded shards - no art assets.
 ## [overnight proposal - awaiting Omer review] shard count, speed, lifetime
-## and the feel numbers are first-pass juice, tuned for reading at a glance,
+## and the feel numbers are first-pass juice (iter37 tune: longer life,
+## bigger shards after footage showed the 0.22s/0.2m burst unreadable),
 ## not realism. Holds its first beat through hitstop because the tree pause
 ## freezes it mid-burst - that is the intended punch.
 
 static var spawned := 0   # test-visible: how many bursts ever spawned
 
-const SHARD_COUNT := 7
-const LIFETIME := 0.22
-const SPEED := 3.4
+const SHARD_COUNT := 9
+const LIFETIME := 0.45
+const SPEED := 4.2
 const GRAVITY := 6.0
 
 var spark_color := Color(1.0, 0.72, 0.32)   # warm contact flash by default
@@ -38,9 +39,9 @@ func _ready() -> void:
 	_mat.albedo_color = spark_color
 	_mat.emission_enabled = true
 	_mat.emission = spark_color
-	_mat.emission_energy_multiplier = 2.2
+	_mat.emission_energy_multiplier = 3.0
 	var mesh := BoxMesh.new()
-	mesh.size = Vector3(0.045, 0.045, 0.20)
+	mesh.size = Vector3(0.07, 0.07, 0.32)
 	for i in SHARD_COUNT:
 		var dir := Vector3(rng.randf_range(-1.0, 1.0), rng.randf_range(0.25, 1.0), rng.randf_range(-1.0, 1.0)).normalized()
 		var m := MeshInstance3D.new()
@@ -58,6 +59,6 @@ func _process(delta: float) -> void:
 		var d: Vector3 = _dirs[i]
 		_shards[i].position = d * SPEED * _t + Vector3(0, -GRAVITY * _t * _t * 0.5, 0)
 		_shards[i].scale = Vector3.ONE * (1.0 - 0.75 * k)
-	_mat.emission_energy_multiplier = 2.2 * (1.0 - k)
+	_mat.emission_energy_multiplier = 3.0 * (1.0 - k)
 	if _t >= LIFETIME:
 		queue_free()
