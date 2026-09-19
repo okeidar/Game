@@ -2522,6 +2522,67 @@ class ScenarioKillFeel extends Scenario:
 		lf += 1
 		return false
 
+class ScenarioSwingSound extends Scenario:
+	const Sim = preload("res://src/combat/combat_sim.gd")
+	var run := 0
+	var lf := -2
+	var light_radius := 0.0
+	func setup() -> void:
+		name = "swing_sound"
+		_start_run(0)
+	func _start_run(r: int) -> void:
+		run = r
+		lf = -2
+		h.make_world()
+		h.player.facing = Vector3(0, 0, -1)
+		h.effigies[0].position = Vector3(0, 0.05, 60.0)
+	func _swings() -> Array:
+		var out := []
+		for snd in Sim.sounds:
+			if snd.get("source") == "swing": out.append(snd)
+		return out
+	func step(_f: int) -> bool:
+		if lf < 0:
+			lf += 1
+			return false
+		match run:
+			0:  # light swing: one audible event on the bus
+				if lf == 5: h.input.cur.attack = true
+				if lf == 60:
+					check(_swings().size() == 1, "one light attack emits exactly one swing sound, got %d" % _swings().size())
+					if _swings().size() == 1:
+						light_radius = _swings()[0].get("radius", 0.0)
+						check(light_radius > 2.5, "the swing carries a few meters (r=%.1f)" % light_radius)
+					_start_run(1)
+					return false
+			1:  # heavy swing carries farther
+				if lf == 5: h.input.cur.heavy = true
+				if lf == 80:
+					check(_swings().size() == 1, "one heavy attack emits exactly one swing sound, got %d" % _swings().size())
+					if _swings().size() == 1:
+						check(_swings()[0].get("radius", 0.0) > light_radius, "the heavy swing carries farther than the light (%.1f > %.1f)" % [_swings()[0].get("radius", 0.0), light_radius])
+					_start_run(2)
+					return false
+			2:  # hearing outcome: a light swing at 4.3m does not carry, a heavy does
+				if lf == 0:
+					var e = h.effigies[0]
+					e.ai_enabled = true
+					e.position = Vector3(3.0, 0.05, -3.1)   # 4.31m: inside the heavy radius, outside the light
+					e.facing = Vector3(0.7, 0, -0.7)        # back turned: only hearing can catch this
+				if lf == 5: h.input.cur.attack = true   # light: out of reach of its ears
+				if lf == 150:
+					check(h.effigies[0].awareness.suspicion == 0.0, "a light swing at 4.3m stays unheard (suspicion=%.2f)" % h.effigies[0].awareness.suspicion)
+					h.input.cur.heavy = true   # heavy: carries to its ears
+				if lf == 200:
+					# one sound pulse bumps suspicion (+HEARING_PULSE) without instant-alerting - that is the hearing model
+					check(h.effigies[0].awareness.suspicion > 0.0, "a heavy swing at 4.3m is heard from behind (suspicion=%.2f)" % h.effigies[0].awareness.suspicion)
+					return true
+				if lf > 400:
+					check(false, "heavy swing never reached its ears")
+					return true
+		lf += 1
+		return false
+
 func _register() -> void:
 
 	scenarios = [
@@ -2549,6 +2610,7 @@ func _register() -> void:
 		ScenarioLandFeel.new(),
 		ScenarioHitWeight.new(),
 		ScenarioKillFeel.new(),
+		ScenarioSwingSound.new(),
 		ScenarioCheckpointRest.new(),
 		ScenarioPatternCycle.new(),
 		ScenarioRemnantPenalty.new(),

@@ -633,6 +633,10 @@ func _tick_attack(dt: float, inp: Dictionary) -> void:
 	move_and_slide()
 	if attack.just_entered_active(prev) and not attack.resolved:
 		attack.resolved = true
+		# swing feel: the cut itself is audible, heavier swings carry - fighting near enemies is noisy
+		var sd: Dictionary = attack.data
+		var sr: float = T.SWING_SOUND_BASE + sd.damage * T.SWING_SOUND_PER_DMG
+		Sim.emit_sound("swing", global_position, sr, sr)
 		_resolve_attack_hit()
 	if inp.dodge:
 		_buffer("dodge")

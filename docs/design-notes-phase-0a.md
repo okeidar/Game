@@ -1569,3 +1569,14 @@ Tradeoffs (per doctrine): a longer freeze on every kill could slow mop-up fights
 
 Verification: new `kill_feel` scenario - a normal connect freezes 0.080s and shakes 0.22; the felling blow (effigy at 5hp) freezes 0.160s and shakes 0.37, and the effigy dies. 50/50 green. Harness lesson recorded: physics frames freeze during hitstop, so duration can't be measured in frames - the bus now records `hitstop_last` (mirrors the shake_pool observability pattern).
 
+
+## iter50 - swing feel: attacks are audible [overnight proposal - awaiting Omer review]
+
+Live: https://feather-iter50-2131-ec554bb781b3.surge.sh
+
+Feel mandate, fifth iteration. Audit found player attacks were the only combat verb with no presence on the hearing bus: footsteps, rolls, and landings all emit; swings were silent. Now the cut itself emits a `swing` sound when the attack enters its active phase, radius scaled by the attack's weight (`SWING_SOUND_BASE 3.0 + damage * 0.05`: light ~4.0m, heavy ~4.6m at current damage).
+
+The design point is not just foley: fighting near an enemy is now noisy. A heavy swing carries past a light's reach, so swinging big near an unaware enemy risks its ear - noise vs commitment, which is the tradeoff doctrine applied to combat itself. Constants in tuning.gd, Omer's to retune.
+
+Verification: new `swing_sound` scenario - one attack emits exactly one swing event (no windup ghost, no double-fire), heavy carries farther than light (4.6 > 4.0), and the hearing outcome is asserted end-to-end: behind an unaware effigy's back at 4.31m, a light swing stays unheard (suspicion 0.00) while a heavy swing is heard (suspicion 0.31 - one pulse bumps without instant-alerting, per the hearing model). 51/51 green.
+
