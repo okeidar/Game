@@ -235,8 +235,12 @@ func _on_player_died() -> void:
 	death_menu_t = Tuning.DEATH_SCREEN_DELAY  # death screen: rise on confirm, after the genre beat
 
 func _on_effigy_died(e) -> void:
-	player.add_feathers(Tuning.KILL_FEATHERS)
-	Sim.log_event("%s FELLED +%d feathers" % [e.display_name, int(Tuning.KILL_FEATHERS)])
+	var reward: float = e.feather_reward()
+	player.add_feathers(reward)
+	if reward < Tuning.KILL_FEATHERS:
+		Sim.log_event("%s FELLED +%d feather (risen - worth less until the world resets)" % [e.display_name, int(reward)])
+	else:
+		Sim.log_event("%s FELLED +%d feathers" % [e.display_name, int(reward)])
 
 func _calm_nearby(pos: Vector3, radius: float) -> void:
 	# smoke pellet effect (scaffold): enemies in radius lose the trail

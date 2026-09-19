@@ -1079,6 +1079,26 @@ class ScenarioHealCommit extends Scenario:
 		lf += 1
 		return false
 
+class ScenarioFeatherScarcity extends Scenario:
+	const Sim = preload("res://src/combat/combat_sim.gd")
+	func setup() -> void:
+		name = "feather_scarcity"
+		h.make_world()
+	func step(f: int) -> bool:
+		var e = h.effigies[0]
+		if f == 2:
+			check(absf(e.feather_reward() - 6.0) < 0.01, "a fresh effigy is worth the full 6")
+			e.apply_hit(999.0, h.player.global_position, 1.0)
+		if f == 4:
+			check(e.dead, "the effigy is felled")
+		if f == 250:
+			check(not e.dead, "it rose again on its own timer")
+			check(absf(e.feather_reward() - 1.0) < 0.01, "risen on its own timer it is worth only a token 1, reward=%.0f" % e.feather_reward())
+			e.reset_run(e.spawn_pos, true)   # what REST and the world reset call
+			check(absf(e.feather_reward() - 6.0) < 0.01, "after the world resets it is worth the full 6 again")
+			return true
+		return false
+
 class ScenarioStaminaClamp extends Scenario:
 	func setup() -> void:
 		name = "stamina_clamp"
@@ -1782,6 +1802,7 @@ func _register() -> void:
 		ScenarioPatternCycle.new(),
 		ScenarioRemnantPenalty.new(),
 		ScenarioHealCommit.new(),
+		ScenarioFeatherScarcity.new(),
 		ScenarioStaminaClamp.new(),
 		ScenarioShell.new(),
 		ScenarioRound5A.new(),

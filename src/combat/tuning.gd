@@ -53,6 +53,7 @@ const PICKUP_VALUE := 6.0
 const PICKUP_RADIUS := 0.9
 const PICKUP_RESPAWN := 12.0
 const KILL_FEATHERS := 6.0         # a felled effigy sheds into your coat
+const KILL_FEATHERS_RISEN := 1.0   # [overnight proposal - awaiting Omer review] an effigy that rose on its own timer is worth a token: scarcity stays real, and full-value farming means RESTING to reset the world (the genre's farm loop costs the world reset)
 
 # Player light attack. Enemy-reactability rules do not bound player swings;
 # fitted so one full swing ~= one roll cycle (C, DS3 straight-sword feel).

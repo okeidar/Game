@@ -703,3 +703,25 @@ Tests: new scenario heal_commit (30 scenarios) - charge drops 3->2 at the sip
 with hp untouched, completion restores exactly +40 spending nothing extra;
 interruption spends the charge, lands no heal, acknowledges the loss, and no
 HEALED event fires. The older heal machinery test still passes unchanged.
+
+## Iteration 13 - scarcity is real: risen effigies pay a token (2026-09-19, overnight)
+
+Audit trail: iteration 13 started as a heavy-commit / stamina-denial audit.
+Both were already correct (windup/active are uncancelable for every attack;
+recovery roll-cancel at 60% is the genre rule and applies evenly; every verb
+is stamina-gated through one path). The real hole found instead was the
+ECONOMY: the training effigy pays 6 feathers per kill and auto-rises every
+4 seconds - an infinite feather fountain that breaks "feathers are scarce"
+and makes the whole death-penalty / coat-resist economy meaningless.
+
+[overnight proposal - awaiting Omer review] An effigy that rises on its own
+timer comes back worth a token 1 feather ("FELLED +1 feather (risen - worth
+less until the world resets)"). Full value (6) returns when the world resets:
+REST at the checkpoint or your own death. Farming is still possible - but the
+genre's farm loop costs you the world reset and the walk, not 4 idle seconds.
+The tradeoff: the training partner still always comes back (practice is free),
+but practice no longer pays.
+
+Tests: new scenario feather_scarcity (31 scenarios) - fresh kill worth 6,
+auto-risen worth 1, rest/reset restores full value. Note for Omer: the 6/1
+values and the 4s timer are all scaffold economy awaiting his pass.

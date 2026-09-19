@@ -12,6 +12,7 @@ var cooldown := 0.5
 var facing := Vector3.FORWARD
 var spawn_pos := Vector3.ZERO
 var respawn_t := 0.0
+var fresh_kill := true   # false after rising on its own timer: worth only a token until the world resets (rest or your death)
 var ai_enabled := true
 const Awareness = preload("res://src/combat/awareness.gd")
 const Projectile = preload("res://src/combat/projectile.gd")
@@ -102,7 +103,7 @@ func tick(dt: float) -> void:
 	if dead:
 		respawn_t -= dt
 		if respawn_t <= 0.0:
-			reset_run(spawn_pos)
+			reset_run(spawn_pos, false)
 			Sim.log_event("%s RISES AGAIN" % display_name)
 		return
 	if not ai_enabled:
@@ -290,7 +291,11 @@ func _update_visual(dt: float) -> void:
 	if dead:
 		visual.rotation.x = lerpf(visual.rotation.x, -1.4, 4.0 * dt)
 
-func reset_run(spawn: Vector3) -> void:
+func feather_reward() -> float:
+	return T.KILL_FEATHERS if fresh_kill else T.KILL_FEATHERS_RISEN
+
+func reset_run(spawn: Vector3, fresh := true) -> void:
+	fresh_kill = fresh
 	position = spawn
 	velocity = Vector3.ZERO
 	hp = max_hp
