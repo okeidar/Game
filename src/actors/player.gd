@@ -40,6 +40,7 @@ var chain_index := 0
 var cur_slot := ""
 var last_attack_hit := false
 var chain_window_t := 0.0
+var swap_lockout_t := 0.0  # weapon-swap exposure [overnight proposal]
 var roll_end_t := 99.0  # seconds since a roll ended; feeds the rolling-attack slot
 var fall_v := 0.0       # deepest downward velocity of the current fall
 var cam: Node3D = null         # camera rig, set by game; null in tests
@@ -236,6 +237,8 @@ func tick(dt: float) -> void:
 		chain_window_t -= dt
 	else:
 		chain_index = 0
+	if swap_lockout_t > 0.0:
+		swap_lockout_t -= dt
 	roll_end_t += dt
 	if not is_on_floor():
 		fall_v = minf(fall_v, velocity.y)
@@ -277,6 +280,7 @@ func _poll() -> Dictionary:
 		"sneak": Input.is_action_pressed("sneak"),
 		"use_item": Input.is_action_just_pressed("use_item"),
 		"jump": Input.is_action_just_pressed("jump"),
+		"weapon_swap": Input.is_action_just_pressed("weapon_swap"),
 	}
 
 func _move_world(m: Vector2) -> Vector3:
@@ -331,6 +335,8 @@ func _tick_free(dt: float, inp: Dictionary) -> void:
 		_try_use_item()
 	elif inp.get("jump", false):
 		_try_jump()
+	elif inp.get("weapon_swap", false):
+		_try_weapon_swap()
 
 func _try_jump() -> bool:
 	if not is_on_floor():
@@ -408,12 +414,41 @@ func _try_attack() -> bool:
 		data = moveset.light_chain[chain_index]
 		chain_index = (chain_index + 1) % moveset.light_chain.size()
 		chain_window_t = data.windup + data.active + data.recovery + T.CHAIN_WINDOW_SCAFFOLD
-	return _start_attack(data, T.ATTACK_COST * moveset.get("cost_mult", 1.0), "ATTACK", slot)
+	var cost: float = T.ATTACK_COST * moveset.get("cost_mult", 1.0)
+	var finisher: bool = slot == "light_chain[%d]" % (moveset.light_chain.size() - 1) and moveset.light_chain.size() > 1
+	if finisher:
+		cost *= T.FINISHER_COST_MULT   # the burst is paid for in breath
+	var ok := _start_attack(data, cost, "ATTACK", slot)
+	if ok and finisher:
+		Sim.log_event("FINISHER - the chain pays off")
+	return ok
 
 func _try_heavy() -> bool:
 	return _start_attack(moveset.heavy, T.HEAVY_COST * moveset.get("cost_mult", 1.0), "HEAVY", "heavy")
 
+## Weapon quick-swap [overnight proposal - awaiting Omer review]: G cycles the
+## owned set mid-fight without opening the equipment menu. Cost: a short exposed
+## lockout where no attack can start - swapping under pressure is a bet.
+func _try_weapon_swap() -> bool:
+	if swap_lockout_t > 0.0:
+		return false
+	var cat: Array = Moveset.catalog()
+	var idx := 0
+	for i in cat.size():
+		if cat[i].get("id", "") == moveset.get("id", ""):
+			idx = i
+	var next: Dictionary = cat[(idx + 1) % cat.size()]
+	equipment.equip("weapon", next, self)
+	swap_lockout_t = T.WEAPON_SWAP_LOCKOUT
+	Audio.sfx("swing")
+	Sim.log_event("WEAPON SWAP -> %s (exposed)" % next.get("id", "?").to_upper())
+	Sim.stat("equip", {"weapon": next.get("id", "?")})
+	return true
+
 func _start_attack(data: Dictionary, cost: float, label: String, slot := "") -> bool:
+	if swap_lockout_t > 0.0:
+		Sim.log_event("%s DENIED swapping" % label)
+		return false
 	if stamina <= 0.0:
 		Sim.log_event("%s DENIED stamina" % label)
 		return false

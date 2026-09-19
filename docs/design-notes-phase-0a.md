@@ -771,3 +771,35 @@ is announced; existing rhythm/overhead/reset checks unchanged. 32/32.
 Harness: bot v6 adds wall/corner escape (long perpendicular sidestep; if the
 sidestep also fails, reverse away from the target first). Harness only, not in
 the repo.
+
+## Iteration 17 (overnight, 2026-09-19) - real combos and weapon changes
+
+Omer's overnight note: "No real combos and weapon changes." The machinery existed
+(chain table, equipment slot) but nothing a player could feel. Two additions, both
+[overnight proposal - awaiting Omer review]:
+
+1. BLADE FINISHER. The blade's light chain is now three links. Link 3 is a
+   finisher: 31 damage, 1.0 stagger, the hardest hit on the blade table. Cost
+   (tradeoff doctrine, all visible): a longer readable windup (0.36s vs 0.28),
+   the longest recovery on the chain (0.62s - you are exposed after the burst),
+   and 1.5x stamina (T.FINISHER_COST_MULT). Event feed shows "FINISHER - the
+   chain pays off" when it fires. The burst is a bet, not a default.
+2. WEAPON QUICK-SWAP (G). Cycles blade -> fangs -> maul mid-fight without
+   opening the equipment menu (the menu path still exists). Cost: a 0.45s
+   exposure lockout (T.WEAPON_SWAP_LOCKOUT) during which no attack can start
+   ("ATTACK DENIED swapping") - swapping under pressure is a bet. Event feed:
+   "WEAPON SWAP -> FANGS (exposed)". HUD already showed the weapon id; the swap
+   is now something you can DO, not just read.
+
+Open for Omer: finisher numbers (31/1.5x/0.62s recovery), the swap lockout
+length, whether swap should be allowed mid-chain (currently resets the chain),
+and whether fangs/maul chains get their own finishers later.
+
+## Bot harness v7 (overnight, 2026-09-19)
+
+Root-caused the intermittent zero-stat runs: the stamina retreat was time-capped
+but not distance-capped, so at swiftshader's ~9% sim speed a "retreat until
+stamina > 45" lasted ~11x too long in distance and fled the bot across the arena
+into the west wall; the 700ms sidestep (~63ms of game time) could not escape the
+corner. v7 caps the retreat at 8m (stand and breathe) and runs 2500ms sidesteps.
+First v7 run: clean fight, WINDED observed organically twice.

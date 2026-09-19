@@ -13,7 +13,7 @@ const DT := 1.0 / 60.0
 
 class ScriptedInput extends RefCounted:
 	var plan: Array = []
-	var cur := {"move": Vector2.ZERO, "sprint": false, "dodge": false, "attack": false, "heavy": false, "volley": false, "lock": false, "block": false, "heal": false, "interact": false, "sneak": false, "use_item": false, "jump": false}
+	var cur := {"move": Vector2.ZERO, "sprint": false, "dodge": false, "attack": false, "heavy": false, "volley": false, "lock": false, "block": false, "heal": false, "interact": false, "sneak": false, "use_item": false, "jump": false, "weapon_swap": false}
 	func at(f: int, set: Dictionary) -> void:
 		plan.append({"f": f, "set": set})
 	func begin_frame(f: int) -> void:
@@ -26,6 +26,7 @@ class ScriptedInput extends RefCounted:
 		cur.interact = false
 		cur.use_item = false
 		cur.jump = false
+		cur.weapon_swap = false
 		for ev in plan:
 			if ev.f == f:
 				for k in ev.set:
@@ -1839,7 +1840,58 @@ class ScenarioDeterminismB extends ScenarioDeterminismA:
 			return true
 		return false
 
+class ScenarioWeaponSwap extends Scenario:
+	const Sim2 = preload("res://src/combat/combat_sim.gd")
+	func setup() -> void:
+		name = "weapon_swap"
+		h.make_world()
+		h.input.at(20, {"weapon_swap": true})   # blade -> fangs
+		h.input.at(30, {"weapon_swap": true})   # inside the 0.45s lockout (27f) - denied
+		h.input.at(80, {"weapon_swap": true})   # fangs -> maul
+		h.input.at(140, {"weapon_swap": true})  # maul -> blade (wrap)
+	func step(f: int) -> bool:
+		var p = h.player
+		if f == 22: check(p.moveset.get("id") == "fangs", "G swaps blade -> fangs, got %s" % p.moveset.get("id"))
+		if f == 32: check(p.moveset.get("id") == "fangs", "swap inside the exposure lockout is denied, still %s" % p.moveset.get("id"))
+		if f == 82: check(p.moveset.get("id") == "maul", "second swap lands fangs -> maul, got %s" % p.moveset.get("id"))
+		if f == 142:
+			check(p.moveset.get("id") == "blade", "cycle wraps maul -> blade, got %s" % p.moveset.get("id"))
+			var n := 0
+			for e in Sim2.events:
+				if e.begins_with("WEAPON SWAP"): n += 1
+			check(n == 3, "exactly three swap events (one denied), got %d" % n)
+		return f >= 150
+
+class ScenarioFinisher extends Scenario:
+	const Sim2 = preload("res://src/combat/combat_sim.gd")
+	func setup() -> void:
+		name = "blade_finisher"
+		h.make_world()
+		h.player.facing = Vector3(0, 0, -1)
+		h.effigies[0].position = Vector3(0, 0.05, -2.0)
+		h.effigies[0].facing = Vector3(0, 0, 1)
+		# chain window per link ~= full swing + 0.8s (98-102f), so f15/f70/f140 stay chained
+		h.input.at(15, {"attack": true})    # link 0: 20 dmg
+		h.input.at(70, {"attack": true})    # link 1: 22 dmg
+		h.input.at(140, {"attack": true})   # link 2 FINISHER: 31 dmg
+	func step(f: int) -> bool:
+		var e = h.effigies[0]
+		if f == 60: check(absf(e.hp - 40.0) < 0.01, "link 0 deals 20, hp=%.2f" % e.hp)
+		if f == 120: check(absf(e.hp - 18.0) < 0.01, "link 1 deals 22, hp=%.2f" % e.hp)
+		if f == 200:
+			check(e.hp <= 0.0 or absf(e.hp - (60.0 - 73.0)) < 0.01, "finisher deals 31 (total 73), hp=%.2f" % e.hp)
+			var saw_fin := false
+			var saw_denied_or_ok := false
+			for ev in Sim2.events:
+				if ev.begins_with("FINISHER"): saw_fin = true
+				if ev == "ATTACK SLOT light_chain[2]": saw_denied_or_ok = true
+			check(saw_denied_or_ok, "third chained attack runs slot light_chain[2]")
+			check(saw_fin, "FINISHER event fires on the third link")
+		return f >= 210
+
+
 func _register() -> void:
+
 	scenarios = [
 		ScenarioStamina.new(),
 		ScenarioCommitment.new(),
@@ -1872,6 +1924,8 @@ func _register() -> void:
 		ScenarioWeapons.new(),
 		ScenarioHeavy.new(),
 		ScenarioDeterminismA.new(),
+		ScenarioWeaponSwap.new(),
+		ScenarioFinisher.new(),
 		ScenarioDeterminismB.new(),
 	]
 	for sc in scenarios:

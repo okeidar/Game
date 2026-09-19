@@ -25,12 +25,13 @@ static func _atk(dmg: float, w: float, a: float, r: float, reach: float, arc: fl
 # equip load, poise, charged heavies, weapon arts, guard counters.
 
 ## BLADE - the standard. No strengths, no weaknesses. The ruler other weapons
-## are measured against.
+## are measured against. Its chain now ENDS in a finisher: the third link hits
+## hardest but is the most exposed swing on the table.
 static func blade() -> Dictionary:
 	return {
 		"id": "blade",
 		"cost_mult": 1.0,
-		"light_chain": [_atk(20.0, 0.28, 0.14, 0.42, 2.4, 100.0, 0.45), _atk(22.0, 0.30, 0.14, 0.46, 2.4, 100.0, 0.5)],
+		"light_chain": [_atk(20.0, 0.28, 0.14, 0.42, 2.4, 100.0, 0.45), _atk(22.0, 0.30, 0.14, 0.46, 2.4, 100.0, 0.5), _atk(31.0, 0.36, 0.16, 0.62, 2.5, 110.0, 1.0)],   # link 3 = FINISHER [overnight proposal - awaiting Omer review]: biggest hit + stagger, paid for with a longer readable windup, the longest recovery, and 1.5x stamina (T.FINISHER_COST_MULT)
 		"heavy": _atk(32.0, 0.50, 0.16, 0.62, 2.5, 110.0, 0.8),
 		"running_attack": _atk(24.0, 0.24, 0.14, 0.50, 2.5, 90.0, 0.6),
 		"rolling_attack": _atk(20.0, 0.20, 0.14, 0.40, 2.3, 90.0, 0.45),
