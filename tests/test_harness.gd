@@ -2811,6 +2811,49 @@ class ScenarioLowHpCue extends Scenario:
 		lf += 1
 		return false
 
+class ScenarioPerfectDodgeTell extends Scenario:
+	const Sim = preload("res://src/combat/combat_sim.gd")
+	const T = preload("res://src/combat/tuning.gd")
+	var lf := -2
+	var hit_done := false
+	var res := -1
+	var flash_at_hit := 0.0
+	var color_at_hit := Color.BLACK
+	func setup() -> void:
+		name = "perfect_dodge_tell"
+		h.make_world()
+		h.player.feathers = 0.0
+		h.player.facing = Vector3(0, 0, -1)
+		h.effigies[0].position = Vector3(0, 0.05, 60.0)
+	func step(_f: int) -> bool:
+		var p = h.player
+		if lf < 0:
+			lf += 1
+			return false
+		if lf == 5:
+			h.input.cur.dodge = true
+			h.input.cur.move = Vector2(0, -1)
+		if lf == 6:
+			h.input.cur.move = Vector2.ZERO
+		if not hit_done and p.state == "roll" and p.roll_t <= T.PERFECT_DODGE_WINDOW * 0.5:
+			res = p.apply_hit(25.0, p.global_position + Vector3(0, 0, 1), 0.35)
+			flash_at_hit = p.guard_flash_t
+			color_at_hit = p.guard_flash_color
+			hit_done = true
+		if hit_done and lf > 40:
+			check(res == p.HIT_RESULT_DODGED, "the frame-tight roll dodges the hit, res=%d" % res)
+			check(absf(p.hp - 100.0) < 0.01, "no damage through the perfect dodge, hp=%.2f" % p.hp)
+			check(Sim.events.has("PERFECT DODGE"), "perfect dodge is acknowledged")
+			check(flash_at_hit > 0.2, "the wind-flash holds (t=%.2f)" % flash_at_hit)
+			check(color_at_hit.is_equal_approx(Color(0.80, 0.88, 1.0)), "the flash is pale wind-blue, got %s" % color_at_hit)
+			check(Sim.events.has("AUDIO sfx:perfect_dodge"), "the tell has a sound")
+			return true
+		if lf > 120:
+			check(false, "never landed the hit inside the perfect window")
+			return true
+		lf += 1
+		return false
+
 func _register() -> void:
 
 	scenarios = [
@@ -2844,6 +2887,7 @@ func _register() -> void:
 		ScenarioHitstopWeight.new(),
 		ScenarioStaminaBreak.new(),
 		ScenarioLowHpCue.new(),
+		ScenarioPerfectDodgeTell.new(),
 		ScenarioCheckpointRest.new(),
 		ScenarioPatternCycle.new(),
 		ScenarioRemnantPenalty.new(),

@@ -288,7 +288,13 @@ func apply_hit(damage: float, from_pos: Vector3, stagger: float, flags := {}) ->
 		return HIT_RESULT_MISS
 	if is_invulnerable():
 		if roll_t <= T.PERFECT_DODGE_WINDOW:
-			# acknowledged only: payoff pending Omer's call (no invented rewards)
+			# [overnight proposal] the perfect dodge gets its TELL - feedback, not reward:
+			# the payoff is still pending Omer's call, but a frame-tight dodge should feel
+			# different from a sloppy one the moment it happens.
+			guard_flash_t = T.PERFECT_DODGE_FLASH
+			guard_flash_color = Color(0.80, 0.88, 1.0)   # pale wind-blue: the air itself missed you
+			HitSpark.burst(get_parent(), global_position + Vector3(0, 1.2, 0), Color(0.80, 0.88, 1.0))
+			Audio.sfx("perfect_dodge")
 			Sim.log_event("PERFECT DODGE")
 		else:
 			Sim.log_event("PLAYER DODGED THROUGH")

@@ -1652,3 +1652,22 @@ What shipped:
 Verified: veil throbs in at critical hp (harness peak a=0.58), oscillates (not a static tint), lifts fully on heal. Reviewed live screenshots at critical hp: edges read clearly, center unobstructed. Cannot judge: whether the 1.1Hz heartbeat reads as dread or as UI noise in real play; whether edge-darkening punishes peripheral enemy reads too hard.
 
 Tests: 56/56. Live: https://feather-iter55-2244-19838.surge.sh
+
+
+---
+
+## iter56 - perfect dodge tell (2026-09-19)
+
+[overnight proposal - awaiting Omer review]
+
+The audit found a dead end with juice missing: PERFECT_DODGE_WINDOW existed (a hit connecting within 0.15s of roll start is recognized) but its only output was a log line - "acknowledged only: payoff pending Omer's call". The parry, by contrast, has a flash, a spark burst, a sound, hitstop, and shake. A frame-tight dodge deserved its tell even while the REWARD stays parked (still Omer's call; this iteration adds zero mechanical payoff).
+
+What shipped:
+- Perfect dodge now flashes the body pale wind-blue for 0.30s (new tuning const PERFECT_DODGE_FLASH), bursts a small blue wisp at chest height, and plays the "perfect_dodge" sfx hook.
+- Distinct from parry's gold (1.0,1.0,0.85): dodge is air, parry is steel.
+- No hitstop: a dodge should feel fluid, not frozen.
+- Tradeoff doctrine: the tell costs nothing mechanically - but it teaches the window exists. Players will start fishing for perfect dodges that still pay nothing. That tension is now visible; the payoff decision is Omer's.
+
+Verified: scenario perfect_dodge_tell - hit inside half the window dodges (res=2), zero damage, flash holds at 0.30s in pale wind-blue, sfx logged. Reviewed staged live screenshots: the wisp reads at chest height, the blue tint is subtle but present. Cannot judge: whether 0.30s is long enough to read in real combat speed; whether blue-on-greybox is distinct enough from the cold block sheen at a glance.
+
+Tests: 57/57. Live: https://feather-iter56-2308-21261.surge.sh
