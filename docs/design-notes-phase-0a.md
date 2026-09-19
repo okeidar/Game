@@ -751,3 +751,23 @@ protection, the mote shows the stash, respawn restores hp/heals but NOT
 feathers, the recovery walk pays them back, rest brings the felled back at
 full value, and the loop closes with a real HARDEN spend. This is the test
 that would have caught the refund bug.
+
+## Iteration 16 - the punish window is VISIBLE (2026-09-19, overnight)
+
+Footage audit: after the double-swing the effigy rests 1.6s (iter 9), but it
+looked identical to its normal 0.9s cooldown - the punish window existed in
+the numbers and was invisible in the world.
+
+[overnight proposal - awaiting Omer review] After the double, the effigy is
+WINDED: it slumps pale, its glow dies, and the club drags low for the whole
+1.6s rest ("EFFIGY WINDED - the opening" in the feed). The opening is now
+something you can SEE and pounce on - the enemy's pressure visibly costs it,
+which is the tradeoff doctrine rendered. Any hit still staggers it; the world
+reset clears the state.
+
+Tests: pattern_cycle extended - after the double, winded_t > 0 and the opening
+is announced; existing rhythm/overhead/reset checks unchanged. 32/32.
+
+Harness: bot v6 adds wall/corner escape (long perpendicular sidestep; if the
+sidestep also fails, reverse away from the target first). Harness only, not in
+the repo.

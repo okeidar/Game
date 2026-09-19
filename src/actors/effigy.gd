@@ -24,6 +24,7 @@ var attack_chain: Array = []    # machinery: follow-up links after the first swi
 var chain_delay_t := 0.0
 var pattern_count := 0            # deterministic swing counter for the pattern cycle
 var did_chain := false            # the double swing earns a longer rest after
+var winded_t := 0.0               # >0 while paying for the double: the opening is VISIBLE (slumped, dim, club down)
 var club_pivot: Node3D
 var body_mat: StandardMaterial3D
 var windup_color := Color("8a7a2a")   # sickly yellow: get ready
@@ -100,6 +101,7 @@ func _physics_process(dt: float) -> void:
 
 func tick(dt: float) -> void:
 	tick_common(dt)
+	winded_t = maxf(0.0, winded_t - dt)
 	if dead:
 		respawn_t -= dt
 		if respawn_t <= 0.0:
@@ -249,6 +251,9 @@ func _tick_attack(dt: float) -> void:
 		else:
 			state = "idle"
 			cooldown = T.DUMMY_CHAIN_COOLDOWN if did_chain else T.DUMMY_COOLDOWN
+			if did_chain:
+				winded_t = T.DUMMY_CHAIN_COOLDOWN
+				Sim.log_event("%s WINDED - the opening" % display_name)
 			did_chain = false
 
 func _in_range_any(target: Node3D) -> bool:
@@ -269,11 +274,17 @@ func _update_visual(dt: float) -> void:
 		else:
 			base_color = base_color.lerp(Color("5a6577"), 6.0 * dt)
 			body_mat.emission = body_mat.emission.lerp(Color.BLACK, 6.0 * dt)
+	elif winded_t > 0.0:
+		# winded: visibly spent - pale slump, no glow, club dragged low
+		base_color = base_color.lerp(Color("9aa4ae"), 4.0 * dt)
+		body_mat.emission = body_mat.emission.lerp(Color.BLACK, 8.0 * dt)
 	else:
 		base_color = base_color.lerp(Color("5a6577"), 6.0 * dt)
 		body_mat.emission = body_mat.emission.lerp(Color.BLACK, 6.0 * dt)
 	# club pose mirrors the attack clock: raise slow, fall fast
 	var pitch := 0.0
+	if winded_t > 0.0 and attack == null:
+		pitch = lerpf(club_pivot.rotation.x, 0.9, 6.0 * dt)   # club dragged low: the opening reads
 	if attack != null:
 		var d2: Dictionary = attack.data
 		if attack.phase == "windup":
@@ -306,6 +317,7 @@ func reset_run(spawn: Vector3, fresh := true) -> void:
 	chain_delay_t = 0.0
 	pattern_count = 0
 	did_chain = false
+	winded_t = 0.0
 	awareness.suspicion = 0.0
 	awareness.state = "calm"
 	state = "idle"

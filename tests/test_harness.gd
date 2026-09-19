@@ -910,6 +910,8 @@ class ScenarioPatternCycle extends Scenario:
 					check(Sim.events.has("EFFIGY CHAINS AGAIN"), "the pattern follow-up fires after the third swing")
 					check(absf(p.hp - 75.0) < 0.01, "the double lands honestly: 15 then 10, hp=%.2f" % p.hp)
 					check(e.cooldown > 1.5, "the double is paid for with a longer rest (punish window), cooldown=%.2f" % e.cooldown)
+					check(e.winded_t > 0.0, "the opening is VISIBLE - winded after the double, winded=%.2f" % e.winded_t)
+					check(Sim.events.has("EFFIGY WINDED - the opening"), "the opening is announced")
 					_start_run(1)
 					return false
 			1:  # world reset: death/rise clears chain, pattern count, aggro, hp, position
