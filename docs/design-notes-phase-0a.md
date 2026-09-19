@@ -564,3 +564,15 @@ Reference frame: Dark Souls 3 mechanics cheat sheet (gastevens/dark-souls-3-mech
 5. Roll i-frames already render as a ghost tuck (alpha 0.45 inside the window) - verified in code; no change needed.
 
 Open (his call, flagged again): spawn-drop jump-attack quirk (attack within the first ~10 frames after landing silently becomes a jump attack). Bot-level death-respawn verification happens live this round.
+
+## Iteration 5 - combos and weapon changes in motion (overnight)
+
+Omer's named gap: "No real combos and weapon changes."
+
+1. [overnight proposal - awaiting Omer review] CHAIN CANCEL WINDOW (CHAIN_CANCEL_POINT_SCAFFOLD = 0.6). Before: the next chain hit could only start after the FULL recovery of the previous swing - chains felt like separate swings with a pause, which is exactly the "no real combos" complaint. Now a pressed or buffered attack during the last 40% of recovery fires immediately, so a chain flows (blade hit gap 840ms -> ~670ms, asserted in the combo_cancel scenario). Tradeoff per the doctrine: the first 60% of recovery is still committed (whiff punishment lives there), and canceling into the next swing spends its stamina and locks you in again - speed bought with commitment, not free.
+2. [overnight proposal - awaiting Omer review] DODGE CANCEL at the same point: a buffered roll fires out of late recovery. This is the genre's core rhythm (swing -> roll out) and was impossible before without waiting out the full recovery. Cost: the roll's 16 stamina, and the first 60% of recovery is still uncancellable.
+3. Enemy hit-flash and roll i-frame ghosting already existed (checked, no change). Weapon-swap stays menu-only (it resets the chain, which is the real cost); no swap animation - that is scope creep for a greybox.
+
+Stat nuance noted: a canceled whiff does not emit a whiff stat (the swing never reaches "done"); hit/whiff rates now slightly overstate accuracy. Acceptable for greybox analytics.
+
+Still his call: spawn-drop jump-attack quirk (flagged iterations 2 and 4).

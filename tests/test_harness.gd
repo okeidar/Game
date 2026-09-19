@@ -172,8 +172,7 @@ class ScenarioStamina extends Scenario:
 class ScenarioCommitment extends Scenario:
 	const Sim = preload("res://src/combat/combat_sim.gd")
 	var interrupted := false
-	var done_frame := -1
-	var saw_roll := false
+	var roll_frame := -1
 	func setup() -> void:
 		name = "attack_commitment"
 		h.make_world()
@@ -182,16 +181,14 @@ class ScenarioCommitment extends Scenario:
 		h.input.at(45, {"dodge": true})
 	func step(f: int) -> bool:
 		var p = h.player
-		if f > 5 and done_frame < 0 and p.state == "free":
-			done_frame = f
-		if f >= 16 and f <= 62 and p.state != "attack":
+		# blade light 1: windup f15-32, active f32-40, committed recovery f40-55 (60%); cancel opens f55
+		if f >= 16 and f <= 54 and p.state != "attack":
 			interrupted = true
-		if f > 62 and p.state == "roll":
-			saw_roll = true
+		if roll_frame < 0 and p.state == "roll":
+			roll_frame = f
 		if f == 100:
-			check(not interrupted, "dodge input during windup/active never interrupts the swing")
-			check(done_frame > 0, "swing completes")
-			check(saw_roll, "buffered dodge fires when the swing ends")
+			check(not interrupted, "windup, active, and the committed 60% of recovery never interrupt")
+			check(roll_frame >= 54 and roll_frame <= 58, "dodge cancel fires at the cancel point (~f55), got f%d" % roll_frame)
 			var rolls := 0
 			for e in Sim.events:
 				if e == "ROLL": rolls += 1
@@ -783,6 +780,51 @@ class ScenarioMachinery4 extends Scenario:
 		lf += 1
 		return false
 
+
+class ScenarioComboCancel extends Scenario:
+	const Sim = preload("res://src/combat/combat_sim.gd")
+	var run := 0
+	var lf := -2
+	func setup() -> void:
+		name = "combo_cancel"
+		_start_run(0)
+	func _start_run(r: int) -> void:
+		run = r
+		lf = -2
+		h.make_world()
+		h.player.facing = Vector3(0, 0, -1)
+		h.effigies[0].position = Vector3(0, 0.05, -2.0)
+		h.effigies[0].facing = Vector3(0, 0, 1)  # faces the player: no backstab crits
+	func step(f: int) -> bool:
+		var p = h.player
+		if lf < 0:
+			lf += 1
+			return false
+		if run == 0:  # buffered chain cancel: the second hit lands early
+			if lf == 5: h.input.cur.attack = true
+			if lf == 20: h.input.cur.attack = true  # buffered mid-swing
+			if lf == 95:
+				var hits: Array = []
+				for st in Sim.stats:
+					if st.get("k") == "hit": hits.append(st)
+				check(hits.size() >= 2, "the buffered chain lands two hits, got %d" % hits.size())
+				if hits.size() >= 2:
+					var gap: int = int(hits[1].t) - int(hits[0].t)
+					check(gap < 750, "chain cancel flows: hit gap %dms beats the uncanceled 840ms" % gap)
+				_start_run(1)
+				return false
+		else:  # dodge cancel: roll out of late recovery before the swing would end
+			if lf == 5: h.input.cur.attack = true
+			if lf == 20:
+				h.input.cur.dodge = true
+				h.input.cur.move = Vector2(0, 1)
+			if lf == 30:
+				h.input.cur.move = Vector2.ZERO
+			if lf == 51:
+				check(p.state == "roll", "dodge cancel fires inside late recovery, state=%s" % p.state)
+				return true
+		lf += 1
+		return false
 
 class ScenarioStaminaClamp extends Scenario:
 	func setup() -> void:
@@ -1482,6 +1524,7 @@ func _register() -> void:
 		ScenarioMachinery2.new(),
 		ScenarioMachinery3.new(),
 		ScenarioMachinery4.new(),
+		ScenarioComboCancel.new(),
 		ScenarioStaminaClamp.new(),
 		ScenarioShell.new(),
 		ScenarioRound5A.new(),

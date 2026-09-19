@@ -134,6 +134,7 @@ const ITEM_USE_COMMIT_SCAFFOLD := 0.8     # SCAFFOLD - item use commit undecided
 
 # Moveset + jump scaffolds (Omer directive 2026-09-18, round 2).
 const CHAIN_WINDOW_SCAFFOLD := 0.8      # SCAFFOLD - chain continue window undecided
+const CHAIN_CANCEL_POINT_SCAFFOLD := 0.6  # [overnight proposal - awaiting Omer review] SCAFFOLD - recovery fraction before a chain/dodge cancel opens; the first 60% of recovery stays committed
 const ROLL_ATTACK_WINDOW_SCAFFOLD := 0.4 # SCAFFOLD - roll-attack window undecided
 const JUMP_VELOCITY_SCAFFOLD := 5.0     # SCAFFOLD - jump height/feel undecided
 

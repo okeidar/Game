@@ -452,6 +452,22 @@ func _tick_attack(dt: float, inp: Dictionary) -> void:
 		_buffer("heavy")
 	elif inp.volley:
 		_buffer("volley")
+	# combo cancel [overnight proposal]: in late recovery a pressed/buffered
+	# attack or dodge fires NOW instead of waiting out the swing - chains and
+	# attack-into-roll flow like the genre. Cost is commitment: the first 60%
+	# of recovery is still exposed, and canceling spends the next action's stamina.
+	if attack.phase == "recovery":
+		var cd: Dictionary = attack.data
+		var cancel_at: float = cd.windup + cd.active + cd.recovery * T.CHAIN_CANCEL_POINT_SCAFFOLD
+		if attack.t >= cancel_at:
+			if inp.attack or buffered == "attack":
+				buffered = ""
+				if _try_attack():
+					return
+			elif inp.dodge or buffered == "dodge":
+				buffered = ""
+				if _try_roll(_move_world(inp.move)):
+					return
 	if attack.phase == "done":
 		if not last_attack_hit:
 			Sim.stat("whiff", {"slot": cur_slot})
