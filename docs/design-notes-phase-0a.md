@@ -1200,3 +1200,20 @@ organic BLOCK footage (iter30: BLOCK UP -> BLOCKED -2 chip, cold-sheen
 guard readable in frames); the bright parry flash stays test-only, and one
 calibrated run is queued behind real game work. Fight stats this run: 21
 attacks / 9 hits / 3 whiffs, 7 telegraphs, 1 block, 0 deaths.
+
+## Iteration 33 - leash audit (NO BUG) + v9.7 verification run [overnight proposal - awaiting Omer review]
+
+NO GAME CODE CHANGED. LEASH AUDIT: the effigy's long chase (x=25.5 -> 31+)
+is working awareness, not a missing leash. The approach state runs while
+awareness is not calm; alert persists while the player is visible within
+12m and decays after 3s game unseen. The bot never broke line of sight, so
+the chase was correct. Genre-normal behavior; nothing to fix. If Omer
+wants a hard territory leash on top, that is his call - recorded, not
+proposed as a bug.
+
+v9.7 verification run (300s, live iter27 build): (1) calibrated parry
+bracket [5.5-7.0s]; (2) heal exercise - heal threshold 50 -> 65 hp so chip
+damage triggers heal_commit organically; (3) death-loop verification -
+on death the bot records the spot, respawns, and walks back to stand on
+the remnant. Critical-path loops under test: heal, death penalty,
+remnant recovery, respawn re-engagement.
