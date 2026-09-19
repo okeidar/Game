@@ -125,6 +125,33 @@ func _ready() -> void:
 	(slab.mesh as BoxMesh).size = Vector3(1.6, 0.12, 1.6)
 	slab.position = Vector3(player_spawn.x, 0.06, player_spawn.z)
 	add_child(slab)
+	# DEFEND room: the duel space gets its own marks (jobs: telegraph the
+	# fight boundary, light the far room). 24-segment inscribed ring, two
+	# ember cressets at its edge.
+	var ring_center := Vector3(25.5, 0.02, -2.0)
+	for i in 24:
+		var a := TAU * float(i) / 24.0
+		var seg := mesh_instance(BoxMesh.new(), Color("7f8ea6"), true)
+		(seg.mesh as BoxMesh).size = Vector3(1.05, 0.02, 0.14)
+		seg.position = ring_center + Vector3(cos(a) * 4.5, 0.0, sin(a) * 4.5)
+		seg.rotation.y = -a + PI * 0.5
+		add_child(seg)
+	for cp in [Vector3(21.4, 0, 2.2), Vector3(29.6, 0, -6.2)]:
+		var post := mesh_instance(BoxMesh.new(), Color("2c313b"))
+		(post.mesh as BoxMesh).size = Vector3(0.3, 1.5, 0.3)
+		post.position = cp + Vector3(0, 0.75, 0)
+		add_child(post)
+		var flame := mesh_instance(BoxMesh.new(), Color("c98a5a"), true)
+		(flame.mesh as BoxMesh).size = Vector3(0.2, 0.3, 0.2)
+		flame.position = cp + Vector3(0, 1.65, 0)
+		add_child(flame)
+		var glow := OmniLight3D.new()
+		glow.light_color = Color("c98a5a")
+		glow.light_energy = 0.5
+		glow.omni_range = 5.0
+		glow.omni_attenuation = 1.6
+		glow.position = cp + Vector3(0, 1.8, 0)
+		add_child(glow)
 	# feathers: VOLLEY room stocks the ammo tests, DEFEND offers recovery mid-fight
 	for fp in [Vector3(4, 0, 3.5), Vector3(8.5, 0, -4.5), Vector3(13, 0, 3.5), Vector3(21.5, 0, 3.0), Vector3(29.5, 0, 0.5)]:
 		spawn_pickup(fp)

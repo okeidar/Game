@@ -31,6 +31,8 @@ var _dbg_acc := 0.0
 var _dbg_kill := false  # debug hook (?killme=1): forces one death after begin so the death loop can be exercised headlessly
 var _dbg_hud := false   # debug hook (?hudcheck=1): applies one non-lethal hit, low stamina, and effigy damage so HUD feedback can be screenshot-verified
 var _dbg_photo := -999.0   # debug hook (?photo=<deg>): orbit portrait of the player for the character sheet; shell+hud hidden
+var _dbg_spot := Vector2(9999, 9999)   # debug hook (?spot=<x>,<z>)
+var _dbg_dist := 3.4   # debug hook (?dist=<m>): orbit distance for location portraits
 var effigy          # the one real enemy (DEFEND room)
 var effigies: Array = []
 var cam
@@ -64,6 +66,12 @@ func _load_build_id() -> void:
 		_dbg_hud = qp != null and str(qp).find("hudcheck") >= 0
 		if str(qp).find("photo=") >= 0:
 			_dbg_photo = float(str(qp).split("photo=")[1].split("&")[0])
+		if str(qp).find("spot=") >= 0:   # debug hook (?spot=<x>,<z>): parks the player for location portraits
+			var _sp = str(qp).split("spot=")[1].split("&")[0].split(",")
+			if _sp.size() == 2:
+				_dbg_spot = Vector2(float(_sp[0]), float(_sp[1]))
+		if str(qp).find("dist=") >= 0:
+			_dbg_dist = float(str(qp).split("dist=")[1].split("&")[0])
 
 func _build() -> void:
 	Sim.reset()
@@ -74,6 +82,8 @@ func _build() -> void:
 	sim_root.add_child(arena)
 	player = Player.new()
 	player.position = arena.player_spawn
+	if _dbg_spot.x < 9000.0:
+		player.position = Vector3(_dbg_spot.x, 0.1, _dbg_spot.y)
 	sim_root.add_child(player)
 	for spec in arena.enemy_specs:
 		var e = Effigy.new()
@@ -139,7 +149,7 @@ func _build() -> void:
 	if _dbg_photo > -900.0:
 		cam.yaw = deg_to_rad(_dbg_photo)
 		cam.pitch = -0.02
-		cam.distance = 3.4
+		cam.distance = _dbg_dist
 	shell.player = player
 	shell.on_begin = func(): shell.close()
 	shell.on_respawn = func(): _respawn(); shell.close()

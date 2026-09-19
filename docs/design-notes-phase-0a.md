@@ -1449,3 +1449,20 @@ Also this cycle: ERTHIS 2D character sheet v1 generated (image tool,
 smart tier, the low-poly turnaround as design reference) and delivered
 for Omer's review - his 18:20 directive "Do an image generation".
 Preview: https://feather-iter41-1801-92ca6ae0830094.surge.sh
+
+## iter42 - LOOK PASS 2: the duel space gets its marks (2026-09-19 ~18:50)
+[overnight proposal - awaiting Omer review] Continuing "Make it look
+better as well" while the Erthis sheet + iter40/41 verdicts are out.
+DEFEND room only; gameplay untouched.
+- Inscribed duel ring around the effigy (24 emissive segments, r4.5) -
+  job: telegraphs the fight boundary before the effigy wakes.
+- Two ember cressets (post + flame + small omni light) at the ring's
+  edge - job: the far room was pitch dark; the duel space now carries
+  its own warm light against the cold hall.
+- Debug hooks extended: ?spot=<x>,<z> parks the player, ?dist=<m> sets
+  orbit distance (location portraits; same pattern as photo/killme).
+- Verified by screenshot: ring reads, spine crosses it, lamps mark the
+  doorway, ember flames glow. Honest limits: cresset light is subtle
+  under swiftshader; the parked shot occludes the effigy behind the
+  player - the effigy model itself still awaits Omer's actor verdicts.
+Preview: https://feather-iter42b-1849-496ae220832960.surge.sh
