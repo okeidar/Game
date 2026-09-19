@@ -996,3 +996,54 @@ raises the bright deflect flash with zero hp cost.
 Open for Omer: spark/flash colors and durations; whether a successful block
 should push the attacker at all (today: nothing, the trade is stamina);
 parry sound hook (Audio.sfx has no parry cue - the deflect is silent).
+
+## Iteration 26 (overnight, 2026-09-19) - the shove question, analyzed (PROPOSAL ONLY, no code)
+
+The open question from iter20/21: the shove fires reliably (6 organic
+triggers in one bot run) but does not DETER - the hugger won anyway. Is the
+shove doing its job? Grounded numbers:
+
+- Capsule floor: player 0.5 + effigy 0.55 = 1.05m center distance.
+- Shove trigger: 0.8s dwell inside 1.3m -> the "hug band" is 1.05-1.3m,
+  0.25m wide.
+- Shove attack: 6 dmg, 0.28s windup, reach 1.6, 120 deg, bypasses the normal
+  cooldown; COST to the effigy: 2.0 m/s backward step + the long rest.
+- Weapon reaches: fangs 1.8-1.9, blade 2.4-2.5, maul similar. EVERY weapon
+  outranges the shove trigger by 0.5m+ - the band only matters to deliberate
+  point-blank play, and collision physics pins you at the floor (1.05m), so
+  "band play" is not a skill expression. THE DWELL IS THE REAL DIAL, not the
+  range.
+
+Why deterrence fails (evidence: iter21 hugger provoked 6 shoves, took 5
+hits, never died, won):
+1. 6 hp is cheaper than a roll (16 stamina) and far cheaper than yielding
+   chain range - hugging THROUGH the shove is the value play.
+2. The effigy's cost (backstep + long rest) REWARDS the hugger: bait the
+   shove, get a free punish window. The hugger wants the shove to happen.
+
+OPTIONS (each with its named cost, per doctrine):
+A. KNOCKBACK, not damage: the shove slides the player to ~2.2m over 0.2s
+   (a slide, not a launch) - outside fangs, at blade's edge. Hugging costs
+   POSITION: chain broken, re-approach through the club's reach. Cost/risk:
+   wall and wedge edges (the corner trap the bot found in iter17) - the
+   slide must clamp against collision or it pins/feels unfair.
+B. STAMINA BITE: shove deals ~25 stamina, no hp. Hugging taxes the roll
+   budget; a sustained hug leaves you empty when the real club comes. Cost:
+   a 6-dmg-looking hit secretly taxing stamina can feel cheap; the price
+   tick/bar make it readable, but the hit LOOKS small.
+C. WIDEN THE BAND: trigger 1.3 -> 1.6m, dwell 0.8 -> 1.0s. Catches
+   deliberate point-blank play. REJECTED: 1.6m reaches into the fangs'
+   designed fighting range (1.8) - it would shove fangs players for playing
+   their weapon as built. Breaks the fangs' identity.
+D. LEAVE IT: hugging is already answered by the club itself (the band sits
+   inside club range - blind hugging is suicide, iter21 note), and the
+   shove's backstep-punish creates a real bait mind game. The pre-shove
+   footage (iter19) showed true face-tank dominance; post-shove footage does
+   not. Maybe deterrence was the wrong bar.
+
+RECOMMENDATION [overnight proposal - awaiting Omer review]: A with the 6 dmg
+kept - the shove's job is to END THE HUG, not to hurt. The token damage
+keeps it honest (a pure reposition could be ignored by a full-hp player);
+the slide is the actual answer, clamped at walls. If Omer prefers
+deterrence-by-price, B is the alternative. C is rejected. D stands if he
+likes the current bait-punish texture. AWAITING HIS CALL - no code written.
