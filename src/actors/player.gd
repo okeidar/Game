@@ -27,6 +27,7 @@ var inventory = Inventory.new()
 var sneaking := false
 var step_acc := 0.0   # sound machinery: distance accumulated toward the next footstep
 var item_t := 0.0
+var pending_item_slot := 0   # which inventory slot the item commit will consume
 const Moveset = preload("res://src/combat/moveset.gd")
 const Attributes = preload("res://src/combat/attributes.gd")
 const Equipment = preload("res://src/combat/equipment.gd")
@@ -345,10 +346,11 @@ func _try_jump() -> bool:
 	Sim.log_event("JUMP")
 	return true
 
-func _try_use_item() -> bool:
-	if not inventory.can_use(0):
+func _try_use_item(slot := 0) -> bool:
+	if not inventory.can_use(slot):
 		Sim.log_event("ITEM DENIED empty slot")
 		return false
+	pending_item_slot = slot
 	state = "item"
 	item_t = 0.0
 	Sim.log_event("ITEM USE START")
@@ -360,7 +362,7 @@ func _tick_item(dt: float, _inp: Dictionary) -> void:
 	_gravity(dt)
 	move_and_slide()
 	if item_t >= T.ITEM_USE_COMMIT_SCAFFOLD:
-		inventory.use(0, self)
+		inventory.use(pending_item_slot, self)
 		state = "free"
 
 func _try_roll(dir: Vector3) -> bool:

@@ -803,3 +803,26 @@ stamina > 45" lasted ~11x too long in distance and fled the bot across the arena
 into the west wall; the 700ms sidestep (~63ms of game time) could not escape the
 corner. v7 caps the retreat at 8m (stand and breathe) and runs 2500ms sidesteps.
 First v7 run: clean fight, WINDED observed organically twice.
+
+## Iteration 18 (overnight, 2026-09-19) - honest inventory
+
+Omer's overnight note: "The menues and inventory feels bad." Audit found the
+worst concrete defect: the inventory LIED. You picked a row, the game closed
+the menu and used slot 0 whatever you picked ("slot-0 commit machinery; slot
+routing is OPEN"), and rows showed only "ember draught x2" with no word about
+what a draught does or costs.
+
+Fixes, all [overnight proposal - awaiting Omer review]:
+1. SLOT ROUTING IS REAL. player._try_use_item(slot) carries the picked slot
+   through the 0.8s commit; _tick_item consumes pending_item_slot. The row you
+   picked is the item you use. The quick-use key (1) still uses slot 0.
+2. ROWS TELL THE TRUTH. Inventory rows now read "ember draught x2 - closes
+   wounds +30 hp - the drink holds you still, exposed". Every item gets a
+   one-line description WITH its cost (design law: the UI shows the tradeoff).
+   Unknown items fall back to "an unwritten thing (scaffold)" - no invented
+   lore.
+3. Descriptions live in inventory.item_descs, registered next to the effect
+   defs in game.gd, so a future item catalog owns both halves.
+
+Open for Omer: description wording, whether quick-use (1) should cycle slots,
+and the item catalog itself (still his).

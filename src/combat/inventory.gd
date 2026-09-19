@@ -8,6 +8,7 @@ const Sim = preload("res://src/combat/combat_sim.gd")
 
 var slots: Array = []    # each: {"id": String, "qty": int}
 var item_defs := {}      # id -> Callable(user); the effect hook. Catalog OPEN.
+var item_descs := {}    # id -> one-line description with its cost (design law: the UI shows the tradeoff)
 
 func add_item(id: String, qty: int = 1) -> void:
 	for it in slots:
@@ -21,6 +22,12 @@ func add_item(id: String, qty: int = 1) -> void:
 
 func register_item_def(id: String, on_use: Callable) -> void:
 	item_defs[id] = on_use
+
+func register_item_desc(id: String, desc: String) -> void:
+	item_descs[id] = desc
+
+func describe(id: String) -> String:
+	return item_descs.get(id, "an unwritten thing (scaffold)")
 
 func can_use(slot: int) -> bool:
 	return slot >= 0 and slot < slots.size() and slots[slot].qty > 0

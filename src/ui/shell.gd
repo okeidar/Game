@@ -141,7 +141,7 @@ func _build_menu() -> void:
 				for i in player.inventory.slots.size():
 					var it: Dictionary = player.inventory.slots[i]
 					var slot: int = i
-					_add("%s x%d" % [it.id, it.qty], func(): _use_item(slot))
+					_add("%s x%d - %s" % [it.id, it.qty, player.inventory.describe(it.id)], func(): _use_item(slot))
 			_add("CLOSE", func(): close())
 		"equipment":
 			_add("weapon: %s" % player.equipment.equipped_id("weapon"), func(): pass)
@@ -159,8 +159,7 @@ func _build_menu() -> void:
 func _use_item(slot: int) -> void:
 	close()
 	if player != null:
-		player._try_use_item()   # slot-0 commit machinery; slot routing is OPEN
-		Sim.log_event("SHELL used inventory slot %d (routing scaffold)" % slot)
+		player._try_use_item(slot)   # [overnight fix] the row you picked is the item you use
 
 func _rest_at_checkpoint() -> void:
 	# genre shape: resting refills you AND brings the world back - the cost of comfort is the fight resetting

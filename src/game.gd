@@ -119,6 +119,8 @@ func _build() -> void:
 	# names/quantities/effects all SCAFFOLD - the item catalog is Omer's.
 	player.inventory.register_item_def("ember draught", func(u): u.hp = minf(u.max_hp, u.hp + 30.0); Sim.stat("item", {"id": "ember draught"}))
 	player.inventory.register_item_def("smoke pellet", func(u): _calm_nearby(u.global_position, 8.0); Sim.stat("item", {"id": "smoke pellet"}))
+	player.inventory.register_item_desc("ember draught", "closes wounds +30 hp - the drink holds you still, exposed")
+	player.inventory.register_item_desc("smoke pellet", "they lose your trail within 8m - one breath of cover, then gone")
 	player.inventory.add_item("ember draught", 2)
 	player.inventory.add_item("smoke pellet", 3)
 	shell = Shell.new()

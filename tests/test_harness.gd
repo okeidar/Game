@@ -1890,6 +1890,33 @@ class ScenarioFinisher extends Scenario:
 		return f >= 210
 
 
+class ScenarioInventorySlots extends Scenario:
+	const Sim2 = preload("res://src/combat/combat_sim.gd")
+	func setup() -> void:
+		name = "inventory_slot_routing"
+		h.make_world()
+		# two items; using slot 1 must consume slot 1, not slot 0
+		h.player.inventory.add_item("alpha", 1)
+		h.player.inventory.add_item("beta", 1)
+		h.player.inventory.register_item_desc("beta", "the second thing")
+	func step(f: int) -> bool:
+		var p = h.player
+		if f == 10:
+			p._try_use_item(1)
+		if f == 20:
+			check(p.state == "item", "item commit runs, state=%s" % p.state)
+		if f == 80:   # commit is 0.8s = 48f, so the use has landed
+			check(p.inventory.slots.size() == 1, "exactly one item remains, got %d" % p.inventory.slots.size())
+			if p.inventory.slots.size() == 1:
+				check(p.inventory.slots[0].id == "alpha", "slot 0 survives; the PICKED slot was consumed, remaining=%s" % p.inventory.slots[0].id)
+			var used_beta := false
+			for e in Sim2.events:
+				if e == "ITEM USED beta (effect hook - catalog undecided)": used_beta = true
+			check(used_beta, "ITEM USED event names beta, not alpha")
+			check(p.inventory.describe("beta") == "the second thing", "describe() returns the registered line")
+			check(p.inventory.describe("mystery") == "an unwritten thing (scaffold)", "describe() falls back honestly")
+		return f >= 90
+
 func _register() -> void:
 
 	scenarios = [
@@ -1926,6 +1953,7 @@ func _register() -> void:
 		ScenarioDeterminismA.new(),
 		ScenarioWeaponSwap.new(),
 		ScenarioFinisher.new(),
+		ScenarioInventorySlots.new(),
 		ScenarioDeterminismB.new(),
 	]
 	for sc in scenarios:
