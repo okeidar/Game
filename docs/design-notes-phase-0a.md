@@ -1152,3 +1152,17 @@ v9.3 bot: skips the five known dummy positions, targets only the live
 EFFIGY. 270s playtest running: walk the gauntlet, then guard-rotation
 against a real opponent - the cold spark / parry flash should finally get
 organic footage.
+
+### Iter30 addendum (v9.3 verified): FIRST COMPLETE ORGANIC FIGHT
+
+270s playtest vs the live EFFIGY at (25.5,-2): bot 19 swings / 9 hits /
+3 whiffs; effigy 8 telegraphs, chased the bot across the room (22.3 ->
+31.0 on the leash), fight ended EFFIGY FELLED +6 essence (economy path
+fires organically). Bot took 5 hits, rolled once, ZERO deaths, and -
+the point of the whole exercise - landed 2 BLOCKS (BLOCK UP -> BLOCKED -2
+chip, the 30% chip-through rule visible in the feed). Footage: red hurt
+flash, yellow windup tell, winded state, finisher banner, the kill - the
+full combat loop reads organically now. Parry flash still uncaptured
+(late-guard timing missed the 0.13s window; 0 parries in 8 telegraphs).
+Montage assembly needs sampling past ~600 frames (ImageMagick cache
+exhausts) - noted for the harness.
