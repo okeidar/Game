@@ -80,69 +80,91 @@ func recalculate_derived() -> void:
 	hp = max_hp * hp_frac
 
 func _build_visuals() -> void:
-	# Model pass (Omer juice directive 2026-09-19): the greybox capsule becomes
-	# a simple procedural knight - torso + helm + visor + pauldrons + skirt.
-	# [overnight proposal - awaiting Omer review] proportions and palette are
-	# first-pass. VISUAL ONLY: the collision capsule below is untouched.
-	# Flash/sheen machinery is preserved by sharing ONE armor material across
-	# the torso and armor parts: tinting visual.material_override (hit flash,
-	# block sheen, guard flash, roll ghost, camera fade) tints the whole body.
+	# Model pass v2 (Omer-approved Erthis sheet v8, 2026-09-19): the armored
+	# knight is OUT (his verdict: "generic knight"). Erthis is pale, gaunt,
+	# NO armor - moss/bark forest garb, big crooked feathered vulture wings.
+	# VISUAL ONLY: collision capsule untouched. Flash/sheen machinery kept by
+	# sharing ONE body material (hit flash, block sheen, guard flash, roll
+	# ghost, camera fade tint the whole body).
 	var capsule := CapsuleMesh.new()
-	capsule.radius = 0.42
-	capsule.height = 1.35
+	capsule.radius = 0.34
+	capsule.height = 1.30
 	visual = MeshInstance3D.new()
 	visual.mesh = capsule
 	var mat := StandardMaterial3D.new()
-	mat.albedo_color = base_color
-	mat.roughness = 0.55
-	mat.metallic = 0.45
+	mat.albedo_color = Color("e8cdb8")   # pale living skin (sheet v8)
+	mat.roughness = 0.85
+	mat.metallic = 0.0
 	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	visual.material_override = mat
 	visual.position.y = 0.95
 	add_child(visual)
-	# helm + pauldrons share the armor material so the flash reads whole-body
-	var helm := MeshInstance3D.new()
-	var hm := SphereMesh.new()
-	hm.radius = 0.24
-	hm.height = 0.46
-	helm.mesh = hm
-	helm.material_override = mat
-	helm.position = Vector3(0, 0.72, 0)
-	visual.add_child(helm)
-	for side in [-1.0, 1.0]:
-		var pauldron := MeshInstance3D.new()
-		var pm := SphereMesh.new()
-		pm.radius = 0.17
-		pm.height = 0.30
-		pauldron.mesh = pm
-		pauldron.scale = Vector3(1.2, 0.75, 1.2)
-		pauldron.material_override = mat
-		pauldron.position = Vector3(side * 0.42, 0.42, 0)
-		visual.add_child(pauldron)
-	# visor slit: near-black, does not flash (tiny)
-	var visor := MeshInstance3D.new()
-	var vm := BoxMesh.new()
-	vm.size = Vector3(0.20, 0.045, 0.05)
-	visor.mesh = vm
-	var vmt := StandardMaterial3D.new()
-	vmt.albedo_color = Color("14161a")
-	vmt.roughness = 0.9
-	visor.material_override = vmt
-	visor.position = Vector3(0, 0.70, 0.20)
-	visual.add_child(visor)
-	# skirt/tassets: dark cloth, does not flash
-	var skirt := MeshInstance3D.new()
-	var km := CylinderMesh.new()
-	km.top_radius = 0.30
-	km.bottom_radius = 0.46
-	km.height = 0.45
-	skirt.mesh = km
-	var kmt := StandardMaterial3D.new()
-	kmt.albedo_color = Color("2f333b")
-	kmt.roughness = 0.95
-	skirt.material_override = kmt
-	skirt.position = Vector3(0, -0.55, 0)
-	visual.add_child(skirt)
+	# gaunt head, shares the skin material so flashes read whole-body
+	var head := MeshInstance3D.new()
+	var hd := SphereMesh.new()
+	hd.radius = 0.19
+	hd.height = 0.44
+	head.mesh = hd
+	head.material_override = mat
+	head.position = Vector3(0, 0.78, 0)
+	visual.add_child(head)
+	# short swept-back hair: pale grey-white, does not flash
+	var hair := MeshInstance3D.new()
+	var hr := SphereMesh.new()
+	hr.radius = 0.195
+	hr.height = 0.30
+	hair.mesh = hr
+	var hmt := StandardMaterial3D.new()
+	hmt.albedo_color = Color("d8d2c6")
+	hmt.roughness = 0.95
+	hair.material_override = hmt
+	hair.position = Vector3(0, 0.84, -0.05)
+	hair.scale = Vector3(1.0, 0.8, 1.05)
+	visual.add_child(hair)
+	# moss shawl: cowl + hood around the shoulders, does not flash
+	var cowl := MeshInstance3D.new()
+	var cm := CylinderMesh.new()
+	cm.top_radius = 0.24
+	cm.bottom_radius = 0.44
+	cm.height = 0.30
+	cowl.mesh = cm
+	var cmt := StandardMaterial3D.new()
+	cmt.albedo_color = Color("4a5240")
+	cmt.roughness = 0.95
+	cowl.material_override = cmt
+	cowl.position = Vector3(0, 0.52, 0)
+	visual.add_child(cowl)
+	var hood := MeshInstance3D.new()
+	var hm2 := SphereMesh.new()
+	hm2.radius = 0.16
+	hm2.height = 0.26
+	hood.mesh = hm2
+	hood.material_override = cmt
+	hood.position = Vector3(0, 0.62, -0.22)
+	visual.add_child(hood)
+	# bark leather harness: two crossed straps, does not flash
+	var smt := StandardMaterial3D.new()
+	smt.albedo_color = Color("5c4632")
+	smt.roughness = 0.9
+	for ang in [-0.6, 0.6]:
+		var strap := MeshInstance3D.new()
+		var sb := BoxMesh.new()
+		sb.size = Vector3(0.07, 0.62, 0.05)
+		strap.mesh = sb
+		strap.material_override = smt
+		strap.position = Vector3(0, 0.18, 0.30)
+		strap.rotation.z = ang
+		visual.add_child(strap)
+	# rough trousers: bark, slimmer than the old skirt, does not flash
+	var legs := MeshInstance3D.new()
+	var lm := CylinderMesh.new()
+	lm.top_radius = 0.26
+	lm.bottom_radius = 0.32
+	lm.height = 0.45
+	legs.mesh = lm
+	legs.material_override = smt
+	legs.position = Vector3(0, -0.55, 0)
+	visual.add_child(legs)
 	var col := CollisionShape3D.new()
 	var shape := CapsuleShape3D.new()
 	shape.radius = 0.5
@@ -160,6 +182,7 @@ func _build_visuals() -> void:
 	sword.mesh = sb
 	var sm := StandardMaterial3D.new()
 	sm.albedo_color = Color("8b93a1")
+
 	sm.roughness = 0.35
 	sm.metallic = 0.6
 	sword.material_override = sm
@@ -186,18 +209,55 @@ func _build_visuals() -> void:
 	_update_coat()
 
 func _wing(side: float) -> MeshInstance3D:
-	var w := MeshInstance3D.new()
-	var wm := BoxMesh.new()
-	wm.size = Vector3(0.09, 1.1, 0.55)
-	w.mesh = wm
-	var mat := StandardMaterial3D.new()
-	mat.albedo_color = Color("2a2d33")
-	mat.roughness = 0.95
-	w.material_override = mat
-	w.position = Vector3(side * 0.52, 1.25, -0.18)
-	w.rotation.z = side * 0.5
-	w.rotation.y = side * 0.35
-	return w
+	# Erthis sheet v8: crooked feathered vulture wing, hunched at rest.
+	# Root at the shoulder; upper arm kinks up-forward (the gnarled joint),
+	# then feather slats fold down along the back. Ivory-tipped primaries.
+	var root := MeshInstance3D.new()
+	root.position = Vector3(side * 0.30, 1.55, -0.28)
+	root.rotation.y = side * 0.30
+	var bone_mat := StandardMaterial3D.new()
+	bone_mat.albedo_color = Color("8e7f72")   # bare wing bone
+	bone_mat.roughness = 0.85
+	var feather_mat := StandardMaterial3D.new()
+	feather_mat.albedo_color = Color("3a3f4a")  # vulture feather
+	feather_mat.roughness = 0.95
+	var tip_mat := StandardMaterial3D.new()
+	tip_mat.albedo_color = Color("d8d2c6")      # feather tip ivory
+	tip_mat.roughness = 0.95
+	# upper arm: the crooked kink, rising forward
+	var arm := MeshInstance3D.new()
+	var am := BoxMesh.new()
+	am.size = Vector3(0.08, 0.55, 0.10)
+	arm.mesh = am
+	arm.material_override = bone_mat
+	arm.position = Vector3(side * 0.12, 0.26, 0)
+	arm.rotation.z = side * -0.5
+	root.add_child(arm)
+	# fore segment folds back down (the multi-joint bend)
+	var elbow := Node3D.new()
+	elbow.position = Vector3(side * 0.34, 0.50, 0)
+	elbow.rotation.z = side * 1.15
+	root.add_child(elbow)
+	# feather slats: layered, hanging from the fore segment
+	for i in 5:
+		var f := MeshInstance3D.new()
+		var fm := BoxMesh.new()
+		fm.size = Vector3(0.05, 0.85 - 0.09 * float(i), 0.14)
+		f.mesh = fm
+		f.material_override = feather_mat
+		f.position = Vector3(side * (0.16 + 0.10 * float(i)), -0.30 - 0.03 * float(i), -0.05 * float(i))
+		f.rotation.z = side * (0.10 + 0.14 * float(i))
+		elbow.add_child(f)
+		# ivory tip on the longer primaries
+		if i >= 3:
+			var t := MeshInstance3D.new()
+			var tm := BoxMesh.new()
+			tm.size = Vector3(0.05, 0.16, 0.14)
+			t.mesh = tm
+			t.material_override = tip_mat
+			t.position = Vector3(0, -(0.85 - 0.09 * float(i)) * 0.5 - 0.06, 0)
+			f.add_child(t)
+	return root
 
 func _update_coat() -> void:
 	var shown := int(ceil(feathers / 5.0))

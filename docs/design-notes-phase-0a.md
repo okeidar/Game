@@ -1495,3 +1495,21 @@ crooked multi-jointed wings, species signature. Sheet v2 generated
 from the story traits and delivered 19:11; the low-poly player model
 redesign waits for his v2 verdict. NO Erthis actor model ships before.
 Preview: https://feather-iter44-1911-a2000483834306.surge.sh
+
+## iter45 - MODEL PASS v2: Erthis from the approved sheet v8 (2026-09-19 ~20:02)
+Omer approved the Erthis sheet v8 (19:40, "Yes this is awesome"), so the
+player model is rebuilt from it. The iter40 armored knight is GONE.
+- Pale gaunt figure (skin e8cdb8, sheet hex), NO armor anywhere.
+- Gaunt head + short swept pale hair (d8d2c6); moss cowl + hood (4a5240);
+  bark harness straps crossed on the chest (5c4632); bark trousers.
+- Crooked feathered vulture wings: bone arm kinking up-forward, feather
+  slats folding down with ivory-tipped primaries (3a3f4a / d8d2c6).
+- ONE shared body material still carries hit flash / block sheen / guard
+  flash / roll ghost / camera fade across skin + head. Collision,
+  sword, motes untouched. Tests 46/46.
+- Screenshot-verified (front + back orbits). Honest notes: the wings fan
+  up-out rather than hunching low (reads slightly peacock at rest -
+  posture tweak if he wants); sword still crosses the body in idle view.
+- Also delivered tonight: action studies + feather-state sheets (v2:
+  FULL / HALF molt / NONE skeletal) generated from v8, for Omer.
+Preview: https://feather-iter45-2001-9549090e837317.surge.sh
