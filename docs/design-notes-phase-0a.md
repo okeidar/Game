@@ -684,3 +684,22 @@ Tests: new scenario remnant_penalty (29 scenarios) - the drop zeroes the
 count, a second death fades the first remnant and leaves only the new one
 holding only the new amount, the recovery names and returns every feather.
 The old empty-payload machinery expectation was updated to the real rule.
+
+## Iteration 12 - heal commitment (2026-09-19, overnight)
+
+Audit found the interrupt already existed (a hit knocks you out of the heal)
+but the charge was only spent on COMPLETION - so an interrupted heal cost
+nothing but the hit itself. The genre rule is the stricter one: the charge is
+committed at the sip.
+
+[overnight proposal - awaiting Omer review] Heal charges are now spent at HEAL
+START, not at the swallow. An uninterrupted 0.9s sip restores +40 as before.
+A hit mid-heal means the charge is gone AND no healing lands
+("HEAL INTERRUPTED - the charge is spent"). The tradeoff is the doctrine's:
+healing is the strongest button you have, and now it carries a real cost when
+mistimed - you heal when you have earned the space, not whenever you are hurt.
+
+Tests: new scenario heal_commit (30 scenarios) - charge drops 3->2 at the sip
+with hp untouched, completion restores exactly +40 spending nothing extra;
+interruption spends the charge, lands no heal, acknowledges the loss, and no
+HEALED event fires. The older heal machinery test still passes unchanged.

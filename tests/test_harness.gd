@@ -1024,6 +1024,61 @@ class ScenarioRemnantPenalty extends Scenario:
 		lf += 1
 		return false
 
+class ScenarioHealCommit extends Scenario:
+	const Sim = preload("res://src/combat/combat_sim.gd")
+	var run := 0
+	var lf := -2
+	func setup() -> void:
+		name = "heal_commit"
+		_start_run(0)
+	func _start_run(r: int) -> void:
+		run = r
+		lf = -2
+		if r == 0:
+			h.make_world()
+		else:
+			h.make_world(Vector3(0, 0.1, 0), [Vector3(0, 0.05, -2.0)])
+	func step(f: int) -> bool:
+		var _unused = f
+		var p = h.player
+		var e = h.effigies[0]
+		match run:
+			0:  # the charge is committed at the sip; an uninterrupted heal completes
+				if lf == 0:
+					p.hp = 40.0
+					p.heal_charges = 3
+				if lf == 2:
+					h.input.cur.heal = true
+				if lf == 4:
+					check(p.heal_charges == 2, "the charge is committed at the sip (3->2 immediately), charges=%d" % p.heal_charges)
+					check(absf(p.hp - 40.0) < 0.01, "the hp has not landed yet - the sip takes time")
+				if lf == 80:
+					check(absf(p.hp - 80.0) < 0.01, "the completed heal restores +40, hp=%.2f" % p.hp)
+					check(p.heal_charges == 2, "completion spends nothing extra, charges=%d" % p.heal_charges)
+					_start_run(1)
+					return false
+			1:  # hit mid-heal: the charge is spent and the heal is lost
+				if lf == 0:
+					p.hp = 60.0
+					p.heal_charges = 3
+					p.feathers = 0.0
+				if lf == 2:
+					h.input.cur.heal = true
+				if lf == 4:
+					e.forced_attack_data = {"damage": 10.0, "windup": 0.15, "active": 0.1, "recovery": 0.3, "reach": 2.6, "arc_deg": 90.0}
+					e._try_attack()
+				if lf == 45:
+					check(Sim.events.has("HEAL INTERRUPTED - the charge is spent"), "the interruption is acknowledged")
+					check(p.heal_charges == 2, "the interrupted sip still spent the charge, charges=%d" % p.heal_charges)
+					check(absf(p.hp - 50.0) < 0.01, "no heal landed - only the hit did (60-10), hp=%.2f" % p.hp)
+					var healed := false
+					for ev in Sim.events:
+						if ev.begins_with("HEALED"): healed = true
+					check(not healed, "an interrupted heal never restores")
+					return true
+		lf += 1
+		return false
+
 class ScenarioStaminaClamp extends Scenario:
 	func setup() -> void:
 		name = "stamina_clamp"
@@ -1726,6 +1781,7 @@ func _register() -> void:
 		ScenarioCheckpointRest.new(),
 		ScenarioPatternCycle.new(),
 		ScenarioRemnantPenalty.new(),
+		ScenarioHealCommit.new(),
 		ScenarioStaminaClamp.new(),
 		ScenarioShell.new(),
 		ScenarioRound5A.new(),

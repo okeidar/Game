@@ -194,6 +194,8 @@ func apply_hit(damage: float, from_pos: Vector3, stagger: float, flags := {}) ->
 		return rb
 	var r: int = super.apply_hit(damage, from_pos, stagger)
 	if r == HIT_RESULT_HIT:
+		if state == "heal":
+			Sim.log_event("HEAL INTERRUPTED - the charge is spent")
 		attack = null
 		state = "free"
 		buffered = ""
@@ -565,7 +567,8 @@ func _try_heal() -> bool:
 		return false
 	state = "heal"
 	heal_t = 0.0
-	Sim.log_event("HEAL START")
+	heal_charges -= 1   # [overnight proposal - awaiting Omer review] the charge is committed at the sip: an interruption spends it (genre rule)
+	Sim.log_event("HEAL START - charge committed (%d left)" % heal_charges)
 	return true
 
 func _tick_heal(dt: float, _inp: Dictionary) -> void:
@@ -574,7 +577,6 @@ func _tick_heal(dt: float, _inp: Dictionary) -> void:
 	_gravity(dt)
 	move_and_slide()
 	if heal_t >= T.HEAL_COMMIT:
-		heal_charges -= 1
 		Sim.stat("heal", {"charges_left": heal_charges})
 		var amt: float = minf(T.HEAL_AMOUNT_SCAFFOLD, max_hp - hp)
 		hp += amt
