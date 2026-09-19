@@ -576,3 +576,14 @@ Omer's named gap: "No real combos and weapon changes."
 Stat nuance noted: a canceled whiff does not emit a whiff stat (the swing never reaches "done"); hit/whiff rates now slightly overstate accuracy. Acceptable for greybox analytics.
 
 Still his call: spawn-drop jump-attack quirk (flagged iterations 2 and 4).
+
+## Iteration 6 - enemy-side feel and camera readability (overnight)
+
+Audit result: the effigy was already well-built (yellow->red telegraph with emission, club raise/fall pose mirroring the attack clock, early-track-late-commit aiming, punishable recovery, keel-over death, any-hit staggers it out of windup). The real readability gaps were camera-side:
+
+1. [overnight proposal - awaiting Omer review] Close-camera body fade. Playtest footage showed the player's own pale capsule filling half the screen whenever a wall pushed the camera in (the sphere-cast pulls to 0.8m, inside the body's silhouette). Genre standard: fade the character. Now below 1.6m camera distance the body renders at 25% alpha; roll ghosting stacks under it. Cost: at point-blank camera the player is a ghost - readability of the WORLD beats readability of the body in that moment.
+2. [overnight proposal - awaiting Omer review] Lock-on marker: a small gold unshaded spark floats over the locked enemy with a gentle bob. Before, lock-on had no world-space indicator - only the HUD bar changed. Cost: one more moving light-element on screen; genre-standard.
+
+Not done (scope): camera collision overhaul (the sphere-cast works; only the close-up readability was broken), effigy attack variety (content design is Omer's - the attack_chain machinery already supports follow-ups), multi-enemy separation (only one live enemy in 0A; physics bodies already push apart).
+
+Verification note: both changes are presentation-layer; the harness does not drive game.gd/camera rig, so they are verified by playtest footage this round, with the 26-scenario suite confirming no regressions.

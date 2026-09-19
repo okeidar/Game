@@ -6,6 +6,7 @@ var player: Node3D
 var yaw := 0.0
 var pitch := -0.34
 var distance := 5.4
+var current_distance := 5.4   # live pull-in distance; player fades when this collapses (wall at your back)
 var pivot_height := 1.7
 var lock_target: Node3D = null
 var cam: Camera3D
@@ -56,5 +57,6 @@ func _physics_process(dt: float) -> void:
 	var res := space.cast_motion(q)
 	if res.size() >= 2 and res[1] < 1.0:
 		want = maxf(0.8, 0.4 + (distance - 0.4) * res[1] * 0.92)
+	current_distance = want
 	cam.position = off * want
 	cam.look_at(pivot + Vector3(0, 0.1, 0), Vector3.UP)

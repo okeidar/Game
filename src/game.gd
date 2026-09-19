@@ -36,6 +36,7 @@ var hud
 var build_id := "dev"
 var progression
 var shell
+var lock_marker: MeshInstance3D = null
 var death_timer := 0.0
 var death_menu_t := -1.0   # counts down after death; YOU DIED screen waits its genre beat
 var deaths := 0
@@ -85,6 +86,20 @@ func _build() -> void:
 	cam.player = player
 	add_child(cam)
 	player.cam = cam
+	# [overnight proposal] lock-on marker: a gold spark floating over the locked enemy
+	lock_marker = MeshInstance3D.new()
+	var lm_mesh := SphereMesh.new()
+	lm_mesh.radius = 0.10
+	lm_mesh.height = 0.20
+	lock_marker.mesh = lm_mesh
+	var lm_mat := StandardMaterial3D.new()
+	lm_mat.albedo_color = Color("e8c96a")
+	lm_mat.emission_enabled = true
+	lm_mat.emission = Color("e8c96a")
+	lm_mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	lock_marker.material_override = lm_mat
+	lock_marker.visible = false
+	sim_root.add_child(lock_marker)
 	hud = Hud.new()
 	hud.player = player
 	hud.effigy = effigy
@@ -156,6 +171,12 @@ func _process(delta: float) -> void:
 			print("POS %.3f %.3f hp=%.0f st=%.0f" % [player.global_position.x, player.global_position.z, player.hp, player.stamina])
 			for e in get_tree().get_nodes_in_group("enemies"):
 				print("EPOS %s %.3f %.3f hp=%.0f dead=%d" % [e.display_name, e.global_position.x, e.global_position.z, e.hp, 1 if e.dead else 0])
+	if lock_marker != null:
+		if player != null and player.lock_target != null and is_instance_valid(player.lock_target) and not player.lock_target.dead:
+			lock_marker.visible = true
+			lock_marker.global_position = player.lock_target.global_position + Vector3(0, 2.25 + sin(Time.get_ticks_msec() / 350.0) * 0.06, 0)
+		else:
+			lock_marker.visible = false
 	# room banner + enemy bar follows the relevant effigy
 	if hud != null and player != null and arena != null:
 		hud.set_room(arena.room_at(player.position))

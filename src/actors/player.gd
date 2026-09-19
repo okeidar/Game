@@ -672,13 +672,20 @@ func _update_visual(dt: float) -> void:
 	else:
 		rotation.y = lerp_angle(rotation.y, target_yaw, 14.0 * dt)
 	# roll: tuck, and go ghost during the i-frame window so they visibly match
+	# [overnight proposal] camera pushed to your back fades the body instead of
+	# filling the screen with it (genre-standard close-camera fade)
+	var cam_close := false
+	if cam != null:
+		var cd = cam.get("current_distance")
+		if cd != null and float(cd) < 1.6:
+			cam_close = true
 	var mat := visual.material_override as StandardMaterial3D
 	if state == "roll":
 		visual.scale = Vector3(1.0, 0.62, 1.0)
-		mat.albedo_color.a = 0.45 if is_invulnerable() else 1.0
+		mat.albedo_color.a = 0.25 if cam_close else (0.45 if is_invulnerable() else 1.0)
 	else:
 		visual.scale = Vector3.ONE
-		mat.albedo_color.a = 1.0
+		mat.albedo_color.a = 0.25 if cam_close else 1.0
 		if state == "block":
 			mat.albedo_color = Color("7f9fcf")  # guard up: cold sheen
 	_update_sword()
