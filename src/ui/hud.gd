@@ -188,7 +188,7 @@ func _process(_dt: float) -> void:
 			st_fill.bg_color = Color("5e6e4a")
 	fe_bar.value = player.feathers
 	var ess: float = player.progression.essence if player.progression != null else 0.0
-	fe_text.text = "%s · %d feathers · %d%% resist%s · %d essence (scaffold)" % [player.moveset.get("id", "?").to_upper(), int(player.feathers), int(round(player.feather_resist() * 100.0)), (" · SNEAK" if player.sneaking else ""), int(ess)]
+	fe_text.text = "%s · %d feathers · %d%% resist%s · %d essence" % [player.moveset.get("id", "?").to_upper(), int(player.feathers), int(round(player.feather_resist() * 100.0)), (" · SNEAK" if player.sneaking else ""), int(ess)]
 	for i in heal_pips.size():
 		heal_pips[i].color = Color("d9b25a") if player.heal_charges > i else Color(0.35, 0.33, 0.28, 0.6)
 	if effigy != null and (player.lock_target == effigy or effigy.since_hit < 4.0) and not effigy.dead:

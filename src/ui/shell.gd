@@ -131,7 +131,7 @@ func _build_menu() -> void:
 		"death":
 			_add("RISE AT THE LAST CHECKPOINT", func(): if on_respawn.is_valid(): on_respawn.call())
 		"checkpoint":
-			# [overnight proposals - awaiting Omer review] rest effects + first essence spends; prices are SCAFFOLD, the currency name is a scaffold label
+			# [overnight proposals - awaiting Omer review] rest effects + first essence spends; prices are SCAFFOLD (the name essence is canon - Omer 2026-09-19)
 			_add("REST - wounds close, heals refill, the fallen rise again", func(): _rest_at_checkpoint())
 			_add("HARDEN +10 max hp - 20 essence (scaffold price)", func(): _buy_upgrade("harden", 20.0))
 			_add("MEND +1 heal charge - 30 essence (scaffold price)", func(): _buy_upgrade("mend", 30.0))
@@ -211,7 +211,9 @@ func _render() -> void:
 	var txt := ""
 	if state == "title":
 		txt += "[center][font_size=64][b][color=%s]FEATHER[/color][/b][/font_size][/center]\n" % COL_ACCENT
-		txt += "[center][color=%s][font_size=16]a phase 0a greybox[/font_size][/color][/center]\n\n" % COL_DIM
+		txt += "[center][color=%s][font_size=16]a phase 0a greybox[/font_size][/color][/center]\n" % COL_DIM
+		# canon world name (Omer 2026-09-19: "I want it in the world of vamora") - names only, no lore text in the public build
+		txt += "[center][color=%s][font_size=16]the world of Vamora[/font_size][/color][/center]\n\n" % COL_DIM
 	else:
 		txt += "[color=%s][font_size=30][b]%s[/b][/font_size][/color]\n" % [COL_ACCENT, _kind_title()]
 		txt += "[color=%s][font_size=13]%s[/font_size][/color]\n\n" % [COL_DIM, _kind_subtitle()]

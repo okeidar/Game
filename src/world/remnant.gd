@@ -1,12 +1,12 @@
 extends Node3D
 ## Death-penalty machinery: where Erthis falls, a remnant remains. It records
-## the death location and holds the dropped ESSENCE (scaffold label - the
+## the death location and holds the dropped ESSENCE (canon name - the
 ## enemy-drop currency) for recovery. Feathers are never part of the payload
 ## (Omer ruling 2026-09-19: feathers are not currency).
 
 const Sim = preload("res://src/combat/combat_sim.gd")
 
-var payload := {}   # contents.essence = the dropped currency (scaffold label)
+var payload := {}   # contents.essence = the dropped currency (canon name)
 var mote: MeshInstance3D
 var spin := 0.0
 

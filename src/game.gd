@@ -108,7 +108,7 @@ func _build() -> void:
 	hud.build_id = build_id
 	add_child(hud)
 	progression = Progression.new()
-	player.progression = progression   # one shared currency ledger (essence, scaffold label)
+	player.progression = progression   # one shared currency ledger (essence - canon name)
 	var cp = Checkpoint.new()
 	cp.position = Vector3(-31.0, 0.05, 1.5)  # MOVE room, beside the slab
 	sim_root.add_child(cp)

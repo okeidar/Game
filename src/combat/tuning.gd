@@ -5,7 +5,7 @@ extends RefCounted
 ## not like runes. They are not come from enemies and are not re collectible.
 ## They are not currency."). FEATHERS are the coat: armor and ammunition,
 ## refilled only by world pickups - never earned, spent, or dropped. ESSENCE
-## (scaffold label, canon name TBD) is the enemy-drop currency: earned from
+## (canon name - Omer 2026-09-19) is the enemy-drop currency: earned from
 ## felled enemies, spent at checkpoints, dropped on death. Every strong
 ## option carries a named cost.
 

@@ -1,8 +1,8 @@
 extends RefCounted
 ## Progression machinery: the spend/sink path and an upgrade application hook.
 ## Omer ruling 2026-09-19: feathers are NOT currency - never enemy-dropped,
-## never spent, never death-dropped. ESSENCE (scaffold label from the design
-## docs; canon name TBD - Omer has not confirmed it) is the enemy-drop
+## never spent, never death-dropped. ESSENCE (canon - Omer 2026-09-19:
+## "Essence is good. I want it in the world of vamora") is the enemy-drop
 ## currency: earned from felled enemies, spent here, dropped on death.
 ## Prices and the upgrade catalog remain SCAFFOLD, not design.
 
@@ -10,7 +10,7 @@ const Sim = preload("res://src/combat/combat_sim.gd")
 const T = preload("res://src/combat/tuning.gd")
 
 var applied_upgrades: Array = []
-var essence := 0.0   # the enemy-drop currency (scaffold label - Omer has not confirmed the name)
+var essence := 0.0   # the enemy-drop currency (canon name - Omer 2026-09-19)
 
 func add_essence(n: float) -> void:
 	essence += n

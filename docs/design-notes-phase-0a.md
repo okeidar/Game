@@ -1047,3 +1047,20 @@ keeps it honest (a pure reposition could be ignored by a full-hp player);
 the slide is the actual answer, clamped at walls. If Omer prefers
 deterrence-by-price, B is the alternative. C is rejected. D stands if he
 likes the current bait-punish texture. AWAITING HIS CALL - no code written.
+
+## Iteration 27 (2026-09-19) - canon: essence, and the world is Vamora
+
+OMER RULINGS (2026-09-19, verbatim): "Essence is good. I want it in the
+world of vamora."
+
+- ESSENCE is CANON, no longer a scaffold label. The "(scaffold)" marker is
+  off the HUD line and the name comments; the checkpoint PRICES keep their
+  (scaffold price) marking - the numbers are still placeholders, only the
+  name was confirmed.
+- VAMORA is the canon world name (the game's own working title stays
+  FEATHER). Per the names-only rule it surfaces in the build at the title
+  screen: FEATHER / a phase 0a greybox / the world of Vamora. No lore text -
+  names only, lore stays in the mind.
+
+The iter26 shove proposal is WITH OMER as a choice (A knockback-slide / B
+stamina-bite / C leave it as D). No shove code until he answers.

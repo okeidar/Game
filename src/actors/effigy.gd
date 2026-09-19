@@ -339,7 +339,7 @@ func _update_visual(dt: float) -> void:
 		visual.rotation.x = lerpf(visual.rotation.x, -1.4, 4.0 * dt)
 
 func kill_reward() -> float:
-	# the enemy-drop currency (essence, scaffold label) - NEVER feathers (Omer ruling 2026-09-19)
+	# the enemy-drop currency (essence - canon name) - NEVER feathers (Omer ruling 2026-09-19)
 	return T.KILL_ESSENCE if fresh_kill else T.KILL_ESSENCE_RISEN
 
 func reset_run(spawn: Vector3, fresh := true) -> void:

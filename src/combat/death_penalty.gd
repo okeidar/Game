@@ -1,6 +1,6 @@
 extends RefCounted
-## Death-penalty machinery. Death drops every carried ESSENCE (scaffold label
-## - the enemy-drop currency) where they fell and leaves a remnant that holds
+## Death-penalty machinery. Death drops every carried ESSENCE (canon name -
+## the enemy-drop currency) where they fell and leaves a remnant that holds
 ## it for recovery. Feathers are NEVER dropped (Omer ruling 2026-09-19:
 ## feathers are not currency) - the coat survives death.
 
