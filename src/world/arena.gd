@@ -42,14 +42,32 @@ func mesh_instance(mesh: Mesh, color: Color, emission := false) -> MeshInstance3
 func _ready() -> void:
 	var world := WorldEnvironment.new()
 	var env := Environment.new()
-	env.background_mode = Environment.BG_COLOR
-	env.background_color = Color("0a0d14")
+	# iter41 visual pass: dusk sky replaces the flat void, ACES + light bloom,
+	# fog breathes into the sky. Gameplay numbers untouched.
+	var sky := Sky.new()
+	var sky_mat := ProceduralSkyMaterial.new()
+	sky_mat.sky_top_color = Color("05070e")
+	sky_mat.sky_horizon_color = Color("1d2c49")
+	sky_mat.sky_curve = 0.18
+	sky_mat.ground_bottom_color = Color("04060a")
+	sky_mat.ground_horizon_color = Color("0e1626")
+	sky_mat.sun_angle_max = 30.0
+	sky_mat.sun_curve = 0.05
+	sky.sky_material = sky_mat
+	env.background_mode = Environment.BG_SKY
+	env.sky = sky
 	env.ambient_light_source = Environment.AMBIENT_SOURCE_COLOR
 	env.ambient_light_color = Color("54627e")
-	env.ambient_light_energy = 0.5
+	env.ambient_light_energy = 0.55
+	env.tonemap_mode = Environment.TONE_MAPPER_ACES
+	env.glow_enabled = true
+	env.glow_intensity = 0.35
+	env.glow_strength = 0.9
+	env.glow_bloom = 0.06
 	env.fog_enabled = true
 	env.fog_light_color = Color("0d1420")
-	env.fog_density = 0.025
+	env.fog_density = 0.02
+	env.fog_sky_affect = 0.55
 	world.environment = env
 	add_child(world)
 
@@ -59,6 +77,12 @@ func _ready() -> void:
 	moon.light_energy = 1.1
 	moon.shadow_enabled = true
 	add_child(moon)
+	# faint warm bounce off the horizon, opposite the moon - lifts the dark sides
+	var fill := DirectionalLight3D.new()
+	fill.rotation_degrees = Vector3(-18, 145, 0)
+	fill.light_color = Color("7a6a55")
+	fill.light_energy = 0.22
+	add_child(fill)
 
 	_static_box(Vector3(68, 0.3, 17), Vector3(0, -0.15, 0), Color("20261f"))   # floor
 	# perimeter walls, 3m tall
@@ -70,6 +94,18 @@ func _ready() -> void:
 	for dx in [-17.0, 0.0, 17.0]:
 		_static_box(Vector3(0.6, 3.0, 7.0), Vector3(dx, 1.5, -5.0), Color("232933"))
 		_static_box(Vector3(0.6, 3.0, 7.0), Vector3(dx, 1.5, 5.0), Color("232933"))
+	# doorway lamps: emissive posts that name every pass-through (job: wayfinding)
+	for dx in [-17.0, 0.0, 17.0]:
+		for dz in [-1.85, 1.85]:
+			var lamp := mesh_instance(BoxMesh.new(), Color("9fb4d8"), true)
+			(lamp.mesh as BoxMesh).size = Vector3(0.14, 2.2, 0.14)
+			lamp.position = Vector3(dx, 1.1, dz)
+			add_child(lamp)
+	# wayfinding spine: a faint lit strip down the hall's main axis
+	var spine := mesh_instance(BoxMesh.new(), Color("3b4a63"), true)
+	(spine.mesh as BoxMesh).size = Vector3(67.0, 0.02, 0.16)
+	spine.position = Vector3(0, 0.011, 0)
+	add_child(spine)
 	# MOVE room: pillars to circle and to test the camera against
 	for pp in [Vector3(-28, 1.1, -4), Vector3(-22.5, 1.1, 1)]:
 		_static_box(Vector3(1.4, 2.2, 1.4), pp, Color("2c313b"))

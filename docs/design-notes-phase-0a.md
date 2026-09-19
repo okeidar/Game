@@ -1428,3 +1428,24 @@ hidden) - turnarounds shot at 0/120/240 on the preview build.
 Preview: https://feather-iter40-1736-8508cb75c858dfc5d90e.surge.sh
 Next actors after Omer's read: effigy figure, then arena dressing +
 lighting/atmosphere pass (Omer 17:26: "Make it look better as well").
+
+## iter41 - LOOK PASS 1: dusk sky, ACES, bloom, wayfinding (2026-09-19 ~18:10)
+[overnight proposal - awaiting Omer review] Omer 17:26: "Make it look
+better as well". Environment-only; gameplay numbers untouched.
+- Flat BG_COLOR void replaced with a ProceduralSkyMaterial dusk sky
+  (near-black zenith 05070e -> dusk blue horizon 1d2c49).
+- ACES tonemap; light bloom (intensity 0.35, bloom 0.06) so emissives
+  (motes, spark, lamps) bleed a little light.
+- Fog density 0.025->0.02 with sky_affect 0.55 so the horizon breathes.
+- Warm fill directional (7a6a55, 0.22) opposite the moon - dark sides lift.
+- Dressing WITH jobs only: emissive doorway lamps naming every pass-through,
+  a faint lit wayfinding spine down the hall's main axis.
+- Verified by screenshot on the local build (swiftshader): sky gradient,
+  spine glow, lamp posts, knight reads under the new grade. Honest limit:
+  swiftshader stills understate bloom/fog - Omer's browser is the judge.
+- Harness note: the glow build thrashed the 2GB sandbox when 12 stray
+  chrome processes piled up; one clean shot at a time works fine.
+Also this cycle: ERTHIS 2D character sheet v1 generated (image tool,
+smart tier, the low-poly turnaround as design reference) and delivered
+for Omer's review - his 18:20 directive "Do an image generation".
+Preview: https://feather-iter41-1801-92ca6ae0830094.surge.sh
