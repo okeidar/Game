@@ -84,6 +84,19 @@ const DUMMY_RESPAWN := 4.0
 const DUMMY_TRACK_FRACTION := 0.5  # share of windup where it still turns
 const DUMMY_TRACK_RATE := 2.6      # rad/s
 
+# Pattern cycle [overnight proposal - awaiting Omer review]: the training
+# effigy no longer repeats one swing forever - every third attack chains a
+# faster, weaker follow-up (deterministic counter, never RNG). The follow-up
+# pays for its speed with lower damage; after the double the effigy rests
+# longer (DUMMY_CHAIN_COOLDOWN) - pressure costs the enemy its punish window.
+# Telegraph honesty holds: the follow-up runs the same yellow->red cycle.
+const DUMMY_ATTACK_FOLLOWUP := {
+	"damage": 10.0, "windup": 0.5, "active": 0.12, "recovery": 0.6,
+	"reach": 2.6, "arc_deg": 90.0, "delay": 0.25,
+}
+const DUMMY_PATTERN_PERIOD := 3     # every 3rd swing chains the follow-up
+const DUMMY_CHAIN_COOLDOWN := 1.6   # the longer rest after the double
+
 # Defense verbs (Omer playtest directive 2026-09-18; reference: Mortal Shell 2).
 # Doctrine: every defense pays for its safety - block pays stamina + mobility,
 # parry pays a tight timing window, perfect dodge pays proximity to the blow.

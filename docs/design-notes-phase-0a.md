@@ -608,3 +608,31 @@ Critical path items: progression + checkpoint behavior. The rest stub is gone; t
 4. HUD shows the results immediately: heal pips refill, hp bar ghost snaps up, feather count drops on a buy.
 
 Tests: checkpoint_rest scenario (menu rows, rest refill + respawn-at-post, exact spend amounts, denial when poor); machinery_scaffolds run 1 updated (no more stub event; menu wiring covered by the new scenario).
+
+## Iteration 9 - enemy patterns: the effigy learns a rhythm (2026-09-19, overnight)
+
+Omer's critical path names "enemy patterns" explicitly. The training effigy had
+exactly one attack repeated forever - a punching bag, not an opponent.
+
+[overnight proposal - awaiting Omer review] The effigy now runs a deterministic
+pattern cycle (no RNG anywhere in the sim): swings 1 and 2 are the honest club
+swing, every 3rd swing chains a faster, weaker follow-up (10 dmg, 0.5s windup,
+0.25s link delay) riding the existing attack_chain machinery. Tradeoff doctrine
+holds on the ENEMY side too: the follow-up pays for its speed with lower damage,
+and after the double the effigy rests 1.6s instead of 0.9s - pressure costs it
+its punish window. Telegraph honesty: the follow-up runs the same yellow->red
+color cycle and club animation, no hidden armor, still staggerable out of
+windup, still parryable (a deflect clears the whole chain).
+
+World reset on death (genre law) was already wired in game.gd _respawn, but
+reset_run had gaps: it now also clears attack_chain, chain_delay_t, the pattern
+counter, and awareness (suspicion 0, calm) - before, a killed-then-risen or
+reset effigy could keep a pending chain or stay aggroed.
+
+Tests: new scenario pattern_cycle (28 scenarios total) - cycle determinism
+(swings 1-2 never chain, swing 3 chains, double lands exactly 15+10, cooldown
+> 1.5s after), and the world reset (full hp, back at post, chain/pattern/aggro
+cleared). Machinery run 5 (manual chain injection) still passes unchanged.
+
+Prices/values are scaffold tuning awaiting Omer's pass: follow-up damage 10,
+pattern period 3, chain cooldown 1.6s.

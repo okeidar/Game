@@ -21,6 +21,8 @@ var boss_phase := 0
 var forced_attack_data = null   # machinery: tests/future AI inject an attack dict
 var attack_chain: Array = []    # machinery: follow-up links after the first swing
 var chain_delay_t := 0.0
+var pattern_count := 0            # deterministic swing counter for the pattern cycle
+var did_chain := false            # the double swing earns a longer rest after
 var club_pivot: Node3D
 var body_mat: StandardMaterial3D
 var windup_color := Color("8a7a2a")   # sickly yellow: get ready
@@ -161,6 +163,13 @@ func _try_attack() -> bool:
 	attack = MeleeAttack.new(forced_attack_data if forced_attack_data != null else T.DUMMY_ATTACK, target.global_position - global_position)
 	facing = attack.direction
 	state = "attack"
+	# pattern cycle: every DUMMY_PATTERN_PERIOD-th honest swing chains the
+	# follow-up. Skipped when machinery already owns the chain (boss phase,
+	# test injection) or a forced attack is being rehearsed.
+	if forced_attack_data == null and boss_data == null and attack_chain.is_empty():
+		pattern_count += 1
+		if pattern_count % T.DUMMY_PATTERN_PERIOD == 0:
+			attack_chain = [T.DUMMY_ATTACK_FOLLOWUP.duplicate()]
 	Sim.log_event("%s RAISES ITS CLUB" % display_name)
 	return true
 
@@ -174,11 +183,13 @@ func _tick_attack(dt: float) -> void:
 				if t2 != null:
 					attack = MeleeAttack.new(link, t2.global_position - global_position)
 					facing = attack.direction
+					did_chain = true
 					Sim.log_event("%s CHAINS AGAIN" % display_name)
 				else:
 					attack_chain.clear()
 					state = "idle"
-					cooldown = T.DUMMY_COOLDOWN
+					cooldown = T.DUMMY_CHAIN_COOLDOWN if did_chain else T.DUMMY_COOLDOWN
+					did_chain = false
 		return
 	var target := _get_target()
 	# track early, commit late: strafing behind it beats the swing
@@ -220,6 +231,7 @@ func _tick_attack(dt: float) -> void:
 					stagger_t = T.PARRY_STAGGER
 					crit_open_t = T.CRIT_WINDOW_SCAFFOLD  # riposte machinery: reel opens the crit window
 					cooldown = T.DUMMY_COOLDOWN
+					did_chain = false
 					Sim.log_event("%s DEFLECTED - REELING" % display_name)
 	if attack != null and attack.phase == "done":
 		attack = null
@@ -227,7 +239,8 @@ func _tick_attack(dt: float) -> void:
 			chain_delay_t = attack_chain[0].get("delay", 0.0)  # SCAFFOLD hook: per-link delay
 		else:
 			state = "idle"
-			cooldown = T.DUMMY_COOLDOWN
+			cooldown = T.DUMMY_CHAIN_COOLDOWN if did_chain else T.DUMMY_COOLDOWN
+			did_chain = false
 
 func _in_range_any(target: Node3D) -> bool:
 	return _dist_to(target) <= T.DUMMY_ATTACK.reach + target.hurt_radius + 1.0
@@ -276,6 +289,12 @@ func reset_run(spawn: Vector3) -> void:
 	dead = false
 	stagger_t = 0.0
 	attack = null
+	attack_chain.clear()
+	chain_delay_t = 0.0
+	pattern_count = 0
+	did_chain = false
+	awareness.suspicion = 0.0
+	awareness.state = "calm"
 	state = "idle"
 	cooldown = 0.8
 	respawn_t = 0.0

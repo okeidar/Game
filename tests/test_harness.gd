@@ -870,6 +870,63 @@ class ScenarioCheckpointRest extends Scenario:
 			return true
 		return false
 
+class ScenarioPatternCycle extends Scenario:
+	const Sim = preload("res://src/combat/combat_sim.gd")
+	const T3 = preload("res://src/combat/tuning.gd")
+	var run := 0
+	var lf := -2
+	func setup() -> void:
+		name = "pattern_cycle"
+		_start_run(0)
+	func _start_run(r: int) -> void:
+		run = r
+		lf = -2
+		h.make_world(Vector3(0, 0.1, 0), [Vector3(0, 0.05, -2.0)])
+	func step(f: int) -> bool:
+		var _unused = f
+		var p = h.player
+		var e = h.effigies[0]
+		match run:
+			0:  # the cycle: swings 1-2 never chain, swing 3 chains, double lands 15+10, longer rest after
+				if lf == 0:
+					p.feathers = 0.0
+				if lf == 2:
+					e._try_attack()
+					check(e.attack_chain.is_empty(), "swing 1 of the cycle never chains")
+					e.attack = null
+					e.state = "idle"
+				if lf == 4:
+					e._try_attack()
+					check(e.attack_chain.is_empty(), "swing 2 of the cycle never chains")
+					e.attack = null
+					e.state = "idle"
+				if lf == 6:
+					e._try_attack()
+					check(e.attack_chain.size() == 1, "every third swing chains the follow-up")
+				if lf == 260:
+					check(Sim.events.has("EFFIGY CHAINS AGAIN"), "the pattern follow-up fires after the third swing")
+					check(absf(p.hp - 75.0) < 0.01, "the double lands honestly: 15 then 10, hp=%.2f" % p.hp)
+					check(e.cooldown > 1.5, "the double is paid for with a longer rest (punish window), cooldown=%.2f" % e.cooldown)
+					_start_run(1)
+					return false
+			1:  # world reset: death/rise clears chain, pattern count, aggro, hp, position
+				if lf == 2:
+					e.attack_chain = [T3.DUMMY_ATTACK_FOLLOWUP.duplicate()]
+					e.awareness.alert_now(e)
+					e.hp = 25.0
+					e.position.x = 3.0
+					e.pattern_count = 2
+					e.did_chain = true
+					e.reset_run(e.spawn_pos)
+				if lf == 4:
+					check(absf(e.hp - e.max_hp) < 0.01, "the world reset restores full hp, hp=%.0f" % e.hp)
+					check(e.position.distance_to(e.spawn_pos) < 0.01, "the world reset returns it to its post")
+					check(e.attack_chain.is_empty() and e.pattern_count == 0 and not e.did_chain, "the world reset clears chain and pattern memory")
+					check(e.awareness.state == "calm" and e.awareness.suspicion == 0.0, "the world reset calms its awareness")
+					return true
+		lf += 1
+		return false
+
 class ScenarioStaminaClamp extends Scenario:
 	func setup() -> void:
 		name = "stamina_clamp"
@@ -1570,6 +1627,7 @@ func _register() -> void:
 		ScenarioMachinery4.new(),
 		ScenarioComboCancel.new(),
 		ScenarioCheckpointRest.new(),
+		ScenarioPatternCycle.new(),
 		ScenarioStaminaClamp.new(),
 		ScenarioShell.new(),
 		ScenarioRound5A.new(),
