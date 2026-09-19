@@ -1917,6 +1917,34 @@ class ScenarioInventorySlots extends Scenario:
 			check(p.inventory.describe("mystery") == "an unwritten thing (scaffold)", "describe() falls back honestly")
 		return f >= 90
 
+class ScenarioEquipmentHonest extends Scenario:
+	const Shell2 = preload("res://src/ui/shell.gd")
+	var shell
+	func setup() -> void:
+		name = "equipment_menu_honest"
+		h.make_world()
+		shell = Shell2.new()
+		shell.player = h.player
+		h.add_child(shell)
+		shell.open("equipment", false)
+	func step(f: int) -> bool:
+		if f == 5:
+			check(shell.menu_items.size() == 4, "equipment menu is 3 weapons + CLOSE, no dead header row, got %d" % shell.menu_items.size())
+			var joined := ""
+			for it in shell.menu_items:
+				joined += it.label + "\n"
+			check(not joined.contains("weapon: blade"), "no dead weapon header eating a nav stop")
+			check(joined.contains("the ruler"), "blade row carries its tradeoff prose")
+			check(joined.contains("cannot stop a swing"), "fangs row names its stagger cost")
+			check(joined.contains("every swing is a bet"), "maul row names its exposure cost")
+			check(shell.menu_items[0].label.begins_with("* blade"), "equipped weapon is starred, got [%s]" % shell.menu_items[0].label)
+			shell.sel = 1
+			shell.activate()
+		if f == 10:
+			check(h.player.moveset.get("id") == "fangs", "activating a row equips that weapon, got %s" % h.player.moveset.get("id"))
+			check(shell.menu_items[1].label.begins_with("* fangs"), "the star follows the equip, got [%s]" % shell.menu_items[1].label)
+		return f >= 15
+
 func _register() -> void:
 
 	scenarios = [
@@ -1954,6 +1982,7 @@ func _register() -> void:
 		ScenarioWeaponSwap.new(),
 		ScenarioFinisher.new(),
 		ScenarioInventorySlots.new(),
+		ScenarioEquipmentHonest.new(),
 		ScenarioDeterminismB.new(),
 	]
 	for sc in scenarios:

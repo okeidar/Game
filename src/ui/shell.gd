@@ -144,7 +144,6 @@ func _build_menu() -> void:
 					_add("%s x%d - %s" % [it.id, it.qty, player.inventory.describe(it.id)], func(): _use_item(slot))
 			_add("CLOSE", func(): close())
 		"equipment":
-			_add("weapon: %s" % player.equipment.equipped_id("weapon"), func(): pass)
 			for w in Moveset.catalog():
 				var wid: String = w.id
 				var mark := "*" if player.equipment.equipped_id("weapon") == wid else " "
@@ -152,7 +151,7 @@ func _build_menu() -> void:
 				var chain_total := 0.0
 				for a in w.light_chain:
 					chain_total += a.damage
-				_add("%s %s - %d-hit chain %d dmg · reach %.1f · stamina x%.1f" % [mark, wid, w.light_chain.size(), int(chain_total), l0.reach, w.get("cost_mult", 1.0)], func(): player.equipment.equip("weapon", w, player); Sim.stat("equip", {"weapon": wid}); _build_menu())
+				_add("%s %s - %s · %d-hit %d dmg · reach %.1f · stamina x%.1f" % [mark, wid, w.get("desc", "an unwritten weapon (scaffold)"), w.light_chain.size(), int(chain_total), l0.reach, w.get("cost_mult", 1.0)], func(): player.equipment.equip("weapon", w, player); Sim.stat("equip", {"weapon": wid}); _build_menu())
 			_add("CLOSE", func(): close())
 	_render()
 
@@ -244,7 +243,7 @@ func _kind_subtitle() -> String:
 	match state:
 		"pause": return "the world waits"
 		"inventory": return "what you carry is all you have"
-		"equipment": return "a weapon is a choice of risks"
+		"equipment": return "a weapon is a choice of risks - carrying %s" % (player.equipment.equipped_id("weapon") if player != null else "?")
 		"settings": return "scaffold entries - more land with the real game"
 		"map": return "where your feet have been"
 		"gestures": return "say it with the body"

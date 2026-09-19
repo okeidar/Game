@@ -826,3 +826,25 @@ Fixes, all [overnight proposal - awaiting Omer review]:
 
 Open for Omer: description wording, whether quick-use (1) should cycle slots,
 and the item catalog itself (still his).
+
+## Iteration 19 (overnight, 2026-09-19) - equipment menu honesty
+
+Completion of the iter18 audit, aimed at the same Omer note ("menues and
+inventory feels bad"). The equipment menu had the same disease as the
+inventory: numbers without meaning, plus a dead "weapon: X" header row that
+ate a navigation stop and did nothing when activated.
+
+Fixes, all [overnight proposal - awaiting Omer review]:
+1. ROWS CARRY THE TRADEOFF. Each weapon row now leads with its one-line cost
+   prose before the numbers: blade = "the ruler - no strengths, no weaknesses;
+   its chain ends in a finisher"; fangs = "speed ... but the shortest reach
+   and almost no stagger: it cannot stop a swing"; maul = "commitment ...
+   every swing is a bet and a whiff is a free hit for them". The prose lives
+   in the moveset table ("desc"), so the weapon catalog owns its own meaning.
+2. THE DEAD HEADER IS OUT OF THE NAV. The current weapon moved into the menu
+   subtitle ("a weapon is a choice of risks - carrying fangs"); the menu is
+   exactly 3 weapons + CLOSE.
+3. The star follows the equip immediately (menu rebuilds on equip).
+
+Open for Omer: the prose wording, whether numbers stay visible at all, and
+whether armor/other slots ever join this menu (his equipment rules).

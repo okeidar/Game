@@ -30,6 +30,7 @@ static func _atk(dmg: float, w: float, a: float, r: float, reach: float, arc: fl
 static func blade() -> Dictionary:
 	return {
 		"id": "blade",
+		"desc": "the ruler - no strengths, no weaknesses; its chain ends in a finisher",
 		"cost_mult": 1.0,
 		"light_chain": [_atk(20.0, 0.28, 0.14, 0.42, 2.4, 100.0, 0.45), _atk(22.0, 0.30, 0.14, 0.46, 2.4, 100.0, 0.5), _atk(31.0, 0.36, 0.16, 0.62, 2.5, 110.0, 1.0)],   # link 3 = FINISHER [overnight proposal - awaiting Omer review]: biggest hit + stagger, paid for with a longer readable windup, the longest recovery, and 1.5x stamina (T.FINISHER_COST_MULT)
 		"heavy": _atk(32.0, 0.50, 0.16, 0.62, 2.5, 110.0, 0.8),
@@ -45,6 +46,7 @@ static func blade() -> Dictionary:
 static func fangs() -> Dictionary:
 	return {
 		"id": "fangs",
+		"desc": "speed - four fast cheap hits, but the shortest reach and almost no stagger: it cannot stop a swing",
 		"cost_mult": 0.6,
 		"light_chain": [
 			_atk(9.0, 0.16, 0.10, 0.26, 1.8, 80.0, 0.15),
@@ -65,6 +67,7 @@ static func fangs() -> Dictionary:
 static func maul() -> Dictionary:
 	return {
 		"id": "maul",
+		"desc": "commitment - the heaviest hits and swing-breaking stagger, but every swing is a bet and a whiff is a free hit for them",
 		"cost_mult": 1.7,
 		"light_chain": [_atk(34.0, 0.52, 0.18, 0.72, 2.7, 120.0, 1.3), _atk(42.0, 0.62, 0.20, 0.85, 2.7, 120.0, 1.8)],
 		"heavy": _atk(55.0, 0.75, 0.20, 1.0, 2.8, 120.0, 2.2),
