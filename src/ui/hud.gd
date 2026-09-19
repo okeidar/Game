@@ -3,17 +3,24 @@ extends CanvasLayer
 ## when it matters, a short combat log, and the death banner.
 
 const Sim = preload("res://src/combat/combat_sim.gd")
+const T = preload("res://src/combat/tuning.gd")
 
 var player: Node3D
 var effigy: Node3D
 var build_id := "dev"
 
 var hp_bar: ProgressBar
+var hp_ghost_bar: ProgressBar   # damage trail: recent loss lingers pale, then drains
+var hp_ghost := 100.0
 var st_bar: ProgressBar
+var st_fill: StyleBoxFlat
+var heal_pips: Array[ColorRect] = []
 var fe_bar: ProgressBar
 var fe_text: Label
 var en_panel: VBoxContainer
 var en_bar: ProgressBar
+var en_ghost_bar: ProgressBar
+var en_ghost := 60.0
 var en_label: Label
 var log_label: Label
 var banner: Label
@@ -39,10 +46,21 @@ func _bar(color: Color, w: int, pos: Vector2) -> ProgressBar:
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
+	hp_ghost_bar = _bar(Color("c9a06a"), 260, Vector2(24, 452))  # under the real bar: the pale trail of what was just lost
 	hp_bar = _bar(Color("7e2b26"), 260, Vector2(24, 452))
 	st_bar = _bar(Color("5e6e4a"), 260, Vector2(24, 470))
+	st_fill = st_bar.get_theme_stylebox("fill") as StyleBoxFlat
 	fe_bar = _bar(Color("d9d3c3"), 260, Vector2(24, 488))
 	fe_bar.max_value = 30.0
+	# heal charges as pips (genre shape), not a text count
+	for i in 3:
+		var pip := ColorRect.new()
+		pip.position = Vector2(292 + i * 18, 506)
+		pip.custom_minimum_size = Vector2(14, 9)
+		pip.size = Vector2(14, 9)
+		pip.color = Color("d9b25a")
+		add_child(pip)
+		heal_pips.append(pip)
 	fe_text = Label.new()
 	fe_text.position = Vector2(292, 482)
 	fe_text.add_theme_font_size_override("font_size", 15)
@@ -59,6 +77,23 @@ func _ready() -> void:
 	en_label.add_theme_color_override("font_color", Color("aab2bd"))
 	en_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	en_panel.add_child(en_label)
+	var en_wrap := Control.new()
+	en_wrap.custom_minimum_size = Vector2(400, 11)
+	en_ghost_bar = ProgressBar.new()
+	en_ghost_bar.min_value = 0.0
+	en_ghost_bar.max_value = 60.0
+	en_ghost_bar.value = 60.0
+	en_ghost_bar.custom_minimum_size = Vector2(400, 11)
+	en_ghost_bar.show_percentage = false
+	var gbg := StyleBoxFlat.new()
+	gbg.bg_color = Color(0.04, 0.05, 0.07, 0.85)
+	var gfill := StyleBoxFlat.new()
+	gfill.bg_color = Color("b8a878")   # pale trail of damage just dealt
+	en_ghost_bar.add_theme_stylebox_override("background", gbg)
+	en_ghost_bar.add_theme_stylebox_override("fill", gfill)
+	en_ghost_bar.set_anchors_preset(Control.PRESET_FULL_RECT)
+	en_ghost_bar.size = Vector2(400, 11)
+	en_wrap.add_child(en_ghost_bar)
 	en_bar = ProgressBar.new()
 	en_bar.min_value = 0.0
 	en_bar.max_value = 60.0
@@ -66,12 +101,15 @@ func _ready() -> void:
 	en_bar.custom_minimum_size = Vector2(400, 11)
 	en_bar.show_percentage = false
 	var ebg := StyleBoxFlat.new()
-	ebg.bg_color = Color(0.04, 0.05, 0.07, 0.85)
+	ebg.bg_color = Color(0.0, 0.0, 0.0, 0.0)   # transparent: the ghost shows through where the real bar has fallen
 	var efill := StyleBoxFlat.new()
 	efill.bg_color = Color("6d7383")
 	en_bar.add_theme_stylebox_override("background", ebg)
 	en_bar.add_theme_stylebox_override("fill", efill)
-	en_panel.add_child(en_bar)
+	en_bar.set_anchors_preset(Control.PRESET_FULL_RECT)
+	en_bar.size = Vector2(400, 11)
+	en_wrap.add_child(en_bar)
+	en_panel.add_child(en_wrap)
 
 	room_label = Label.new()
 	room_label.position = Vector2(24, 44)
@@ -124,12 +162,32 @@ func _process(_dt: float) -> void:
 	if player == null:
 		return
 	hp_bar.value = player.hp
+	# [overnight proposal] damage trail: ghost snaps up on heal, drains down slow after a hit
+	if player.hp > hp_ghost:
+		hp_ghost = player.hp
+	else:
+		hp_ghost = move_toward(hp_ghost, player.hp, 25.0 * _dt)
+	hp_ghost_bar.value = hp_ghost
 	st_bar.value = player.stamina
+	# [overnight proposal] stamina low-warning: below roll cost the bar pulses hot
+	if st_fill != null:
+		if player.stamina < T.ROLL_COST:
+			var w: float = sin(Time.get_ticks_msec() / 150.0) * 0.5 + 0.5
+			st_fill.bg_color = Color("5e6e4a").lerp(Color("a04a38"), 0.4 + 0.6 * w)
+		else:
+			st_fill.bg_color = Color("5e6e4a")
 	fe_bar.value = player.feathers
-	fe_text.text = "%s · %d feathers · %d%% resist · heal x%d%s" % [player.moveset.get("id", "?").to_upper(), int(player.feathers), int(round(player.feather_resist() * 100.0)), player.heal_charges, (" · SNEAK" if player.sneaking else "")]
+	fe_text.text = "%s · %d feathers · %d%% resist%s" % [player.moveset.get("id", "?").to_upper(), int(player.feathers), int(round(player.feather_resist() * 100.0)), (" · SNEAK" if player.sneaking else "")]
+	for i in heal_pips.size():
+		heal_pips[i].color = Color("d9b25a") if player.heal_charges > i else Color(0.35, 0.33, 0.28, 0.6)
 	if effigy != null and (player.lock_target == effigy or effigy.since_hit < 4.0) and not effigy.dead:
 		en_panel.visible = true
 		en_bar.value = effigy.hp
+		if effigy.hp > en_ghost:
+			en_ghost = effigy.hp
+		else:
+			en_ghost = move_toward(en_ghost, effigy.hp, 20.0 * _dt)
+		en_ghost_bar.value = en_ghost
 	else:
 		en_panel.visible = false
 	log_label.text = "\n".join(Sim.log_lines)

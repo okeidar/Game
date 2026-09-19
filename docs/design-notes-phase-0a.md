@@ -587,3 +587,13 @@ Audit result: the effigy was already well-built (yellow->red telegraph with emis
 Not done (scope): camera collision overhaul (the sphere-cast works; only the close-up readability was broken), effigy attack variety (content design is Omer's - the attack_chain machinery already supports follow-ups), multi-enemy separation (only one live enemy in 0A; physics bodies already push apart).
 
 Verification note: both changes are presentation-layer; the harness does not drive game.gd/camera rig, so they are verified by playtest footage this round, with the 26-scenario suite confirming no regressions.
+
+## Iteration 7 - HUD combat feedback (overnight)
+
+The HUD had the right data but no FEEL: bars snapped instantly and nothing warned you before a denial.
+
+1. [overnight proposal - awaiting Omer review] Damage trails (both directions). Player hp and the effigy bar now carry a pale "ghost" segment behind the real fill: on damage the ghost lingers where the bar was and drains down (25/s player, 20/s enemy); on heal it snaps up. This is the genre's single strongest damage-readability device - a hit has visible WEIGHT because you watch what you lost drain away. Cost: one extra bar element each; none in gameplay terms.
+2. [overnight proposal - awaiting Omer review] Low-stamina warning: below roll cost (16) the stamina bar pulses hot. Before, the first sign of an empty pool was a denied roll - a silent failure at the worst moment. Cost: a pulsing element in the peripheral UI; genre-consistent (DS3 flashes the bar on deny).
+3. [overnight proposal - awaiting Omer review] Heal charges are pips (3 gold squares, filled/dim), not "heal x3" text - readable at a glance mid-fight.
+
+Verification: new ?hudcheck=1 debug hook (applies a 35-dmg hit, drops stamina to 10, damages the effigy) so the feedback can be screenshot-verified headlessly. No damage numbers - genre doesn't float them; skipped deliberately.

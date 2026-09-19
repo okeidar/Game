@@ -29,6 +29,7 @@ var player
 var _dbg_pos := false
 var _dbg_acc := 0.0
 var _dbg_kill := false  # debug hook (?killme=1): forces one death after begin so the death loop can be exercised headlessly
+var _dbg_hud := false   # debug hook (?hudcheck=1): applies one non-lethal hit, low stamina, and effigy damage so HUD feedback can be screenshot-verified
 var effigy          # the one real enemy (DEFEND room)
 var effigies: Array = []
 var cam
@@ -59,6 +60,7 @@ func _load_build_id() -> void:
 		var qp = JavaScriptBridge.eval("location.search", true)
 		_dbg_pos = qp != null and str(qp).find("debugpos") >= 0
 		_dbg_kill = qp != null and str(qp).find("killme") >= 0
+		_dbg_hud = qp != null and str(qp).find("hudcheck") >= 0
 
 func _build() -> void:
 	Sim.reset()
@@ -164,6 +166,12 @@ func _process(delta: float) -> void:
 	if _dbg_kill and player != null and not player.dead and shell != null and shell.state == "hidden":
 		_dbg_kill = false
 		player.apply_hit(99999.0, player.global_position + Vector3(0, 0, 1), 0.0)
+	if _dbg_hud and player != null and not player.dead and shell != null and shell.state == "hidden":
+		_dbg_hud = false
+		player.apply_hit(35.0, player.global_position + Vector3(0, 0, 1), 0.0)
+		player.stamina = 10.0
+		if effigy != null:
+			effigy.apply_hit(20.0, player.global_position, 0.0)
 	if _dbg_pos and player != null:
 		_dbg_acc += delta
 		if _dbg_acc >= 0.5:
