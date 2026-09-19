@@ -2711,6 +2711,73 @@ class ScenarioHitstopWeight extends Scenario:
 		lf += 1
 		return false
 
+class ScenarioStaminaBreak extends Scenario:
+	const Sim = preload("res://src/combat/combat_sim.gd")
+	var run := 0
+	var lf := -2
+	var broke_lf := -1
+	func setup() -> void:
+		name = "stamina_break"
+		_start_run(0)
+	func _start_run(r: int) -> void:
+		run = r
+		lf = -2
+		broke_lf = -1
+		h.make_world()
+		h.effigies[0].position = Vector3(0, 0.05, 60.0)
+		h.player.stamina = 10.0   # near empty: the break comes fast
+	func _breaks() -> int:
+		var n := 0
+		for snd in Sim.sounds:
+			if snd.get("source") == "stamina_break": n += 1
+		return n
+	func _winded_events() -> int:
+		var n := 0
+		for ev in Sim.events:
+			if ev.begins_with("WINDED"): n += 1
+		return n
+	func step(_f: int) -> bool:
+		if lf < 0:
+			lf += 1
+			return false
+		var p = h.player
+		match run:
+			0:  # the break fires once, then stays honest at zero
+				if lf == 5:
+					h.input.cur.move = Vector2(0, -1)
+					h.input.cur.sprint = true
+				if broke_lf < 0 and p.stamina <= 0.0:
+					broke_lf = lf
+				if broke_lf >= 0 and lf == broke_lf + 2:
+					check(_breaks() == 1, "the break gasps once, got %d" % _breaks())
+					check(_winded_events() == 1, "the break acknowledges on the feed once, got %d" % _winded_events())
+					check(p.winded_t > 0.0, "the break pulse shows on the body (t=%.2f)" % p.winded_t)
+				if lf == 200:
+					check(_breaks() == 1, "held at zero the break does not machine-gun, got %d" % _breaks())
+					_start_run(1)
+					return false
+			1:  # after regen the break re-arms
+				if lf == 5:
+					h.input.cur.move = Vector2(0, -1)
+					h.input.cur.sprint = true
+				if broke_lf < 0 and p.stamina <= 0.0:
+					broke_lf = lf
+				if broke_lf >= 0 and lf == broke_lf + 5:
+					h.input.cur.sprint = false
+					h.input.cur.move = Vector2.ZERO
+					p.stamina = 50.0   # regen did its work off-screen
+				if broke_lf >= 0 and lf == broke_lf + 10:
+					h.input.cur.move = Vector2(0, -1)
+					h.input.cur.sprint = true   # sprint again: 50 stamina drains to a second break
+				if broke_lf >= 0 and lf > broke_lf + 10 and p.stamina <= 0.0 and _breaks() >= 2:
+					check(_breaks() == 2, "after regen the break re-arms and fires again, got %d" % _breaks())
+					return true
+				if lf > 400:
+					check(false, "second break never fired (breaks=%d)" % _breaks())
+					return true
+		lf += 1
+		return false
+
 func _register() -> void:
 
 	scenarios = [
@@ -2742,6 +2809,7 @@ func _register() -> void:
 		ScenarioVolleyFeel.new(),
 		ScenarioCameraFov.new(),
 		ScenarioHitstopWeight.new(),
+		ScenarioStaminaBreak.new(),
 		ScenarioCheckpointRest.new(),
 		ScenarioPatternCycle.new(),
 		ScenarioRemnantPenalty.new(),

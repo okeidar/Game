@@ -1620,3 +1620,16 @@ Tradeoffs (per doctrine): longer freezes on heavies slow the game's pulse if eve
 
 Verification: new `hitstop_weight` scenario asserts against the bus's `hitstop_last`: light 0.080, heavy 0.120, backstab crit 0.120 (light base + crit bonus). 54/54 green.
 
+
+## iter54 - stamina feel: the break answers [overnight proposal - awaiting Omer review]
+
+Live: https://feather-iter54-2232-7867835136e5.surge.sh
+
+Feel mandate, ninth iteration. Audit found an asymmetry: the EFFIGY winds down visibly when spent (slump, dim, club low - "the opening is VISIBLE") but the PLAYER's own stamina empties in silence - sprint just stops, denials are feed lines. Now the break crossing answers: a short gasp on the sound bus (2.0m, close-range), a pale pulse on the body (0.7s, fading), and a WINDED line on the feed. Cosmetic only - no stagger, no state lock; the punishment for an empty bar is already the denials.
+
+The interesting machinery: the first version machine-gunned. Held sprint stutters across zero (regen ticks above 0, drain pulls back under) and each re-cross fired the cue. Fixed with a re-arm threshold: the gasp re-arms only after stamina recovers past 25% of max by any means - so sprint-stutter stays silent, but a real second break after recovery still sounds.
+
+Tradeoffs (per doctrine): a break cue risks crying wolf in exactly the stutter case the gate solves; the gate's 25% is the tunable (`STAMINA_BREAK_SOUND` is the radius). Both in tuning.gd / player.gd, Omer's to retune.
+
+Verification: new `stamina_break` scenario - the break fires exactly once (sound + feed + body pulse), held-at-zero does not machine-gun, and after recovery past the threshold the break re-arms and fires again. 55/55 green.
+

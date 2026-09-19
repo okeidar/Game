@@ -50,7 +50,8 @@ const SHAKE_HIT_KILL := 0.15
 const SWING_SOUND_BASE := 3.0   # swing feel: a sword swing is audible this far before weight scaling
 const SWING_SOUND_PER_DMG := 0.05
 const VOLLEY_FIRE_SOUND := 2.5   # volley feel: loosing a feather is quiet - stealthy ranged
-const VOLLEY_HIT_SOUND := 5.0   # volley feel: the impact carries farther than the loose   # swing feel: heavier swings carry farther (light ~4m, heavy ~5m)   # kill feel: the felling blow shakes on top of the connect answer   # connect feel: crits (riposte/backstab) add this on top   # landing feel: only a real touchdown is audible (tiny drops stay silent)
+const VOLLEY_HIT_SOUND := 5.0
+const STAMINA_BREAK_SOUND := 2.0   # stamina feel: the break gasp is close-range, your own body spending   # volley feel: the impact carries farther than the loose   # swing feel: heavier swings carry farther (light ~4m, heavy ~5m)   # kill feel: the felling blow shakes on top of the connect answer   # connect feel: crits (riposte/backstab) add this on top   # landing feel: only a real touchdown is audible (tiny drops stay silent)
 
 # The feather economy. Feathers held = armor. Feathers spent = ammo (volley
 # only - the 2026-09-19 ruling: feathers are never currency, never spent at

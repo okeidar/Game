@@ -50,6 +50,8 @@ var fall_v := 0.0       # deepest downward velocity of the current fall
 var cam: Node3D = null         # camera rig, set by game; null in tests
 var lock_target: Node3D = null
 var buffered := ""
+var winded_t := 0.0   # stamina feel: >0 while the break pulse shows on the body
+var winded_armed := true   # stamina feel: re-arms only after real recovery, so sprint-stutter cannot machine-gun the gasp
 var jump_buffer_t := 0.0   # jump feel: press shortly before landing still jumps
 var land_squash_t := 0.0   # landing feel: >0 while the landing squash recovers
 var land_squash_amp := 0.0   # landing feel: squash depth, scaled by fall impact
@@ -345,8 +347,15 @@ func add_feathers(n: float) -> void:
 	_update_coat()
 
 func _spend_stamina(n: float) -> void:
+	var was: float = stamina
 	stamina = maxf(0.0, stamina - n)  # clamp at 0: negative stamina was hidden regen debt (telemetry showed st=-19); genre clamps at 0
 	since_spend = 0.0
+	if was > 0.0 and stamina <= 0.0 and winded_armed:
+		# stamina feel: the break answers - a gasp, a pale pulse on the body, a line on the feed. Cosmetic: no state lock
+		winded_armed = false
+		winded_t = 0.7
+		Sim.emit_sound("stamina_break", global_position, T.STAMINA_BREAK_SOUND, T.STAMINA_BREAK_SOUND)
+		Sim.log_event("WINDED - stamina spent")
 
 func _physics_process(dt: float) -> void:
 	tick(dt)
@@ -395,6 +404,8 @@ func tick(dt: float) -> void:
 	else:
 		coyote_t = maxf(0.0, coyote_t - dt)
 		fall_v = minf(fall_v, velocity.y)
+	if stamina >= T.STAMINA_MAX * 0.25:
+		winded_armed = true   # recovered by any means - regen, rest, item
 	jump_buffer_t = maxf(0.0, jump_buffer_t - dt)
 	land_squash_t = maxf(0.0, land_squash_t - dt)
 	match state:
@@ -870,6 +881,7 @@ func acquire_lock(cam_forward: Vector3) -> Node3D:
 
 func _update_visual(dt: float) -> void:
 	guard_flash_t = maxf(0.0, guard_flash_t - dt)
+	winded_t = maxf(0.0, winded_t - dt)
 	var target_yaw := atan2(facing.x, facing.z)
 	if state == "attack" or state == "roll" or state == "volley":
 		rotation.y = target_yaw
@@ -893,6 +905,8 @@ func _update_visual(dt: float) -> void:
 		mat.albedo_color.a = 0.25 if cam_close else 1.0
 		if state == "block":
 			mat.albedo_color = Color("7f9fcf")  # guard up: cold sheen
+	if winded_t > 0.0:
+		mat.albedo_color = mat.albedo_color.lerp(Color(0.78, 0.80, 0.82), (winded_t / 0.7) * 0.7)   # the break pulse: the body pales as it spends
 	if guard_flash_t > 0.0:
 		mat.albedo_color = guard_flash_color   # the guard's answer reads through the sheen
 	_update_sword()
